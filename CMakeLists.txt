@@ -14,15 +14,10 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(googletest)
 
-# Include the lib folder
-add_subdirectory(${CMAKE_SOURCE_DIR}/lib)
-
 # Enable testing
 enable_testing()
 
-# # Add tests (example)
-# add_executable(example_test tests/example_test.cpp)
-# target_link_libraries(example_test gtest gtest_main)
-# target_link_libraries(example_test unimoc_lib)
-# # Add test to CMake
-# add_test(NAME example_test COMMAND example_test)
+# Include the lib folder
+add_subdirectory(${CMAKE_SOURCE_DIR}/lib)
+add_subdirectory(${CMAKE_SOURCE_DIR}/tests)
+
