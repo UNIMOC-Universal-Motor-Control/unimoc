@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "complex": "cpp",
+        "array": "cpp",
+        "numbers": "cpp"
+    }
+}
