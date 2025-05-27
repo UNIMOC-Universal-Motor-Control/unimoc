@@ -1,4 +1,5 @@
 #include <modm/platform.hpp>
+#include <modm/debug.hpp>
 
 using namespace modm::platform;
 using namespace std::chrono_literals;

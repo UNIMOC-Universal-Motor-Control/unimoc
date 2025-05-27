@@ -13,6 +13,17 @@
             "configFiles": [
                 "modm/openocd.cfg",
             ],
+            "rttConfig": {
+            "enabled": true,
+            "address": "auto",
+            "decoders": [
+                {
+                    "label": "",
+                    "port": 0,
+                    "type": "console"
+                }
+            ]
+            },
         }
     ]
 }
