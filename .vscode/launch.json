@@ -1,0 +1,18 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug STM32G473CBT6",
+            "cwd": "${workspaceFolder}",
+            "executable": "build/src/ModmCMakeTest.elf",
+            "request": "launch",
+            "type": "cortex-debug",
+            "servertype": "jlink",
+            "device": "STM32G473CB",
+            "breakAfterReset": true,
+            "configFiles": [
+                "modm/openocd.cfg",
+            ],
+        }
+    ]
+}
