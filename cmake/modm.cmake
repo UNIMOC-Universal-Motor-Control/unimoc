@@ -1,5 +1,9 @@
-include(FetchContent)
+# This file handles the integration of the modm library into the CMake build process.
+# It fetches the modm library using FetchContent, sets up a Python virtual environment,
+# installs dependencies from requirements.txt, and then uses lbuild to generate
+# the necessary build files for modm based on project.xml.
 
+# download the modm library using FetchContent
 FetchContent_Declare(
   modm
   GIT_REPOSITORY https://github.com/modm-io/modm.git
@@ -7,8 +11,14 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(modm)
 
+# check if Python3 is available
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
+if(NOT Python3_Interpreter_FOUND)
+    message(FATAL_ERROR "Python3 interpreter not found. Please install Python3.") 
+endif()
 
+# set the path to the Python virtual environment
+# and the path to the Python binary within that environment
 set(VENV_PATH "${CMAKE_BINARY_DIR}/venv")
 if (WIN32)
   set(VENV_BIN "${VENV_PATH}/Scripts")
@@ -16,17 +26,18 @@ else()
   set(VENV_BIN "${VENV_PATH}/bin")
 endif()
 
+# Set the path to the requirements.txt file
 set(REQUIREMENTS_TXT "${CMAKE_SOURCE_DIR}/requirements.txt")
 
-# Erstelle das venv, falls es noch nicht existiert
+# Create the Python virtual environment if it does not exist
 if(NOT EXISTS "${VENV_PATH}")
     execute_process(
         COMMAND ${Python3_EXECUTABLE} -m venv "${VENV_PATH}"
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     )
-    endif()
+endif()
 
-# Installiere Pakete im venv
+# Activate the virtual environment and install the required packages
 execute_process(
     COMMAND "${VENV_BIN}/python" -m pip install --upgrade pip
 )
@@ -34,8 +45,8 @@ execute_process(
     COMMAND "${VENV_BIN}/pip" install -r "${REQUIREMENTS_TXT}"
 )
 
-
-# Führe lbuild build um modm zu bauen
+# Add a custom command to run lbuild
+# This command will be triggered whenever project.xml changes. 
 add_custom_command(
     OUTPUT ${CMAKE_SOURCE_DIR}/modm/CMakeLists.txt
     COMMAND "${VENV_BIN}/lbuild" build

@@ -3,13 +3,14 @@
     <repository><path>./build/_deps/modm-src/repo.lb</path></repository>
   </repositories>
   <options>
-    <option name="modm:build:project.name">unimoc_bcc</option>
+    <option name="modm:build:project.name">unimoc</option>
     <option name="modm:target">stm32g473cbt6</option>
     <option name="modm:build:build.path">build</option>
     <option name="modm:build:cmake:include_cmakelists">false</option>
     <option name="modm:build:make:include_makefile">false</option>
     <option name="modm:platform:rtt:buffer.rx">16</option>
   </options>
+
   <modules>
     <module>modm:platform:core</module>
     <module>modm:platform:gpio</module>

@@ -1,0 +1,8 @@
+<library>
+  <options>
+    <option name="modm:target">hosted-windowss</option>
+  </options>
+  <modules>
+    <module>modm:build:cmake</module>
+  </modules>
+</library>

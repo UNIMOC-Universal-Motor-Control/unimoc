@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
+include(FetchContent)
 include(cmake/ToolChain.cmake)
 include(cmake/modm.cmake)
 
