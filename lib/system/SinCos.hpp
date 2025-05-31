@@ -28,6 +28,9 @@
 #define UNIMOC_SYSTEM_SIN_COS_H_
 
 #include <array>
+#include <cmath>
+#include <concepts>	
+#include "units.h"
 
 /**
  * @namespace unimoc global namespace
@@ -39,8 +42,18 @@ namespace unimoc
      */
     namespace system
     {
-        ///< sinus and cosine values of an angle.
-        template <typename T = float>
+        /// @brief SinCos class
+        ///
+        /// This class is used to represent the sine and cosine values of an angle.
+        ///
+        /// It provides methods to compute the sine and cosine values, normalize them, and perform arithmetic operations.   
+        ///
+        /// @tparam T The type of the sine and cosine values. It must be a floating point type.
+        ///
+        /// @note The class is designed
+        /// to be used with angles in radians, and it is expected that the user will implement the `computeSinCos` method
+        /// to provide the actual sine and cosine calculations based on the angle.    
+        template <std::floating_point T>
         struct SinCos
         {
             T sin;
@@ -49,14 +62,14 @@ namespace unimoc
             // function to compute sin and cos values
             // this function should be implemented by the user
             // it should return the sin and cos values of the given angle
-            virtual SinCos<T> computeSinCos(T angle) = 0;
+            virtual SinCos<T> computeSinCos(const units::unit_t<units::angle::radian, T> angle) = 0;
 
             // default constructor destructor
             constexpr SinCos() = default;
             virtual ~SinCos() = default;
 
             // constructor with angle
-            constexpr SinCos(T angle)
+            constexpr SinCos(const units::unit_t<units::angle::radian, T> angle)
             {
                 // compute sin and cos values
                 SinCos<T> result = computeSinCos(angle);
@@ -67,24 +80,24 @@ namespace unimoc
             // length of the vector
             constexpr T length() const noexcept
             {
-                return std::sqrt(sin * sin + cos * cos);
+                return std::hypot(sin, cos);
             }
 
             // normalize the sin and cos values to one
-            constexpr NormToOne<T> normToOne() const
+            constexpr auto normToOne(void) const
             {
-                return SinCos<T>(sin / length(), cos / length());
+                return SinCos<T>(sin / this.length(), cos / this.length());
             }
 
             // constructor with sin and cos values
-            constexpr SinCos(T sin, T cos) : sin(sin), cos(cos) {  }
+            constexpr SinCos(const T sin, const T cos) : sin(sin), cos(cos) {  }
 
             // copy constructor
             constexpr SinCos(const SinCos &other) : sin(other.sin), cos(other.cos) { }
             // move constructor
             constexpr SinCos(SinCos &&other) noexcept : sin(other.sin), cos(other.cos) {  }
             // copy assignment operator
-            constexpr SinCos &operator=(const SinCos &other)
+            constexpr auto &operator=(const SinCos &other)
             {
                 if (this != &other)
                 {
@@ -95,7 +108,7 @@ namespace unimoc
             }
 
             // move assignment operator
-            constexpr SinCos &operator=(SinCos &&other) noexcept
+            constexpr auto &operator=(SinCos &&other) noexcept
             {
                 if (this != &other)
                 {
@@ -123,26 +136,18 @@ namespace unimoc
                 return {sin, cos};
             }
 
-            constexpr auto operator-() const noexcept -> SinCos
+            constexpr auto operator-() const noexcept -> SinCos<T>
             {
-                return SinCos(-sin, -cos);
+                return SinCos<T>(-sin, -cos);
             }
 
             // sine cosine difference
-            constexpr SinCos operator-(const SinCos &other) const
+            constexpr auto operator-(const SinCos<T> &other) const
             {
                 // Using trigonometric identities for subtraction:
                 // sin(a - b) = sin(a)cos(b) - cos(a)sin(b)
                 // cos(a - b) = cos(a)cos(b) + sin(a)sin(b)
-                return SinCos(sin * other.cos - cos * other.sin, cos * other.cos + sin * other.sin);
-            }
-
-            // sin cosine difference
-            constexpr T operator-(const SinCos &other) const
-            {
-                // Using trigonometric identities for subtraction:
-                // sin(a - b) = sin(a)cos(b) - cos(a)sin(b)
-                return sin * other.cos - cos * other.sin;
+                return SinCos<T>(sin * other.cos - cos * other.sin, cos * other.cos + sin * other.sin);
             }
         };
     } // namespace system
