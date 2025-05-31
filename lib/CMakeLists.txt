@@ -1,5 +1,5 @@
 # Specify the minimum CMake version
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 4.00)
 
 # Add the library target
 add_library(unimoc_lib)

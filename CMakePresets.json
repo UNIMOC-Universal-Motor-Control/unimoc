@@ -1,0 +1,67 @@
+{
+    "version": 6,
+    "cmakeMinimumRequired": {
+      "major": 4,
+      "minor": 0,
+      "patch": 0
+    },
+    "configurePresets": [
+      {
+        "name": "stm32-cross-debug",
+        "displayName": "Cross build for STM32",
+        "description": "Build Debug firmware for STM32 using ARM GCC toolchain",
+        "generator": "Ninja",
+        "binaryDir": "${sourceDir}/build/stm32debug",
+        "toolchainFile": "${sourceDir}/cmake/ToolChain.cmake",
+        "cacheVariables": {
+            "CMAKE_BUILD_TYPE": "Debug"
+          }
+      },
+      {
+        "name": "stm32-cross-release",
+        "displayName": "Cross build for STM32",
+        "description": "Build Release firmware for STM32 using ARM GCC toolchain",
+        "generator": "Ninja",
+        "binaryDir": "${sourceDir}/build/stm32release",
+        "toolchainFile": "${sourceDir}/cmake/ToolChain.cmake",
+        "cacheVariables": {
+            "CMAKE_BUILD_TYPE": "MinSizeRel"
+          }
+      },
+      {
+        "name": "hosted-test",
+        "displayName": "Hosted build with tests",
+        "description": "Build and run tests on host (e.g. x86_64 Linux or Windows)",
+        "generator": "Ninja",
+        "binaryDir": "${sourceDir}/build/hosted",
+        "cacheVariables": {
+          "CMAKE_BUILD_TYPE": "Debug",
+          "ENABLE_TESTS": "ON"
+        }
+      }
+    ],
+    "buildPresets": [
+        {
+            "name": "stm32-cross-debug",
+            "configurePreset": "stm32-cross-debug",
+            "displayName": "Build STM32 Debug Firmware"
+        },
+        {
+            "name": "stm32-cross-release",
+            "configurePreset": "stm32-cross-release",
+            "displayName": "Build STM32 Release Firmware"
+        },
+        {
+            "name": "hosted-test",
+            "configurePreset": "hosted-test",
+            "displayName": "Build and Test on Host"
+        }
+    ],
+    "testPresets": [
+      {
+        "name": "hosted-test",
+        "configurePreset": "hosted-test"
+      }
+    ]
+  }
+  
