@@ -5,6 +5,7 @@ cmake_minimum_required(VERSION 4.00)
 add_library(unimoc_lib)
 
 # use unit library
+add_compile_definitions(UNIT_LIB_DEFAULT_TYPE=float)
 target_compile_definitions(unimoc_lib PRIVATE UNIT_LIB_DISABLE_IOSTREAM)
 target_compile_definitions(unimoc_lib PRIVATE DISABLE_PREDEFINED_UNITS)
 target_compile_definitions(unimoc_lib PRIVATE ENABLE_PREDEFINED_ANGULAR_VELOCITY_UNITS)
