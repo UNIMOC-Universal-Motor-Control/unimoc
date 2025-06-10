@@ -35,3 +35,4 @@
 # build folder
 build/*
 
+modm/modm_tools/__pycache__/*
