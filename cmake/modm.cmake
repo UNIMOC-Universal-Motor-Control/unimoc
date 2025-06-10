@@ -2,6 +2,7 @@
 # It fetches the modm library using FetchContent, sets up a Python virtual environment,
 # installs dependencies from requirements.txt, and then uses lbuild to generate
 # the necessary build files for modm based on project.xml.
+include(FetchContent)
 
 # download the modm library using FetchContent
 FetchContent_Declare(
