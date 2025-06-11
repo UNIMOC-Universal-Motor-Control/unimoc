@@ -11,7 +11,7 @@
         "displayName": "Debug Build for Battery Case Controller",
         "description": "Build Debug firmware for STM32G473 using ARM GCC toolchain for Battery Case Controller",
         "generator": "Ninja",
-        "binaryDir": "${sourceDir}/build/stm32debug",
+        "binaryDir": "${sourceDir}/build/batterycasecontroller-debug",
         "toolchainFile": "${sourceDir}/cmake/ToolChain.cmake",
         "cacheVariables": {
             "CMAKE_BUILD_TYPE": "Debug",
@@ -24,7 +24,7 @@
         "displayName": "Release Build for Battery Case Controller",
         "description": "Build Release firmware for STM32G473 using ARM GCC toolchain for Battery Case Controller",
         "generator": "Ninja",
-        "binaryDir": "${sourceDir}/build/stm32release",
+        "binaryDir": "${sourceDir}/build/batterycasecontroller-release",
         "toolchainFile": "${sourceDir}/cmake/ToolChain.cmake",
         "cacheVariables": {
             "CMAKE_BUILD_TYPE": "MinSizeRel",

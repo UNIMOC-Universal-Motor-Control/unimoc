@@ -51,8 +51,8 @@ execute_process(
 add_custom_command(
     OUTPUT ${CMAKE_SOURCE_DIR}/modm/CMakeLists.txt
     COMMAND "${VENV_BIN}/lbuild" build
-    DEPENDS ${CMAKE_SOURCE_DIR}/project.xml
-    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    DEPENDS ${HARDWARE_DIRECTORY}/project.xml
+    WORKING_DIRECTORY "${HARDWARE_DIRECTORY}"
     COMMENT "Running lbuild build because project.xml changed"
 )
 
