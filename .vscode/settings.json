@@ -7,5 +7,8 @@
     "C_Cpp.clang_format_sortIncludes": true,
     "C_Cpp.formatting": "clangFormat",
     "editor.defaultFormatter": "ms-vscode.cpptools",
-    "editor.formatOnSaveMode": "modifications"
+    "editor.formatOnSaveMode": "modifications",
+    "files.associations": {
+        "functional": "c"
+    }
 }

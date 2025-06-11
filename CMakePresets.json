@@ -7,60 +7,65 @@
     },
     "configurePresets": [
       {
-        "name": "stm32-cross-debug",
-        "displayName": "Cross build for STM32",
-        "description": "Build Debug firmware for STM32 using ARM GCC toolchain",
+        "name": "BatteryCaseController Debug",
+        "displayName": "Debug Build for Battery Case Controller",
+        "description": "Build Debug firmware for STM32G473 using ARM GCC toolchain for Battery Case Controller",
         "generator": "Ninja",
         "binaryDir": "${sourceDir}/build/stm32debug",
         "toolchainFile": "${sourceDir}/cmake/ToolChain.cmake",
         "cacheVariables": {
-            "CMAKE_BUILD_TYPE": "Debug"
+            "CMAKE_BUILD_TYPE": "Debug",
+            "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+            "HARDWARE_DIRECTORY": "${sourceDir}/hardware/batterycasecontroller"
           }
       },
       {
-        "name": "stm32-cross-release",
-        "displayName": "Cross build for STM32",
-        "description": "Build Release firmware for STM32 using ARM GCC toolchain",
+        "name": "BatteryCaseController Release",
+        "displayName": "Release Build for Battery Case Controller",
+        "description": "Build Release firmware for STM32G473 using ARM GCC toolchain for Battery Case Controller",
         "generator": "Ninja",
         "binaryDir": "${sourceDir}/build/stm32release",
         "toolchainFile": "${sourceDir}/cmake/ToolChain.cmake",
         "cacheVariables": {
-            "CMAKE_BUILD_TYPE": "MinSizeRel"
+            "CMAKE_BUILD_TYPE": "MinSizeRel",
+            "HARDWARE_DIRECTORY": "${sourceDir}/hardware/batterycasecontroller"
           }
       },
       {
-        "name": "hosted-test",
+        "name": "Hosted build with tests",
         "displayName": "Hosted build with tests",
         "description": "Build and run tests on host (e.g. x86_64 Linux or Windows)",
         "generator": "Ninja",
         "binaryDir": "${sourceDir}/build/hosted",
         "cacheVariables": {
           "CMAKE_BUILD_TYPE": "Debug",
-          "ENABLE_TESTS": "ON"
+          "ENABLE_TESTS": "ON",
+          "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+          "HARDWARE_DIRECTORY": "${sourceDir}/hardware/host"
         }
       }
     ],
     "buildPresets": [
         {
-            "name": "stm32-cross-debug",
-            "configurePreset": "stm32-cross-debug",
-            "displayName": "Build STM32 Debug Firmware"
+            "name": "BatteryCaseController Debug",
+            "configurePreset": "BatteryCaseController Debug",
+            "displayName": "Build BatteryCaseController Debug Firmware"
         },
         {
-            "name": "stm32-cross-release",
-            "configurePreset": "stm32-cross-release",
-            "displayName": "Build STM32 Release Firmware"
+            "name": "BatteryCaseController Release",
+            "configurePreset": "BatteryCaseController Release",
+            "displayName": "Build BatteryCaseController Release Firmware"
         },
         {
-            "name": "hosted-test",
-            "configurePreset": "hosted-test",
+            "name": "Hosted build with tests",
+            "configurePreset": "Hosted build with tests",
             "displayName": "Build and Test on Host"
         }
     ],
     "testPresets": [
       {
-        "name": "hosted-test",
-        "configurePreset": "hosted-test"
+        "name": "Hosted Test",
+        "configurePreset": "Hosted build with tests"
       }
     ]
   }

@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 3.20)
 
+# remove the warning about CMP0175
+cmake_policy(SET CMP0175 OLD)
+
 # Projektname und Version
 project(unimoc LANGUAGES C CXX)
 
 add_library(project_options INTERFACE)
-
-# Generate compile_commands.json to make it easier to work with clang based tools
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Colors is unsupported vscode, can also be turend off in cmake/StandardProjectSettings.cmake
 target_compile_options(project_options INTERFACE -fdiagnostics-color=never)
@@ -29,6 +29,15 @@ include(cmake/StaticAnalyzers.cmake)
 add_subdirectory(lib)
 
 option(ENABLE_TESTS "Enable tests" OFF)
+option(HARDWARE_DIRECTORY "Directory for hardware files" "${CMAKE_SOURCE_DIR}/hardware/batterycasecontroller")
+
+if(HARDWARE_DIRECTORY)
+  target_include_directories(project_options INTERFACE ${CMAKE_SOURCE_DIR}/hardware)
+  # add hardware files
+  add_subdirectory(${HARDWARE_DIRECTORY})
+else()
+  message(WARNING "HARDWARE_DIRECTORY is not set, skipping hardware files.")
+endif()
 
 if(ENABLE_TESTS)
   add_subdirectory(tests)
