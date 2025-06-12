@@ -13,10 +13,14 @@
         "generator": "Ninja",
         "binaryDir": "${sourceDir}/build/batterycasecontroller-debug",
         "toolchainFile": "${sourceDir}/cmake/ToolChain.cmake",
+        "environment": {
+            "GCC_PATH": "/usr/bin"
+        },
         "cacheVariables": {
             "CMAKE_BUILD_TYPE": "Debug",
             "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-            "HARDWARE_DIRECTORY": "${sourceDir}/hardware/batterycasecontroller"
+            "HARDWARE_DIRECTORY": "${sourceDir}/hardware/batterycasecontroller",
+            "MODM_DBG_UI": "tui"
           }
       },
       {
@@ -26,9 +30,13 @@
         "generator": "Ninja",
         "binaryDir": "${sourceDir}/build/batterycasecontroller-release",
         "toolchainFile": "${sourceDir}/cmake/ToolChain.cmake",
+        "environment": {
+            "GCC_PATH": "/usr/bin"
+        },
         "cacheVariables": {
             "CMAKE_BUILD_TYPE": "MinSizeRel",
-            "HARDWARE_DIRECTORY": "${sourceDir}/hardware/batterycasecontroller"
+            "HARDWARE_DIRECTORY": "${sourceDir}/hardware/batterycasecontroller",
+            "MODM_DBG_UI": "tui"
           }
       },
       {
