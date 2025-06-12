@@ -24,6 +24,7 @@
  */
 #include <modm/platform.hpp>
 #include <modm/debug.hpp>
+#include "HardwareInterface.hpp"
 
 using namespace modm::platform;
 using namespace std::chrono_literals;
@@ -35,7 +36,7 @@ int main()
     GpioA3::setOutput();
     GpioA4::setOutput();
 
-
+    unimoc::hardware::analog::initialize();
 
     while (true)
     {
