@@ -1521,7 +1521,7 @@ namespace units
 	{
 		constexpr inline UNIT_LIB_DEFAULT_TYPE pow(UNIT_LIB_DEFAULT_TYPE x, unsigned long long y)
 		{
-			return y == 0 ? 1.0 : x * pow(x, y - 1);
+			return y == 0ULL ? 1.0 : x * pow(x, y - 1);
 		}
 
 		constexpr inline UNIT_LIB_DEFAULT_TYPE abs(UNIT_LIB_DEFAULT_TYPE x)
@@ -3014,14 +3014,14 @@ namespace units
 	 * @note		This is intentionally identical in concept to a `std::ratio`.
 	 *
 	 */
-	template<typename Units, std::uintmax_t Num, std::uintmax_t Denom = 1>
+	template<typename Units, std::intmax_t Num, std::intmax_t Denom = 1>
 	struct unit_value_t : units::detail::_unit_value_t<Units>
 	{
 		typedef Units unit_type;
 		typedef std::ratio<Num, Denom> ratio;
 
 		static_assert(traits::is_unit<Units>::value, "Template parameter `Units` must be a unit type.");
-		static constexpr const unit_t<Units> value() { return unit_t<Units>((UNIT_LIB_DEFAULT_TYPE)ratio::num / ratio::den); }
+		static constexpr const unit_t<Units> value() { return unit_t<Units>(static_cast<UNIT_LIB_DEFAULT_TYPE>(ratio::num) / ratio::den); }
 	};
 
 	namespace traits
@@ -3111,14 +3111,14 @@ namespace units
 		// value if PI isn't involved
 		static constexpr const unit_t<unit_type> value(std::false_type) noexcept
 		{
-			return unit_t<unit_type>((UNIT_LIB_DEFAULT_TYPE)ratio::num / ratio::den);
+			return unit_t<unit_type>(static_cast<UNIT_LIB_DEFAULT_TYPE>(ratio::num) / ratio::den);
 		}
 
 		// value if PI *is* involved
 		static constexpr const unit_t<unit_type> value(std::true_type) noexcept
 		{
-			return unit_t<unit_type>(((UNIT_LIB_DEFAULT_TYPE)Base::_RATIO1::num / Base::_RATIO1::den) +
-			((UNIT_LIB_DEFAULT_TYPE)Base::_RATIO2CONV::num / Base::_RATIO2CONV::den) * std::pow(units::constants::detail::PI_VAL, ((UNIT_LIB_DEFAULT_TYPE)Base::_PI_EXP::num / Base::_PI_EXP::den)));
+			return unit_t<unit_type>((static_cast<UNIT_LIB_DEFAULT_TYPE>(Base::_RATIO1::num) / Base::_RATIO1::den) +
+			(static_cast<UNIT_LIB_DEFAULT_TYPE>(Base::_RATIO2CONV::num) / Base::_RATIO2CONV::den) * std::pow(units::constants::detail::PI_VAL, (static_cast<UNIT_LIB_DEFAULT_TYPE>(Base::_PI_EXP::num) / Base::_PI_EXP::den)));
 		}
 		/** @endcond */	// END DOXYGEN IGNORE
 	};
@@ -3161,14 +3161,14 @@ namespace units
 		// value if PI isn't involved
 		static constexpr const unit_t<unit_type> value(std::false_type) noexcept
 		{
-			return unit_t<unit_type>((UNIT_LIB_DEFAULT_TYPE)ratio::num / ratio::den);
+			return unit_t<unit_type>(static_cast<UNIT_LIB_DEFAULT_TYPE>(ratio::num) / ratio::den);
 		}
 
 		// value if PI *is* involved
 		static constexpr const unit_t<unit_type> value(std::true_type) noexcept
 		{
-			return unit_t<unit_type>(((UNIT_LIB_DEFAULT_TYPE)Base::_RATIO1::num / Base::_RATIO1::den) - ((UNIT_LIB_DEFAULT_TYPE)Base::_RATIO2CONV::num / Base::_RATIO2CONV::den)
-				* std::pow(units::constants::detail::PI_VAL, ((UNIT_LIB_DEFAULT_TYPE)Base::_PI_EXP::num / Base::_PI_EXP::den)));
+			return unit_t<unit_type>((static_cast<UNIT_LIB_DEFAULT_TYPE>(Base::_RATIO1::num) / Base::_RATIO1::den) - (static_cast<UNIT_LIB_DEFAULT_TYPE>(Base::_RATIO2CONV::num) / Base::_RATIO2CONV::den)
+				* std::pow(units::constants::detail::PI_VAL, (static_cast<UNIT_LIB_DEFAULT_TYPE>(Base::_PI_EXP::num) / Base::_PI_EXP::den)));
 		}
 		/** @endcond */	// END DOXYGEN IGNORE	};
 	};
@@ -3212,13 +3212,13 @@ namespace units
 		// value if PI isn't involved
 		static constexpr const unit_t<unit_type> value(std::false_type) noexcept
 		{
-			return unit_t<unit_type>((UNIT_LIB_DEFAULT_TYPE)ratio::num / ratio::den);
+			return unit_t<unit_type>(static_cast<UNIT_LIB_DEFAULT_TYPE>(ratio::num) / ratio::den);
 		}
 
 		// value if PI *is* involved
 		static constexpr const unit_t<unit_type> value(std::true_type) noexcept
 		{
-			return unit_t<unit_type>(((UNIT_LIB_DEFAULT_TYPE)ratio::num / ratio::den) * std::pow(units::constants::detail::PI_VAL, ((UNIT_LIB_DEFAULT_TYPE)Base::_PI_EXP::num / Base::_PI_EXP::den)));
+			return unit_t<unit_type>((static_cast<UNIT_LIB_DEFAULT_TYPE>(ratio::num) / ratio::den) * std::pow(units::constants::detail::PI_VAL, (static_cast<UNIT_LIB_DEFAULT_TYPE>(Base::_PI_EXP::num) / Base::_PI_EXP::den)));
 		}
 		/** @endcond */	// END DOXYGEN IGNORE
 	};
@@ -3262,13 +3262,13 @@ namespace units
 		// value if PI isn't involved
 		static constexpr const unit_t<unit_type> value(std::false_type) noexcept
 		{
-			return unit_t<unit_type>((UNIT_LIB_DEFAULT_TYPE)ratio::num / ratio::den);
+			return unit_t<unit_type>(static_cast<UNIT_LIB_DEFAULT_TYPE>(ratio::num) / ratio::den);
 		}
 
 		// value if PI *is* involved
 		static constexpr const unit_t<unit_type> value(std::true_type) noexcept
 		{
-			return unit_t<unit_type>(((UNIT_LIB_DEFAULT_TYPE)ratio::num / ratio::den) * std::pow(units::constants::detail::PI_VAL, ((UNIT_LIB_DEFAULT_TYPE)Base::_PI_EXP::num / Base::_PI_EXP::den)));
+			return unit_t<unit_type>((static_cast<UNIT_LIB_DEFAULT_TYPE>(ratio::num) / ratio::den) * std::pow(units::constants::detail::PI_VAL, (static_cast<UNIT_LIB_DEFAULT_TYPE>(Base::_PI_EXP::num) / Base::_PI_EXP::den)));
 		}
 		/** @endcond */	// END DOXYGEN IGNORE
 	};
@@ -3309,13 +3309,13 @@ namespace units
 		// value if PI isn't involved
 		static constexpr const unit_t<unit_type> value(std::false_type) noexcept
 		{
-			return unit_t<unit_type>((UNIT_LIB_DEFAULT_TYPE)ratio::num / ratio::den);
+			return unit_t<unit_type>(static_cast<UNIT_LIB_DEFAULT_TYPE>(ratio::num) / ratio::den);
 		}
 
 		// value if PI *is* involved
 		static constexpr const unit_t<unit_type> value(std::true_type) noexcept
 		{
-			return unit_t<unit_type>(((UNIT_LIB_DEFAULT_TYPE)ratio::num / ratio::den) * std::pow(units::constants::detail::PI_VAL, ((UNIT_LIB_DEFAULT_TYPE)pi_exponent::num / pi_exponent::den)));
+			return unit_t<unit_type>((static_cast<UNIT_LIB_DEFAULT_TYPE>(ratio::num) / ratio::den) * std::pow(units::constants::detail::PI_VAL, (static_cast<UNIT_LIB_DEFAULT_TYPE>(pi_exponent::num) / pi_exponent::den)));
 		}
 		/** @endcond */	// END DOXYGEN IGNORE	};
 	};
@@ -3356,13 +3356,13 @@ namespace units
 		// value if PI isn't involved
 		static constexpr const unit_t<unit_type> value(std::false_type) noexcept
 		{
-			return unit_t<unit_type>((UNIT_LIB_DEFAULT_TYPE)ratio::num / ratio::den);
+			return unit_t<unit_type>(static_cast<UNIT_LIB_DEFAULT_TYPE>(ratio::num) / ratio::den);
 		}
 
 		// value if PI *is* involved
 		static constexpr const unit_t<unit_type> value(std::true_type) noexcept
 		{
-			return unit_t<unit_type>(((UNIT_LIB_DEFAULT_TYPE)ratio::num / ratio::den) * std::pow(units::constants::detail::PI_VAL, ((UNIT_LIB_DEFAULT_TYPE)pi_exponent::num / pi_exponent::den)));
+			return unit_t<unit_type>((static_cast<UNIT_LIB_DEFAULT_TYPE>(ratio::num) / ratio::den) * std::pow(units::constants::detail::PI_VAL, (static_cast<UNIT_LIB_DEFAULT_TYPE>(pi_exponent::num) / pi_exponent::den)));
 		}
 		/** @endcond */	// END DOXYGEN IGNORE
 	};
@@ -4200,23 +4200,23 @@ namespace units
 		#undef PI
 		using PI = unit<std::ratio<1>, dimensionless::scalar, std::ratio<1>>;
 
-		static constexpr const unit_t<PI>																											pi(1);											///< Ratio of a circle's circumference to its diameter.
+		static constexpr const unit_t<PI>																											pi(1.0);											///< Ratio of a circle's circumference to its diameter.
 		static constexpr const velocity::meters_per_second_t																						c(299792458.0);									///< Speed of light in vacuum.
 		static constexpr const unit_t<compound_unit<cubed<length::meters>, inverse<mass::kilogram>, inverse<squared<time::seconds>>>>				G(6.67408e-11);									///< Newtonian constant of gravitation.
 		static constexpr const unit_t<compound_unit<energy::joule, time::seconds>>																	h(6.626070040e-34);								///< Planck constant.
-		static constexpr const unit_t<compound_unit<force::newtons, inverse<squared<current::ampere>>>>												mu0(pi * 4.0e-7 * force::newton_t(1) / units::math::cpow<2>(current::ampere_t(1)));										///< vacuum permeability.
+		static constexpr const unit_t<compound_unit<force::newtons, inverse<squared<current::ampere>>>>												mu0(pi * 4.0e-7 * force::newton_t(1.0) / units::math::cpow<2>(current::ampere_t(1.0)));										///< vacuum permeability.
 		static constexpr const unit_t<compound_unit<capacitance::farad, inverse<length::meter>>>													epsilon0(1.0 / (mu0 * math::cpow<2>(c)));		///< vacuum permitivity.
 		static constexpr const impedance::ohm_t																										Z0(mu0 * c);									///< characteristic impedance of vacuum.
-		static constexpr const unit_t<compound_unit<force::newtons, area::square_meter, inverse<squared<charge::coulomb>>>>							k_e(1.0 / (4 * pi * epsilon0));					///< Coulomb's constant.
+		static constexpr const unit_t<compound_unit<force::newtons, area::square_meter, inverse<squared<charge::coulomb>>>>							k_e(1.0 / (4.0 * pi * epsilon0));					///< Coulomb's constant.
 		static constexpr const charge::coulomb_t																									e(1.6021766208e-19);							///< elementary charge.
 		static constexpr const mass::kilogram_t																										m_e(9.10938356e-31);							///< electron mass.
 		static constexpr const mass::kilogram_t																										m_p(1.672621898e-27);							///< proton mass.
-		static constexpr const unit_t<compound_unit<energy::joules, inverse<magnetic_field_strength::tesla>>>										mu_B(e * h / (4 * pi *m_e));					///< Bohr magneton.
+		static constexpr const unit_t<compound_unit<energy::joules, inverse<magnetic_field_strength::tesla>>>										mu_B(e * h / (4.0 * pi *m_e));					///< Bohr magneton.
 		static constexpr const unit_t<inverse<substance::mol>>																						N_A(6.022140857e23);							///< Avagadro's Number.
 		static constexpr const unit_t<compound_unit<energy::joules, inverse<temperature::kelvin>, inverse<substance::moles>>>						R(8.3144598);									///< Gas constant.
 		static constexpr const unit_t<compound_unit<energy::joules, inverse<temperature::kelvin>>>													k_B(R / N_A);									///< Boltzmann constant.
 		static constexpr const unit_t<compound_unit<charge::coulomb, inverse<substance::mol>>>														F(N_A * e);										///< Faraday constant.
-		static constexpr const unit_t<compound_unit<power::watts, inverse<area::square_meters>, inverse<squared<squared<temperature::kelvin>>>>>	sigma((2 * math::cpow<5>(pi) * math::cpow<4>(R)) / (15 * math::cpow<3>(h) * math::cpow<2>(c) * math::cpow<4>(N_A)));	///< Stefan-Boltzmann constant.
+		static constexpr const unit_t<compound_unit<power::watts, inverse<area::square_meters>, inverse<squared<squared<temperature::kelvin>>>>>	sigma((2.0 * math::cpow<5>(pi) * math::cpow<4>(R)) / (15.0 * math::cpow<3>(h) * math::cpow<2>(c) * math::cpow<4>(N_A)));	///< Stefan-Boltzmann constant.
 		/** @} */
 	}
 #endif
