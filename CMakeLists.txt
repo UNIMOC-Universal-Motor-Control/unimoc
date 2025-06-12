@@ -25,8 +25,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include(cmake/StaticAnalyzers.cmake)
 
-# add universal code as library
-add_subdirectory(lib)
+# generate docs only for the main project
+include(cmake/Doxygen.cmake)
+enable_doxygen()
 
 option(ENABLE_TESTS "Enable tests" OFF)
 option(HARDWARE_DIRECTORY "Directory for hardware files" "${CMAKE_SOURCE_DIR}/hardware/batterycasecontroller")
@@ -36,22 +37,21 @@ if(HARDWARE_DIRECTORY)
   # add hardware files
   add_subdirectory(${HARDWARE_DIRECTORY})
 else()
-  message(WARNING "HARDWARE_DIRECTORY is not set, skipping hardware files.")
+  message(WARNING "HARDWARE_DIRECTORY is not set, skipping hardware files.")  
 endif()
 
 if(ENABLE_TESTS)
   add_subdirectory(tests)
 else()
-  # generate docs only for the main project
-  include(cmake/Doxygen.cmake)
-  enable_doxygen()
-  # use modm only if embedded target
-  include(cmake/modm.cmake)
-  add_subdirectory(modm)
-
   # add the projects code folders
   add_subdirectory(src)
 endif()
+
+# add universal code as library
+add_subdirectory(lib)
+
+target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC unimoc_lib project_options project_warnings)
+
 
 
 

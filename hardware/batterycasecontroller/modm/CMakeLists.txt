@@ -44,6 +44,7 @@ add_library(modm OBJECT
   src/modm/platform/core/vectors.c
   src/modm/platform/gpio/enable.cpp
   src/modm/platform/rtt/rtt.cpp
+  src/modm/platform/timer/timer_8.cpp
 )
 set_source_files_properties(
   ext/printf/printf.c

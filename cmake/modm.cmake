@@ -20,7 +20,7 @@ endif()
 
 # set the path to the Python virtual environment
 # and the path to the Python binary within that environment
-set(VENV_PATH "${CMAKE_BINARY_DIR}/venv")
+set(VENV_PATH "${CMAKE_SOURCE_DIR}/.venv")
 if (WIN32)
   set(VENV_BIN "${VENV_PATH}/Scripts")
 else()
@@ -49,7 +49,7 @@ execute_process(
 # Add a custom command to run lbuild
 # This command will be triggered whenever project.xml changes. 
 add_custom_command(
-    OUTPUT ${CMAKE_SOURCE_DIR}/modm/CMakeLists.txt
+    OUTPUT ${HARDWARE_DIRECTORY}/modm/CMakeLists.txt
     COMMAND "${VENV_BIN}/lbuild" build
     DEPENDS ${HARDWARE_DIRECTORY}/project.xml
     WORKING_DIRECTORY "${HARDWARE_DIRECTORY}"

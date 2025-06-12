@@ -20,3 +20,5 @@ target_include_directories(unimoc_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/system)
 # Add the source files from the src subfolder
 file(GLOB SRC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
 target_sources(unimoc_lib PRIVATE ${SRC_FILES})
+
+target_link_libraries(unimoc_lib PUBLIC project_options project_warnings)

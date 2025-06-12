@@ -1,9 +1,9 @@
 <library>
   <repositories>
-    <repository><path>../../build/_deps/modm-src/repo.lb</path></repository>
+    <repository><path>../../../modm/repo.lb</path></repository>
   </repositories>
   <options>
-    <option name="modm:build:project.name">unimoc</option>
+    <option name="modm:build:project.name">unimoc_battery_case_controller</option>
     <option name="modm:target">stm32g473cbt6</option>
     <option name="modm:build:build.path">build</option>
     <option name="modm:build:cmake:include_cmakelists">false</option>
@@ -19,7 +19,7 @@
     <module>modm:platform:adc:3</module>
     <module>modm:platform:adc:4</module>
     <module>modm:platform:adc:5</module>
-    <module>modm:platform:tim:8</module>
+    <module>modm:platform:timer:8</module>
     <module>modm:platform:rtt</module>
     <module>modm:build:cmake</module>
     <module>modm:debug</module>
