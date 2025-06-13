@@ -27,7 +27,7 @@
 #ifndef UNIMOC_HARDWARE_INTERFACE_H_
 #define UNIMOC_HARDWARE_INTERFACE_H_
 
-#include "units.h"
+#include "Units.hpp"
 
 /**
  * @namespace unimoc global namespace
@@ -45,16 +45,27 @@ namespace hardware
 namespace analog
 {
 
-    /**
-     * @brief Initializes the ADC channels for current and voltage measurements.
-     *
-     * This function sets up the GPIOs for the ADC channels, initializes the ADCs,
-     * and configures the injected conversion sequences for current and voltage
-     * measurements.
-     */
-    void initialize();
-
 }  // namespace analog
+
+/**
+ * @namespace angle angle namespace
+ */
+namespace angle
+{
+
+// sin(Angle) -> DimensionlessRatio
+template<typename Rep, typename P>
+unit::DimensionlessRatio
+calculate_sine_cosine(const unit::Unit<Rep, P, unit::AngleTag>& angle)
+{
+	// Assumes angle.value() is in radians, which is true for the Angle alias (Period =
+	// std::ratio<1>)
+	return DimensionlessRatio(std::sinf(angle.value()));
+}
+
+}  // namespace angle
+
+
 }  // namespace hardware
 }  // namespace unimoc
 
