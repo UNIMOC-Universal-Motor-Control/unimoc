@@ -1,5 +1,5 @@
 # make modm available to this hardware type
-include(../../cmake/modm.cmake)
+include(../../cmake/Modm.cmake)
 
 add_subdirectory(modm)
 
@@ -8,6 +8,7 @@ add_executable(${CMAKE_PROJECT_NAME})
 target_sources(${CMAKE_PROJECT_NAME}
   PRIVATE
   adc.cpp
+  sincos.cpp
 )
 
 target_include_directories(${CMAKE_PROJECT_NAME}
