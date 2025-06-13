@@ -36,15 +36,17 @@ if(NOT EXISTS "${VENV_PATH}")
         COMMAND ${Python3_EXECUTABLE} -m venv "${VENV_PATH}"
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     )
+
+    # Activate the virtual environment and install the required packages
+    execute_process(
+        COMMAND "${VENV_BIN}/python" -m pip install --upgrade pip
+    )
+    execute_process(
+        COMMAND "${VENV_BIN}/pip" install -r "${REQUIREMENTS_TXT}"
+    )
 endif()
 
-# Activate the virtual environment and install the required packages
-execute_process(
-    COMMAND "${VENV_BIN}/python" -m pip install --upgrade pip
-)
-execute_process(
-    COMMAND "${VENV_BIN}/pip" install -r "${REQUIREMENTS_TXT}"
-)
+
 
 # Add a custom command to run lbuild
 # This command will be triggered whenever project.xml changes. 
