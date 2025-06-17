@@ -31,6 +31,7 @@
 #include <cmath>
 #include <concepts>	
 #include "Units.hpp"
+#include "arm_math.h"  // For arm_sin_cos
 
 /**
  * @namespace unimoc global namespace
@@ -47,109 +48,80 @@ namespace unimoc
         /// This class is used to represent the sine and cosine values of an angle.
         ///
         /// It provides methods to compute the sine and cosine values, normalize them, and perform arithmetic operations.   
-        ///
-        /// @tparam T The type of the sine and cosine values. It must be a floating point type.
-        ///
-        /// @note The class is designed
-        /// to be used with angles in radians, and it is expected that the user will implement the `computeSinCos` method
-        /// to provide the actual sine and cosine calculations based on the angle.    
-        template <std::floating_point T>
-        struct SinCos
+        ///        
+        class SinCos
         {
-            T sin;
-            T cos;
+		private:
+            // private method to compute sine and cosine from angle
+			constexpr void
+			from_angle(const unit::Angle angle) noexcept;
 
-            // function to compute sin and cos values
-            // this function should be implemented by the user
-            // it should return the sin and cos values of the given angle
-            virtual SinCos<T> computeSinCos(const units::unit_t<units::angle::radian, T> angle) = 0;
+            // constructor with sine and cosine values
+            constexpr SinCos(float sin_value, float cos_value) noexcept
+                : sin(sin_value), cos(cos_value) {}
+
+		public:
+
+            // sine and cosine values
+            float sin;  
+            float cos;
 
             // default constructor destructor
             constexpr SinCos() = default;
-            virtual ~SinCos() = default;
+            constexpr ~SinCos() = default;
 
-            // constructor with angle
-            constexpr SinCos(const units::unit_t<units::angle::radian, T> angle)
-            {
-                // compute sin and cos values
-                SinCos<T> result = computeSinCos(angle);
-                sin = result.sin;
-                cos = result.cos;
-            }
+			// constructor with angle
+			constexpr SinCos(const unit::Angle angle) noexcept;
 
-            // length of the vector
-            constexpr T length() const noexcept
-            {
-                return std::hypot(sin, cos);
-            }
-
-            // normalize the sin and cos values to one
-            constexpr auto normToOne(void) const
-            {
-                return SinCos<T>(sin / this.length(), cos / this.length());
-            }
-
-            // constructor with sin and cos values
-            constexpr SinCos(const T sin, const T cos) : sin(sin), cos(cos) {  }
+			// length of the vector
+			constexpr float
+			length() const noexcept;
+			
+			// normalize the sin and cos values to one
+			constexpr SinCos
+			normToOne(void) noexcept;
 
             // copy constructor
-            constexpr SinCos(const SinCos &other) : sin(other.sin), cos(other.cos) { }
-            // move constructor
-            constexpr SinCos(SinCos &&other) noexcept : sin(other.sin), cos(other.cos) {  }
-            // copy assignment operator
-            constexpr auto &operator=(const SinCos &other)
-            {
-                if (this != &other)
-                {
-                    sin = other.sin;
-                    cos = other.cos;
-                }
-                return *this;
-            }
+			constexpr SinCos(const SinCos &other) noexcept;
+			// move constructor
+			constexpr SinCos(SinCos &&other) noexcept;
+			// copy assignment operator
+			constexpr SinCos &
+			operator=(const SinCos &other) noexcept;
 
-            // move assignment operator
-            constexpr auto &operator=(SinCos &&other) noexcept
-            {
-                if (this != &other)
-                {
-                    sin = other.sin;
-                    cos = other.cos;
-                }
-                return *this;
-            }
+			// move assignment operator
+			constexpr SinCos &
+			operator=(SinCos &&other) noexcept;
 
-            // equality operator
-            constexpr bool operator==(const SinCos &other) const
+			// equality operator
+            inline constexpr bool operator==(const SinCos &other) const noexcept
             {
                 return (sin == other.sin && cos == other.cos);
             }
 
             // inequality operator
-            constexpr bool operator!=(const SinCos &other) const
+            inline constexpr bool operator!=(const SinCos &other) const noexcept
             {
                 return !(*this == other);
             }
 
             // transform to array
-            constexpr auto to_array() const noexcept -> std::array<T, 2>
-            {
+			inline constexpr std::array<float, 2>
+			to_array() const noexcept
+			{
                 return {sin, cos};
             }
 
-            constexpr auto operator-() const noexcept -> SinCos<T>
-            {
-                return SinCos<T>(-sin, -cos);
-            }
+			inline constexpr SinCos
+			operator-() const noexcept
+			{
+				return SinCos(-sin, -cos);
+			}
 
-            // sine cosine difference
-            constexpr auto operator-(const SinCos<T> &other) const
-            {
-                // Using trigonometric identities for subtraction:
-                // sin(a - b) = sin(a)cos(b) - cos(a)sin(b)
-                // cos(a - b) = cos(a)cos(b) + sin(a)sin(b)
-                return SinCos<T>(sin * other.cos - cos * other.sin, cos * other.cos + sin * other.sin);
-            }
-        };
+			// sine cosine difference
+			constexpr SinCos
+			operator-(const SinCos &other) const noexcept;
+		};
     } // namespace system
 } // namespace unimoc
 
