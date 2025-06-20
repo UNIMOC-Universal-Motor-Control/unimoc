@@ -33,6 +33,7 @@
 *.app
 
 # build folder
-build/*
+build
 
-modm/modm_tools/__pycache__/*
+# python cache
+__pycache__

@@ -46,15 +46,3 @@ if(NOT EXISTS "${VENV_PATH}")
     )
 endif()
 
-
-
-# Add a custom command to run lbuild
-# This command will be triggered whenever project.xml changes. 
-add_custom_command(
-    OUTPUT ${HARDWARE_DIRECTORY}/modm/CMakeLists.txt
-    COMMAND "${VENV_BIN}/lbuild" build
-    DEPENDS ${HARDWARE_DIRECTORY}/project.xml
-    WORKING_DIRECTORY "${HARDWARE_DIRECTORY}"
-    COMMENT "Running lbuild build because project.xml changed"
-)
-
