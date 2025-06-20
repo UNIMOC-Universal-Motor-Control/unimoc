@@ -27,7 +27,11 @@
 #ifndef UNIMOC_HARDWARE_INTERFACE_H_
 #define UNIMOC_HARDWARE_INTERFACE_H_
 
-#include "Units.hpp"
+#include <cstdint>
+#include <array>
+#include <functional>
+
+#include "HardwareInterfaceConfig.hpp"
 
 /**
  * @namespace unimoc global namespace
@@ -39,32 +43,57 @@ namespace unimoc
  */
 namespace hardware
 {
-/**
- * @namespace analog analog namespace
- */
-namespace analog
-{
-
-}  // namespace analog
 
 /**
- * @namespace angle angle namespace
+ * @brief Hardware interface class for the UNIMOC project.
+ * This class provides a basic structure for hardware interfaces.
  */
-namespace angle
+struct HardwareInterface
 {
+	/**
+	 * @brief Function to initialize the hardware interface.
+	 * @return true if initialization is successful, false otherwise.
+	 */
+	const std::function<bool(void)>& initialize;
 
-// sin(Angle) -> DimensionlessRatio
-template<typename Rep, typename P>
-unit::DimensionlessRatio
-calculate_sine_cosine(const unit::Unit<Rep, P, unit::AngleTag>& angle)
-{
-	// Assumes angle.value() is in radians, which is true for the Angle alias (Period =
-	// std::ratio<1>)
-	return DimensionlessRatio(std::sinf(angle.value()));
-}
+	/**
+	 * @brief Functions to get the phase currents and voltages, and to set the phase duties.
+	 */
+	const std::function<std::array<float, PHASES>(void)>& getPhaseCurrents;
 
-}  // namespace angle
+	/**
+	 * @brief Function to get the phase voltages.
+	 */
+	const std::function<std::array<float, PHASES>(void)>&getPhaseVoltages;
 
+	/**
+	 * @brief Function to set the phase duties.
+	 * @param duties An array of floats representing the phase duties.
+	 */
+	const std::function<void(std::array<float, PHASES>)>& setPhaseDutys;
+
+	/**
+	 * @brief Constructor for the HardwareInterface class.
+	 * @param getPhaseCurrents Function to get the phase currents.
+	 * @param getPhaseVoltages Function to get the phase voltages.
+	 * @param setPhaseDutys Function to set the phase duties.
+	 */
+	HardwareInterface(const std::function<bool(void)>& _initialize,
+					  const std::function<std::array<float, PHASES>(void)>& _getPhaseCurrents,
+					  const std::function<std::array<float, PHASES>(void)>& _getPhaseVoltages,
+					  const std::function<void(std::array<float, PHASES>)>& _setPhaseDutys)
+		: initialize(_initialize),
+		  getPhaseCurrents(_getPhaseCurrents),
+		  getPhaseVoltages(_getPhaseVoltages),
+		  setPhaseDutys(_setPhaseDutys) {};
+
+	/**
+	 * @brief Default destructor.
+	 */
+	~HardwareInterface() = default;
+};
+
+extern HardwareInterface motor[MOTORS];  ///< Global array of hardware interfaces for motors
 
 }  // namespace hardware
 }  // namespace unimoc

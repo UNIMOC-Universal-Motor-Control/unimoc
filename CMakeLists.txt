@@ -48,9 +48,9 @@ else()
 endif()
 
 # add universal code as library
-add_subdirectory(lib)
+#add_subdirectory(lib)
 
-target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC unimoc_lib project_options project_warnings)
+target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC project_options project_warnings)
 
 
 

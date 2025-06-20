@@ -1,0 +1,16 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "defines": [],
+            "compilerPath": "/usr/bin/clang",
+            "compileCommands": [
+                "${workspaceFolder}/build/batterycasecontroller-debug/compile_commands.json"
+            ]
+        }
+    ],
+    "version": 4
+}

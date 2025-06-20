@@ -29,10 +29,7 @@
 
 #include <array>
 #include <cmath>
-#include <concepts>	
-#include "Units.hpp"
-#include "arm_math.h"  // For arm_sin_cos
-
+#include <concepts>
 /**
  * @namespace unimoc global namespace
  */
@@ -54,7 +51,7 @@ namespace unimoc
 		private:
             // private method to compute sine and cosine from angle
 			constexpr void
-			from_angle(const unit::Angle angle) noexcept;
+			from_angle(const float angle) noexcept;
 
             // constructor with sine and cosine values
             constexpr SinCos(float sin_value, float cos_value) noexcept
@@ -71,7 +68,7 @@ namespace unimoc
             constexpr ~SinCos() = default;
 
 			// constructor with angle
-			constexpr SinCos(const unit::Angle angle) noexcept;
+			constexpr SinCos(const float angle) noexcept;
 
 			// length of the vector
 			constexpr float

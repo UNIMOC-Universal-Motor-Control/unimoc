@@ -121,19 +121,15 @@ constexpr SinCos SinCos::operator - (const SinCos &other) const noexcept
 constexpr void
 SinCos::from_angle(const unit::Angle angle) noexcept
 {
-    // Precomputed constants
-    static constexpr float invTwoPi = 1.0f / (2.0f * std::numbers::pi_v<float>);
-    static constexpr float delta    = (2.0f * std::numbers::pi_v<float>) / TABLE_SIZE;
+	// Precomputed constants
+	static constexpr float invTwoPi = 1.0f / (2.0f * std::numbers::pi_v<float>);
+	static constexpr float delta = (2.0f * std::numbers::pi_v<float>) / TABLE_SIZE;
 
-    float in      = std::fabsf(angle.value() * invTwoPi);
-    in           -= static_cast<int32_t>(in);
-    const float fIndex = static_cast<float>(TABLE_SIZE) * in;
-    const uint16_t idxS = static_cast<uint16_t>(static_cast<int>(fIndex) & 0x1FF);
-    const uint16_t idxC = static_cast<uint16_t>((idxS + (TABLE_SIZE / 4)) & 0x1FF);
+	const uint16_t idxS = static_cast<uint16_t>(angle.value() / delta) % TABLE_SIZE;
+	const uint16_t idxC = (idxS + (TABLE_SIZE / 4)) % TABLE_SIZE;
+	const float fract = std::fmod(angle.value(), delta);
 
-    const float fract = fIndex - static_cast<float>(idxS);
-
-    // Cosine
+	// Cosine
     {
         const float f1 = sin_table[idxC];
         const float f2 = sin_table[idxC + 1];

@@ -23,7 +23,6 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "units.h"
 #include "HardwareInterface.hpp"
 #include <modm/platform.hpp>
 

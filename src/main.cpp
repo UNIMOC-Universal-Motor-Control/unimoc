@@ -33,18 +33,17 @@ using namespace std::chrono_literals;
 
 int main()
 {
-    GpioA3::setOutput();
-    GpioA4::setOutput();
-
-    unimoc::hardware::analog::initialize();
+    for (auto& motor : unimoc::hardware::motor)
+    {
+        if (!motor.initialize())
+        {
+            MODM_LOG_ERROR << "Failed to initialize motor interface\n";
+            return 1;  // Exit if initialization fails
+        }
+    }
 
     while (true)
     {
-        GpioA3::toggle();       
-
-        GpioA4::toggle();
-
-
         modm::delay(0.5s);
     }
 }
