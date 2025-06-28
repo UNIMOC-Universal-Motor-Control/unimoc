@@ -31,7 +31,8 @@
 #include <array>
 #include <functional>
 
-#include "HardwareInterfaceConfig.hpp"
+#include "hardware_interface_config.hpp"
+#include "three_phase_system.hpp"
 
 /**
  * @namespace unimoc global namespace
@@ -59,18 +60,18 @@ struct HardwareInterface
 	/**
 	 * @brief Functions to get the phase currents and voltages, and to set the phase duties.
 	 */
-	const std::function<std::array<float, PHASES>(void)>& getPhaseCurrents;
+	const std::function<system::ThreePhase(void)>& getPhaseCurrents;
 
 	/**
 	 * @brief Function to get the phase voltages.
 	 */
-	const std::function<std::array<float, PHASES>(void)>&getPhaseVoltages;
+	const std::function<system::ThreePhase(void)>& getPhaseVoltages;
 
 	/**
 	 * @brief Function to set the phase duties.
 	 * @param duties An array of floats representing the phase duties.
 	 */
-	const std::function<void(std::array<float, PHASES>)>& setPhaseDutys;
+	const std::function<void(system::ThreePhase)>& setPhaseDutys;
 
 	/**
 	 * @brief Constructor for the HardwareInterface class.
@@ -79,9 +80,9 @@ struct HardwareInterface
 	 * @param setPhaseDutys Function to set the phase duties.
 	 */
 	HardwareInterface(const std::function<bool(void)>& _initialize,
-					  const std::function<std::array<float, PHASES>(void)>& _getPhaseCurrents,
-					  const std::function<std::array<float, PHASES>(void)>& _getPhaseVoltages,
-					  const std::function<void(std::array<float, PHASES>)>& _setPhaseDutys)
+					  const std::function<system::ThreePhase(void)>& _getPhaseCurrents,
+					  const std::function<system::ThreePhase(void)>& _getPhaseVoltages,
+					  const std::function<void(system::ThreePhase)>& _setPhaseDutys)
 		: initialize(_initialize),
 		  getPhaseCurrents(_getPhaseCurrents),
 		  getPhaseVoltages(_getPhaseVoltages),

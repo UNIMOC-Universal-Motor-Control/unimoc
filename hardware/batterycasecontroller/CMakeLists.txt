@@ -8,7 +8,8 @@ add_executable(${CMAKE_PROJECT_NAME})
 target_sources(${CMAKE_PROJECT_NAME}
   PRIVATE
   base.cpp
-  adc.cpp
+  analog.cpp
+  pulse_width.cpp
 )
 
 target_include_directories(${CMAKE_PROJECT_NAME}

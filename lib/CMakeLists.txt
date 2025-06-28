@@ -11,7 +11,10 @@ target_include_directories(unimoc_lib PUBLIC
 # Add the source files from the src subfolder
 target_sources(unimoc_lib
     PRIVATE
-    system/SinCos.cpp)
+    system/rotor_angle.cpp
+    system/rotor_system.cpp
+    system/stator_system.cpp
+    system/three_phase_system.cpp)
 
-target_link_libraries(unimoc_lib PUBLIC project_options project_warnings units)
+target_link_libraries(unimoc_lib PUBLIC project_options project_warnings)
 

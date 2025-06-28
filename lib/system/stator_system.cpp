@@ -5,7 +5,7 @@
     / /_/ / /|  // // /  / / /_/ / /___
     \____/_/ |_/___/_/  /_/\____/\____/
 
-    Universal Motor Control 2025 Alexander <tecnologic86@gmail.com> Evers
+    Universal Motor Control  2025 Alexander <tecnologic86@gmail.com> Evers
 
     This file is part of UNIMOC.
 
@@ -22,13 +22,31 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <modm/platform.hpp>
-#include <modm/debug.hpp>
+#include <array>
+#include <cmath>
+#include "stator_system.hpp"
+#include "rotor_system.hpp" // Include the header file for RotorReference
+#include "rotor_angle.hpp" // Include the header file for RotorAngle
 
-modm::platform::Rtt rtt(0);
-modm::IODeviceObjectWrapper<modm::platform::Rtt, modm::IOBuffer::DiscardIfFull> rtt_device(rtt);
-// Set all four logger streams to use RTT
-modm::log::Logger modm::log::debug(rtt_device);
-modm::log::Logger modm::log::info(rtt_device);
-modm::log::Logger modm::log::warning(rtt_device);
-modm::log::Logger modm::log::error(rtt_device);
+/**
+ * @namespace unimoc global namespace
+ */
+namespace unimoc
+{
+/**
+ * @namespace coordinate systems.
+ */
+namespace system
+{
+
+	// transform alpha beta vector to dq vector.
+	constexpr RotorReference
+	StatorReference::park(const RotorAngle &angle) const noexcept
+	{
+		return RotorReference{
+			alpha * angle.cos + beta * angle.sin,
+			-alpha * angle.sin + beta * angle.cos
+		};
+	}
+}  // namespace system
+}  // namespace unimoc

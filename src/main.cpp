@@ -24,7 +24,7 @@
  */
 #include <modm/platform.hpp>
 #include <modm/debug.hpp>
-#include "HardwareInterface.hpp"
+#include "hardware_interface.hpp"
 
 using namespace modm::platform;
 using namespace std::chrono_literals;

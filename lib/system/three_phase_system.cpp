@@ -22,11 +22,10 @@
 	You should have received a copy of the GNU General Public License
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
+#include <array>
 
-#ifndef UNIMOC_HARDWARE_INTERFACE_CONFIG_H_
-#define UNIMOC_HARDWARE_INTERFACE_CONFIG_H_
-
+#include "three_phase_system.hpp"
+#include "stator_system.hpp"
 
 /**
  * @namespace unimoc global namespace
@@ -34,21 +33,21 @@
 namespace unimoc
 {
 /**
- * @namespace hardware hardware namespace
+ * @namespace coordinate systems.
  */
-namespace hardware
+namespace system
 {
-constexpr uint_fast8_t VERSION_MAJOR = 1;  ///< Major version of the hardware interface
-constexpr uint_fast8_t VERSION_MINOR = 0;  ///< Minor version of the hardware interface
-constexpr uint_fast8_t VERSION_PATCH = 0;  ///< Patch version of the hardware interface
+// clarke transformation
+// transform abc 3 phase vector to alpha beta vector.
+constexpr StatorReference
+ThreePhase::clark() const noexcept
+{
+	constexpr float sqrt3by2 = std::sqrt(3.0f) / 2.0f;
+	constexpr float _2by3 = 2.0f / 3.0f;
 
-constexpr uint_fast8_t VERSION =
-	(VERSION_MAJOR << 16) | (VERSION_MINOR << 8) | VERSION_PATCH;  ///< Combined hardware version
+	return StatorReference{_2by3 * (a - (0.5f * b) - (0.5f * c)),
+						   _2by3 * ((sqrt3by2 * b) - (sqrt3by2 * c))};
+}
 
-constexpr uint_fast8_t MOTORS = 1;  ///< Number of motors supported by the hardware interface
-constexpr uint_fast8_t PHASES = 3;  ///< Number of phases supported by the hardware interface
-
-}  // namespace hardware
+}  // namespace system
 }  // namespace unimoc
-
-#endif /* UNIMOC_HARDWARE_INTERFACE_CONFIG_H_ */
