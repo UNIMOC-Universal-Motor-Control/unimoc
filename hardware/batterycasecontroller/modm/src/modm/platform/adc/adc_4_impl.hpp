@@ -286,6 +286,31 @@ modm::platform::Adc4::setInjectedConversionSequenceLength(uint8_t length)
 	return true;
 }
 
+void 
+modm::platform::Adc4::setInjectedConversionTriggerEdge(ExternalTriggerEdge edge)
+{
+	static_assert(std::to_underlying(ExternalTriggerEdge::Disabled) == 0);
+	static_assert(std::to_underlying(ExternalTriggerEdge::Rising) == ADC_JSQR_JEXTEN_0);
+	static_assert(std::to_underlying(ExternalTriggerEdge::Falling) == ADC_JSQR_JEXTEN_1);
+	static_assert(std::to_underlying(ExternalTriggerEdge::RisingAndFalling) == (ADC_JSQR_JEXTEN_0 | ADC_JSQR_JEXTEN_1));
+
+	ADC4->JSQR = (ADC4->JSQR & ~ADC_JSQR_JEXTEN_Msk) 
+		| std::to_underlying(edge);
+}
+
+bool
+modm::platform::Adc4::setInjectedConversionTriggerSource(uint32_t source)
+{
+	if (source > 31) {
+		return false; // Invalid source
+	}
+
+	// Set the trigger source for injected conversions
+	ADC4->JSQR = (ADC4->JSQR & ~ADC_JSQR_JEXTSEL_Msk) 
+		| (source << ADC_JSQR_JEXTSEL_Pos);
+	return true;
+}
+
 bool
 modm::platform::Adc4::isInjectedConversionFinished()
 {

@@ -70,49 +70,41 @@ void initialize()
                      true);
 
     Adc1::connect<A1_IA, A1_VA>();
-    Adc1::setInjectedConversionSequenceLength(4);
-    Adc1::setInjectedConversionChannel<A1_IA>(0, Adc1::SampleTime::Cycles13);
-    Adc1::setInjectedConversionChannel<A1_VA>(1, Adc1::SampleTime::Cycles13);
-    Adc1::setInjectedConversionChannel<A1_IA>(2, Adc1::SampleTime::Cycles13);
-    Adc1::setInjectedConversionChannel<A1_VA>(3, Adc1::SampleTime::Cycles13);
+    Adc1::setInjectedConversionSequenceLength(2);
+	Adc1::setInjectedConversionChannel<A1_IA>(0, Adc1::SampleTime::Cycles25);
+	Adc1::setInjectedConversionChannel<A1_VA>(1, Adc1::SampleTime::Cycles25);
 
-    Adc2::initialize(Adc2::ClockMode::SynchronousPrescaler4,
+	Adc2::initialize(Adc2::ClockMode::SynchronousPrescaler4,
                      Adc2::ClockSource::SystemClock,
                      Adc2::Prescaler::Disabled,
                      Adc2::CalibrationMode::SingleEndedInputsMode,
                      true);
 
     Adc2::connect<A2_IB, A2_VB>();
-    Adc2::setInjectedConversionSequenceLength(4);
-    Adc2::setInjectedConversionChannel<A2_IB>(0, Adc2::SampleTime::Cycles13);
-    Adc2::setInjectedConversionChannel<A2_VB>(1, Adc2::SampleTime::Cycles13);
-    Adc2::setInjectedConversionChannel<A2_IB>(2, Adc2::SampleTime::Cycles13);
-    Adc2::setInjectedConversionChannel<A2_VB>(3, Adc2::SampleTime::Cycles13);
+    Adc2::setInjectedConversionSequenceLength(2);
+	Adc2::setInjectedConversionChannel<A2_IB>(0, Adc2::SampleTime::Cycles25);
+	Adc2::setInjectedConversionChannel<A2_VB>(1, Adc2::SampleTime::Cycles25);
 
-    Adc3::initialize(Adc3::ClockMode::SynchronousPrescaler4,
+	Adc3::initialize(Adc3::ClockMode::SynchronousPrescaler4,
                      Adc3::ClockSource::SystemClock,
                      Adc3::Prescaler::Disabled,
                      Adc3::CalibrationMode::SingleEndedInputsMode,
                      true);
 
     Adc3::connect<A3_IC, A3_VC>();
-    Adc3::setInjectedConversionSequenceLength(4);
-    Adc3::setInjectedConversionChannel<A3_IC>(0, Adc3::SampleTime::Cycles13);
-    Adc3::setInjectedConversionChannel<A3_VC>(1, Adc3::SampleTime::Cycles13);
-    Adc3::setInjectedConversionChannel<A3_IC>(2, Adc3::SampleTime::Cycles13);
-    Adc3::setInjectedConversionChannel<A3_VC>(3, Adc3::SampleTime::Cycles13);
+    Adc3::setInjectedConversionSequenceLength(2);
+	Adc3::setInjectedConversionChannel<A3_IC>(0, Adc3::SampleTime::Cycles25);
+	Adc3::setInjectedConversionChannel<A3_VC>(1, Adc3::SampleTime::Cycles25);
 
-    Adc4::initialize(Adc4::ClockMode::SynchronousPrescaler4,
+	Adc4::initialize(Adc4::ClockMode::SynchronousPrescaler4,
                      Adc4::ClockSource::SystemClock,
                      Adc4::Prescaler::Disabled,
                      Adc4::CalibrationMode::SingleEndedInputsMode,
                      true);
     Adc4::connect<A4_VDC, A4_CRKT>();
-    Adc4::setInjectedConversionSequenceLength(4);
-    Adc4::setInjectedConversionChannel<A4_VDC>(0, Adc4::SampleTime::Cycles13);
-    Adc4::setInjectedConversionChannel<A4_CRKT>(1, Adc4::SampleTime::Cycles13);
-    Adc4::setInjectedConversionChannel<A4_VDC>(2, Adc4::SampleTime::Cycles13);
-    Adc4::setInjectedConversionChannel<A4_CRKT>(3, Adc4::SampleTime::Cycles13);
+    Adc4::setInjectedConversionSequenceLength(2);
+	Adc4::setInjectedConversionChannel<A4_VDC>(0, Adc4::SampleTime::Cycles25);
+	Adc4::setInjectedConversionChannel<A4_CRKT>(1, Adc4::SampleTime::Cycles25);
 
     Adc5::initialize(Adc5::ClockMode::SynchronousPrescaler4,
                      Adc5::ClockSource::SystemClock,
@@ -120,18 +112,28 @@ void initialize()
                      Adc5::CalibrationMode::SingleEndedInputsMode,
                      true);
     Adc5::connect<A5_MOTT, A5_BRDGT>();
-    Adc5::setInjectedConversionSequenceLength(4);
-    Adc5::setInjectedConversionChannel<A5_MOTT>(0, Adc5::SampleTime::Cycles13);
-    Adc5::setInjectedConversionChannel<A5_BRDGT>(1, Adc5::SampleTime::Cycles13);
-    Adc5::setInjectedConversionChannel<A5_MOTT>(2, Adc5::SampleTime::Cycles13);
-    Adc5::setInjectedConversionChannel<A5_BRDGT>(3, Adc5::SampleTime::Cycles13);
-
+    Adc5::setInjectedConversionSequenceLength(2);
+	Adc5::setInjectedConversionChannel<A5_MOTT>(0, Adc5::SampleTime::Cycles25);
+	Adc5::setInjectedConversionChannel<A5_BRDGT>(1, Adc5::SampleTime::Cycles25);
 
     // Enable ADC interrupt vector and set priority
     // use only one ADC interrupt vector for all ADCs
     Adc1::enableInterruptVector(5); // Set priority for ADC1 interrupt
     Adc1::enableInterrupt(Adc1::Interrupt::EndOfInjectedConversion);
     AdcInterrupt1::attachInterruptHandler(adcInterruptHandler);
+
+    // Set the ADCs to use the same trigger source and edge
+    // Rising edge of Timer8 OC4
+    Adc1::setInjectedConversionTriggerEdge(Adc1::ExternalTriggerEdge::Rising);
+    Adc2::setInjectedConversionTriggerEdge(Adc2::ExternalTriggerEdge::Rising);
+    Adc3::setInjectedConversionTriggerEdge(Adc3::ExternalTriggerEdge::Rising);
+    Adc4::setInjectedConversionTriggerEdge(Adc4::ExternalTriggerEdge::Rising);
+    Adc5::setInjectedConversionTriggerEdge(Adc5::ExternalTriggerEdge::Rising);
+    Adc1::setInjectedConversionTriggerSource(7);
+    Adc2::setInjectedConversionTriggerSource(7);
+    Adc3::setInjectedConversionTriggerSource(7);
+    Adc4::setInjectedConversionTriggerSource(7);
+    Adc5::setInjectedConversionTriggerSource(7);
 
 	Adc1::startInjectedConversionSequence();
     Adc2::startInjectedConversionSequence();

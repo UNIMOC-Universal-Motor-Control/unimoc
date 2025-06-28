@@ -147,6 +147,14 @@ public:
 		Mask = Circular
 	};
 
+	enum class ExternalTriggerEdge : uint32_t
+	{
+		Disabled = 0,
+		Rising = ADC_JSQR_JEXTEN_0,
+		Falling = ADC_JSQR_JEXTEN_1,
+		RisingAndFalling = ADC_JSQR_JEXTEN_0 | ADC_JSQR_JEXTEN_1,
+	};
+
 	enum class Interrupt : uint32_t
 	{
 		Ready 								= ADC_IER_ADRDYIE,
@@ -360,10 +368,23 @@ public:
 	setInjectedConversionSequenceLength(uint8_t length);
 
 	/**
+	 * @arg edge Edge of the trigger signal selected in setInjectedTriggerSource()
+	 */
+	static inline void 
+	setInjectedConversionTriggerEdge(ExternalTriggerEdge edge);
+
+	/**
+	 * @arg source Source of the trigger signal for injected conversion.
+	 * @return true if configuration is successful, false if arguments are invalid
+	 */
+	static inline bool 
+	setInjectedConversionTriggerSource(uint32_t source);
+
+	/**
 	 * @return If the injected conversion sequence is finished.
 	 * @pre An injected conversion should have been started with startInjectedConversionSequence()
 	 */
-	static inline bool
+	static inline bool 
 	isInjectedConversionFinished();
 
 	/**
