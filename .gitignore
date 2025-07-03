@@ -37,3 +37,4 @@ build
 
 # python cache
 __pycache__
+.venv
