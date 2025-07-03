@@ -2,6 +2,9 @@
 	"folders": [
 		{
 			"path": ".."
+		},
+		{
+			"path": "../../modm"
 		}
 	],
 	"settings": {
@@ -77,6 +80,8 @@
 			"shared_mutex": "cpp",
 			"unordered_set": "cpp",
 			"valarray": "cpp"
-		}
+		},
+		"cmake.automaticReconfigure": true,
+		"cmake.autoSelectActiveFolder": false
 	}
 }

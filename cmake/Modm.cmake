@@ -2,15 +2,6 @@
 # It fetches the modm library using FetchContent, sets up a Python virtual environment,
 # installs dependencies from requirements.txt, and then uses lbuild to generate
 # the necessary build files for modm based on project.xml.
-include(FetchContent)
-
-# download the modm library using FetchContent
-FetchContent_Declare(
-  modm
-  GIT_REPOSITORY https://github.com/modm-io/modm.git
-  GIT_TAG 2025q1 
-)
-FetchContent_MakeAvailable(modm)
 
 # check if Python3 is available
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
