@@ -109,7 +109,7 @@ function(modm_target_config_create target target_arch target_options target_warn
   set(CCFLAGS
     -fdata-sections
     -ffile-prefix-map=${MODM_GCC_PATH}=.
-    -ffile-prefix-map=${CMAKE_SOURCE_DIR}=.
+    -ffile-prefix-map=${CMAKE_CURRENT_SOURCE_DIR}=.
     -ffunction-sections
     -finline-limit=10000
     -fno-builtin-printf
@@ -187,7 +187,7 @@ function(modm_target_config_create target target_arch target_options target_warn
   set(LINKFLAGS
     --specs=nano.specs
     --specs=nosys.specs
-    -L${CMAKE_SOURCE_DIR}
+    -L${CMAKE_CURRENT_SOURCE_DIR}
     -nostartfiles
     -Thardware/batterycasecontroller/modm/link/linkerscript.ld
     -Wl,--build-id=sha1
@@ -320,7 +320,7 @@ function(modm_targets_create project_name)
     USES_TERMINAL
     COMMAND cmake -E env PYTHONPATH=${CMAKE_CURRENT_SOURCE_DIR}/modm ${Python3_EXECUTABLE} -m modm_tools.size ${PROJECT_BINARY_DIR}/${project_name}.elf \"[{'name': 'flash', 'access': 'rx', 'start': 134217728, 'size': 131072}, {'name': 'ccm', 'access': 'rwx', 'start': 268435456, 'size': 32768}, {'name': 'sram1', 'access': 'rwx', 'start': 536870912, 'size': 81920}, {'name': 'sram2', 'access': 'rwx', 'start': 536952832, 'size': 16384}]\"
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-
+  
 
   add_custom_target(program DEPENDS program.done)
   add_custom_command(OUTPUT program.done
