@@ -238,6 +238,17 @@ modm::platform::Adc3::isConversionSequenceFinished()
 }
 
 void
+modm::platform::Adc3::enableRegularConversionExternalTrigger(
+	ExternalTriggerPolarity externalTriggerPolarity,
+	RegularConversionExternalTrigger regularConversionExternalTrigger)
+{
+	const auto polarity = (static_cast<uint32_t>(externalTriggerPolarity) << ADC_CFGR_EXTEN_Pos);
+	const auto externalTrigger = (static_cast<uint32_t>(regularConversionExternalTrigger) << ADC_CFGR_EXTSEL_Pos);
+	const auto mask = ADC_CFGR_EXTEN_Msk | ADC_CFGR_EXTSEL_Msk;
+	ADC3->CFGR = (ADC3->CFGR & ~mask) | polarity | externalTrigger;
+}
+
+void
 modm::platform::Adc3::startInjectedConversionSequence()
 {
 	acknowledgeInterruptFlags(InterruptFlag::EndOfInjectedConversion |
@@ -286,30 +297,18 @@ modm::platform::Adc3::setInjectedConversionSequenceLength(uint8_t length)
 	return true;
 }
 
-void 
-modm::platform::Adc3::setInjectedConversionTriggerEdge(ExternalTriggerEdge edge)
+void
+modm::platform::Adc3::enableInjectedConversionExternalTrigger(
+	ExternalTriggerPolarity externalTriggerPolarity,
+	RegularConversionExternalTrigger regularConversionExternalTrigger)
 {
-	static_assert(std::to_underlying(ExternalTriggerEdge::Disabled) == 0);
-	static_assert(std::to_underlying(ExternalTriggerEdge::Rising) == ADC_JSQR_JEXTEN_0);
-	static_assert(std::to_underlying(ExternalTriggerEdge::Falling) == ADC_JSQR_JEXTEN_1);
-	static_assert(std::to_underlying(ExternalTriggerEdge::RisingAndFalling) == (ADC_JSQR_JEXTEN_0 | ADC_JSQR_JEXTEN_1));
-
-	ADC3->JSQR = (ADC3->JSQR & ~ADC_JSQR_JEXTEN_Msk) 
-		| std::to_underlying(edge);
+	const auto polarity = (static_cast<uint32_t>(externalTriggerPolarity) << ADC_JSQR_JEXTEN_Pos);
+	const auto externalTrigger =
+		(static_cast<uint32_t>(regularConversionExternalTrigger) << ADC_JSQR_JEXTSEL_Pos);
+	const auto mask = ADC_JSQR_JEXTEN_Msk | ADC_JSQR_JEXTSEL_Msk;
+	ADC3->JSQR = (ADC3->JSQR & ~mask) | polarity | externalTrigger;
 }
 
-bool
-modm::platform::Adc3::setInjectedConversionTriggerSource(uint32_t source)
-{
-	if (source > 31) {
-		return false; // Invalid source
-	}
-
-	// Set the trigger source for injected conversions
-	ADC3->JSQR = (ADC3->JSQR & ~ADC_JSQR_JEXTSEL_Msk) 
-		| (source << ADC_JSQR_JEXTSEL_Pos);
-	return true;
-}
 
 bool
 modm::platform::Adc3::isInjectedConversionFinished()
@@ -362,4 +361,39 @@ modm::platform::Adc3::acknowledgeInterruptFlags(const InterruptFlag_t flags)
 	// Flags are cleared by writing a one to the flag position.
 	// Writing a zero is ignored.
 	ADC3->ISR = flags.value;
+}
+
+/**
+ * @arg slot for the offset register (0..3)
+ * @arg channel channel to which the offset is applied
+ * @arg offset offset value to be applied to the channel
+ * @return true if configuration is successful, false if the ADC is currently converting
+ */
+bool
+modm::platform::Adc3::setChannelOffset(OffsetSlot slot, Channel channel, int16_t offset,
+	bool saturate, bool enable)
+{
+	if ( (ADC3->CR & ADC_CR_JADSTART) || (ADC3->CR & ADC_CR_ADSTART) ) {
+		// ADC is currently converting, cannot set offset
+		return false;
+	}
+
+	const uint32_t channelMask = (static_cast<uint32_t>(channel) << ADC_OFR1_OFFSET1_CH_Pos) & ADC_OFR1_OFFSET1_CH_Msk;
+	const uint32_t offsetMask = (std::abs(offset) << ADC_OFR1_OFFSET1_Pos) & ADC_OFR1_OFFSET1_Msk;
+	const uint32_t saturateMask = saturate ? ADC_OFR1_SATEN : 0u;
+	const uint32_t enableMask = enable ? ADC_OFR1_OFFSET1_EN : 0u;
+	const uint32_t signMask = (offset > 0) ? ADC_OFR1_OFFSETPOS : 0u;
+	const uint32_t offsetValue = channelMask | offsetMask | saturateMask | enableMask | signMask;
+
+	switch (slot)
+	{
+		case OffsetSlot::Slot0: ADC3->OFR1 = offsetValue;	break;
+		case OffsetSlot::Slot1: ADC3->OFR2 = offsetValue;	break;
+		case OffsetSlot::Slot2: ADC3->OFR3 = offsetValue;	break;
+		case OffsetSlot::Slot3: ADC3->OFR4 = offsetValue;	break;
+		default:
+			return false;	// invalid slot
+	}
+
+	return true;
 }

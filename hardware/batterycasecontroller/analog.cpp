@@ -37,7 +37,7 @@ constexpr float ADC_RESOLUTION = 4096.0f;  // 12-bit ADC resolution
 constexpr float VOLTAGE_REFERENCE = 3.3f;  // Voltage reference for the ADC
 
 
-system::ThreePhase currentOffsets = system::ThreePhase(0.0f, 0.0f, 0.0f); 
+system::ThreePhase currentOffsets = system::ThreePhase(0.0f, 0.0f, 0.0f);
 float torqueOffset = 0.0f; // Torque offset in Nm
 
 
@@ -124,16 +124,20 @@ void initialize()
 
     // Set the ADCs to use the same trigger source and edge
     // Rising edge of Timer8 OC4
-    Adc1::setInjectedConversionTriggerEdge(Adc1::ExternalTriggerEdge::Rising);
-    Adc2::setInjectedConversionTriggerEdge(Adc2::ExternalTriggerEdge::Rising);
-    Adc3::setInjectedConversionTriggerEdge(Adc3::ExternalTriggerEdge::Rising);
-    Adc4::setInjectedConversionTriggerEdge(Adc4::ExternalTriggerEdge::Rising);
-    Adc5::setInjectedConversionTriggerEdge(Adc5::ExternalTriggerEdge::Rising);
-    Adc1::setInjectedConversionTriggerSource(7);
-    Adc2::setInjectedConversionTriggerSource(7);
-    Adc3::setInjectedConversionTriggerSource(7);
-    Adc4::setInjectedConversionTriggerSource(7);
-    Adc5::setInjectedConversionTriggerSource(7);
+	Adc1::enableInjectedConversionExternalTrigger(Adc1::ExternalTriggerPolarity::RisingEdge,
+												  Adc1::RegularConversionExternalTrigger::Event7);
+	Adc2::enableInjectedConversionExternalTrigger(Adc2::ExternalTriggerPolarity::RisingEdge,
+												  Adc2::RegularConversionExternalTrigger::Event7);
+	Adc3::enableInjectedConversionExternalTrigger(Adc3::ExternalTriggerPolarity::RisingEdge,
+												  Adc3::RegularConversionExternalTrigger::Event7);
+	Adc4::enableInjectedConversionExternalTrigger(Adc4::ExternalTriggerPolarity::RisingEdge,
+												  Adc4::RegularConversionExternalTrigger::Event7);
+	Adc5::enableInjectedConversionExternalTrigger(Adc5::ExternalTriggerPolarity::RisingEdge,
+												  Adc5::RegularConversionExternalTrigger::Event7);
+
+    Adc1::setChannelOffset<A1_IA>(Adc1::OffsetSlot::Slot0, 2048);
+    Adc2::setChannelOffset<A2_IB>(Adc2::OffsetSlot::Slot0, 2048);
+    Adc3::setChannelOffset<A3_IC>(Adc3::OffsetSlot::Slot0, 2048);
 
 	Adc1::startInjectedConversionSequence();
     Adc2::startInjectedConversionSequence();
@@ -309,7 +313,7 @@ getBridgeTemperature(void) noexcept
 {
     // Read the injected conversion value for the bridge temperature
     uint32_t adcValue = Adc5::getInjectedConversionValue(1);
-    return adcToTemperature(adcValue);  // Convert the ADC value to temperature and return it   
+    return adcToTemperature(adcValue);  // Convert the ADC value to temperature and return it
 }
 
 } // namespace unimoc::hardware::analog

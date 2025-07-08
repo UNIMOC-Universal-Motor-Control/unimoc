@@ -1,9 +1,11 @@
 {
 	"folders": [
 		{
+			"name": "unimoc",
 			"path": ".."
 		},
 		{
+			"name": "modm",
 			"path": "../../modm"
 		}
 	],
@@ -82,6 +84,24 @@
 			"valarray": "cpp"
 		},
 		"cmake.automaticReconfigure": true,
-		"cmake.autoSelectActiveFolder": false
+		"cmake.autoSelectActiveFolder": false,
+		"C_Cpp.autocompleteAddParentheses": true,
+		"C_Cpp.codeFolding": "disabled",
+		"C_Cpp.default.cppStandard": "c++23",
+		"C_Cpp.default.cStandard": "c23",
+		"C_Cpp.default.intelliSenseMode": "gcc-arm",
+		"C_Cpp.clang_format_sortIncludes": true,
+		"C_Cpp.formatting": "clangFormat",
+		"editor.defaultFormatter": "ms-vscode.cpptools",
+		"editor.formatOnSaveMode": "modificationsIfAvailable",
+		"C_Cpp.autocomplete": "default",
+		"C_Cpp.errorSquiggles": "enabled",
+		"C_Cpp.files.exclude": {
+			"**/.vscode": true,
+			"**/.vs": true,
+			"**/.git": true,
+			"**/.venv": true,
+			"modm/**": true
+		},
 	}
 }

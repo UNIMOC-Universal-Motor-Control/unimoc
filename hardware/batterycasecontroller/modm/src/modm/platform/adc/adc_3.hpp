@@ -147,12 +147,12 @@ public:
 		Mask = Circular
 	};
 
-	enum class ExternalTriggerEdge : uint32_t
+	enum class ExternalTriggerPolarity
 	{
-		Disabled = 0,
-		Rising = ADC_JSQR_JEXTEN_0,
-		Falling = ADC_JSQR_JEXTEN_1,
-		RisingAndFalling = ADC_JSQR_JEXTEN_0 | ADC_JSQR_JEXTEN_1,
+		NoTriggerDetection = 0x0u,
+		RisingEdge = 0x1u,
+		FallingEdge = 0x2u,
+		RisingAndFallingEdge = 0x3u,
 	};
 
 	enum class Interrupt : uint32_t
@@ -187,6 +187,55 @@ public:
 		All									= ADC_ISR_ADRDY | ADC_ISR_EOSMP | ADC_ISR_EOC | ADC_ISR_EOS | ADC_ISR_OVR | ADC_ISR_JEOC | ADC_ISR_JEOS | ADC_ISR_AWD1 | ADC_ISR_AWD2 | ADC_ISR_AWD3 | ADC_ISR_JQOVF,
 	};
 	MODM_FLAGS32(InterruptFlag);
+
+	/**
+	 * Enum mapping all events on a external trigger converter.
+	 * The source mapped to each event varies on controller family,
+	 * refer to the ADC external trigger section on reference manual
+	 * of your controller for more information
+	 */
+	enum class RegularConversionExternalTrigger
+	{
+		Event0 = 0x00u,
+		Event1 = 0x01u,
+		Event2 = 0x02u,
+		Event3 = 0x03u,
+		Event4 = 0x04u,
+		Event5 = 0x05u,
+		Event6 = 0x06u,
+		Event7 = 0x07u,
+		Event9 = 0x09u,
+		Event10 = 0x0Au,
+		Event11 = 0x0Bu,
+		Event12 = 0x0Cu,
+		Event13 = 0x0Du,
+		Event14 = 0x0Eu,
+		Event15 = 0x0Fu,
+		Event16 = 0x10u,
+		Event17 = 0x11u,
+		Event18 = 0x12u,
+		Event19 = 0x13u,
+		Event20 = 0x14u,
+		Event21 = 0x15u,
+		Event22 = 0x16u,
+		Event23 = 0x17u,
+		Event24 = 0x18u,
+		Event25 = 0x19u,
+		Event26 = 0x1Au,
+		Event27 = 0x1Bu,
+		Event28 = 0x1Cu,
+		Event29 = 0x1Du,
+		Event30 = 0x1Eu,
+		Event31 = 0x1Fu,
+	};
+
+	enum class OffsetSlot : uint8_t
+	{
+		Slot0 = 0,
+		Slot1 = 1,
+		Slot2 = 2,
+		Slot3 = 3,
+	};
 
 public:
 	template< class... Signals >
@@ -328,6 +377,18 @@ public:
 	stopConversion();
 
 	/**
+	 * enable regular conversions on external trigger.
+	 *
+	 * @param externalTriggerPolarity
+	 * 		Polarity of the external trigger signal.
+	 * @param regularConversionExternalTrigger
+	 * 		Regular conversion external trigger source.
+	 */
+	static inline void enableRegularConversionExternalTrigger(
+		ExternalTriggerPolarity externalTriggerPolarity,
+		RegularConversionExternalTrigger regularConversionExternalTrigger);
+
+	/**
 	 * @return If the conversion is finished.
 	 * @pre A conversion should have been started with startConversion()
 	 */
@@ -368,23 +429,22 @@ public:
 	setInjectedConversionSequenceLength(uint8_t length);
 
 	/**
-	 * @arg edge Edge of the trigger signal selected in setInjectedTriggerSource()
+	 * enable injected conversions on external trigger.
+	 *
+	 * @param externalTriggerPolarity
+	 * 		Polarity of the external trigger signal.
+	 * @param regularConversionExternalTrigger
+	 * 		Regular conversion external trigger source.
 	 */
-	static inline void 
-	setInjectedConversionTriggerEdge(ExternalTriggerEdge edge);
-
-	/**
-	 * @arg source Source of the trigger signal for injected conversion.
-	 * @return true if configuration is successful, false if arguments are invalid
-	 */
-	static inline bool 
-	setInjectedConversionTriggerSource(uint32_t source);
+	static inline void enableInjectedConversionExternalTrigger(
+		ExternalTriggerPolarity externalTriggerPolarity,
+		RegularConversionExternalTrigger regularConversionExternalTrigger);
 
 	/**
 	 * @return If the injected conversion sequence is finished.
 	 * @pre An injected conversion should have been started with startInjectedConversionSequence()
 	 */
-	static inline bool 
+	static inline bool
 	isInjectedConversionFinished();
 
 	/**
@@ -424,6 +484,25 @@ public:
 		default:
 			return ADC3->JDR4;
 		}
+	}
+
+	/**
+	 * @arg slot for the offset register (0..3)
+	 * @arg channel channel to which the offset is applied
+	 * @arg offset offset value to be applied to the channel
+	 */
+	static inline bool
+	setChannelOffset(OffsetSlot slot, Channel channel, int16_t offset, bool saturate = false, bool enable = true);
+
+	/**
+	 * @arg slot for the offset register (0..3)
+	 * @return offset value applied to the channel
+	 */
+	template<class Gpio>
+	static inline bool
+	setChannelOffset(OffsetSlot slot, int16_t offset, bool saturate = false, bool enable = true)
+	{
+		return setChannelOffset(slot, getPinChannel<Gpio>(), offset, saturate, enable);
 	}
 
 	static inline void
