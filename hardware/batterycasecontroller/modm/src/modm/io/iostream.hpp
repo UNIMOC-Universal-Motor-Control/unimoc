@@ -29,7 +29,6 @@
 #include <string_view>
 
 #include "iodevice.hpp"
-#include "iodevice_wrapper.hpp" // convenience
 
 /// @cond
 extern "C"
