@@ -54,8 +54,10 @@ namespace pulse_width
 /**
  * @brief Initializes the pwm subsystem.
  * This function sets up the necessary configurations for the pwm outputs.
+ *
+ * @return true if initialization is successful, false otherwise.
  */
-void
+bool
 initialize(void) noexcept;
 
 /**

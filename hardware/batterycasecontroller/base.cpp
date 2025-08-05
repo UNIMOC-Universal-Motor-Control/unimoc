@@ -37,31 +37,20 @@ using namespace modm::literals;
 namespace unimoc::hardware
 {
 
-HardwareInterface motor[MOTORS] = {
-	{// Initialize function
-	 []() -> bool {
-		 // Initialization code here
-		 return true;  // Return true if initialization is successful
-	 },
+bool initialize(void);
 
-	 // Get phase currents function
-	 []() -> system::ThreePhase {
-		 return {0.0f, 0.0f, 0.0f};  // Replace with actual current readings
-	 },
+HardwareInterface motor[MOTORS] = {{// Initialize function
+									initialize,
 
-	 // Get phase voltages function
-	 []() -> system::ThreePhase {
-		 return {0.0f, 0.0f, 0.0f};  // Replace with actual voltage readings
-	 },
+									// Get phase currents function
+									analog::getPhaseCurrents,
 
-	 // Set phase duties function
-	 [](system::ThreePhase duties) {
-		 // Set the phase duties here
-		 for (const auto& duty : duties.to_array())
-		 {
-			 MODM_LOG_INFO << "Setting duty: " << duty << '\n';
-		 }
-	 }}};
+									// Get phase voltages function
+									analog::getPhaseVoltages,
+
+									// Set phase duties function
+									pulse_width::setPhaseDuties
+									}};
 
 /**
  * Initializes the hardware components of the battery case controller.
@@ -69,18 +58,28 @@ HardwareInterface motor[MOTORS] = {
  * This function sets up the system clock, initializes the ADCs, and configures
  * the pulse width modulation (PWM) for motor control.
  */
-void
-initialize()
+bool
+initialize(void)
 {
-	SystemClock::enable();
-	SysTickTimer::initialize<SystemClock>();
+	if (!SystemClock::enable()) {
+		MODM_LOG_ERROR << "Failed to enable system clock." << modm::endl;
+		return false;  // Return false if system clock initialization fails
+	}
 
 	// Initialize the ADCs
-	analog::initialize();
+	if (!analog::initialize()) {
+		MODM_LOG_ERROR << "Failed to initialize ADCs." << modm::endl;
+		return false;  // Return false if ADC initialization fails
+	}
 
 	// Initialize the pulse width modulation (PWM) for motor control
-	pulse_width::initialize();
+	if (!pulse_width::initialize()) {
+		MODM_LOG_ERROR << "Failed to initialize PWM." << modm::endl;
+		return false;  // Return false if PWM initialization fails
+	}
 
+	MODM_LOG_INFO << "Hardware initialization successful." << modm::endl;
+	return true;  // Return true if all initializations are successful
 }
 
 }  // namespace unimoc::hardware

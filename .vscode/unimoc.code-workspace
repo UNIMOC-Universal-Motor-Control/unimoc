@@ -81,7 +81,20 @@
 			"set": "cpp",
 			"shared_mutex": "cpp",
 			"unordered_set": "cpp",
-			"valarray": "cpp"
+			"valarray": "cpp",
+			"ios": "cpp",
+			"locale": "cpp",
+			"xhash": "cpp",
+			"xiosbase": "cpp",
+			"xlocale": "cpp",
+			"xlocbuf": "cpp",
+			"xlocmes": "cpp",
+			"xlocmon": "cpp",
+			"xlocnum": "cpp",
+			"xloctime": "cpp",
+			"xmemory": "cpp",
+			"xstring": "cpp",
+			"*.in": "cpp"
 		},
 		"cmake.automaticReconfigure": true,
 		"cmake.autoSelectActiveFolder": false,
@@ -103,5 +116,6 @@
 			"**/.venv": true,
 			"modm/**": true
 		},
+		"C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
 	}
 }

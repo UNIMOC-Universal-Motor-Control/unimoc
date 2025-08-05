@@ -83,8 +83,10 @@ using A5_BRDGT = modm::platform::GpioA9::In2;
 /**
  * @brief Initializes the analog subsystem.
  * This function sets up the necessary configurations for the analog inputs.
+ *
+ * @return true if initialization is successful, false otherwise.
  */
-void
+bool
 initialize(void) noexcept;
 
 /**

@@ -25,6 +25,7 @@
 
 #include "analog.hpp"
 #include <modm/platform.hpp>
+#include <chrono>
 
 using namespace modm::platform;
 using namespace std::chrono_literals;
@@ -36,8 +37,6 @@ namespace unimoc::hardware::analog
 constexpr float ADC_RESOLUTION = 4096.0f;  // 12-bit ADC resolution
 constexpr float VOLTAGE_REFERENCE = 3.3f;  // Voltage reference for the ADC
 
-
-system::ThreePhase currentOffsets = system::ThreePhase(0.0f, 0.0f, 0.0f);
 float torqueOffset = 0.0f; // Torque offset in Nm
 
 
@@ -49,8 +48,18 @@ void adcInterruptHandler()
 }
 
 
-void initialize()
+/**
+ * @brief Initializes the ADCs and GPIOs for analog input.
+ *
+ * This function sets up the GPIO pins for analog input, initializes the ADCs,
+ * and configures the injected conversion channels.
+ *
+ * @return true if initialization is successful, false otherwise.
+ */
+bool
+initialize(void)
 {
+
     // Initialize the GPIOs for ADC channels
     GpioA0::setAnalogInput();
     GpioA2::setAnalogInput();
@@ -70,20 +79,21 @@ void initialize()
                      true);
 
     Adc1::connect<A1_IA, A1_VA>();
-    Adc1::setInjectedConversionSequenceLength(2);
-	Adc1::setInjectedConversionChannel<A1_IA>(0, Adc1::SampleTime::Cycles25);
-	Adc1::setInjectedConversionChannel<A1_VA>(1, Adc1::SampleTime::Cycles25);
+	if (!Adc1::setInjectedConversionSequenceLength(2)) { return false; }
+	if (!Adc1::setInjectedConversionChannel<A1_IA>(0, Adc1::SampleTime::Cycles25)) { return false; }
+	if (!Adc1::setInjectedConversionChannel<A1_VA>(1, Adc1::SampleTime::Cycles25)) { return false; }
 
-	Adc2::initialize(Adc2::ClockMode::SynchronousPrescaler4,
+
+    Adc2::initialize(Adc2::ClockMode::SynchronousPrescaler4,
                      Adc2::ClockSource::SystemClock,
                      Adc2::Prescaler::Disabled,
                      Adc2::CalibrationMode::SingleEndedInputsMode,
                      true);
 
     Adc2::connect<A2_IB, A2_VB>();
-    Adc2::setInjectedConversionSequenceLength(2);
-	Adc2::setInjectedConversionChannel<A2_IB>(0, Adc2::SampleTime::Cycles25);
-	Adc2::setInjectedConversionChannel<A2_VB>(1, Adc2::SampleTime::Cycles25);
+    if (!Adc2::setInjectedConversionSequenceLength(2)) { return false; }
+	if (!Adc2::setInjectedConversionChannel<A2_IB>(0, Adc2::SampleTime::Cycles25)) { return false; }
+    if (!Adc2::setInjectedConversionChannel<A2_VB>(1, Adc2::SampleTime::Cycles25)) { return false; }
 
 	Adc3::initialize(Adc3::ClockMode::SynchronousPrescaler4,
                      Adc3::ClockSource::SystemClock,
@@ -92,9 +102,9 @@ void initialize()
                      true);
 
     Adc3::connect<A3_IC, A3_VC>();
-    Adc3::setInjectedConversionSequenceLength(2);
-	Adc3::setInjectedConversionChannel<A3_IC>(0, Adc3::SampleTime::Cycles25);
-	Adc3::setInjectedConversionChannel<A3_VC>(1, Adc3::SampleTime::Cycles25);
+    if (!Adc3::setInjectedConversionSequenceLength(2)) { return false; }
+    if (!Adc3::setInjectedConversionChannel<A3_IC>(0, Adc3::SampleTime::Cycles25)) { return false; }
+    if (!Adc3::setInjectedConversionChannel<A3_VC>(1, Adc3::SampleTime::Cycles25)) { return false; }
 
 	Adc4::initialize(Adc4::ClockMode::SynchronousPrescaler4,
                      Adc4::ClockSource::SystemClock,
@@ -102,19 +112,20 @@ void initialize()
                      Adc4::CalibrationMode::SingleEndedInputsMode,
                      true);
     Adc4::connect<A4_VDC, A4_CRKT>();
-    Adc4::setInjectedConversionSequenceLength(2);
-	Adc4::setInjectedConversionChannel<A4_VDC>(0, Adc4::SampleTime::Cycles25);
-	Adc4::setInjectedConversionChannel<A4_CRKT>(1, Adc4::SampleTime::Cycles25);
+    if (!Adc4::setInjectedConversionSequenceLength(2)) { return false; }
+	if (!Adc4::setInjectedConversionChannel<A4_VDC>(0, Adc4::SampleTime::Cycles25)) { return false; }
+	if (!Adc4::setInjectedConversionChannel<A4_CRKT>(1, Adc4::SampleTime::Cycles25)) { return false; }
 
     Adc5::initialize(Adc5::ClockMode::SynchronousPrescaler4,
                      Adc5::ClockSource::SystemClock,
                      Adc5::Prescaler::Disabled,
                      Adc5::CalibrationMode::SingleEndedInputsMode,
                      true);
+
     Adc5::connect<A5_MOTT, A5_BRDGT>();
-    Adc5::setInjectedConversionSequenceLength(2);
-	Adc5::setInjectedConversionChannel<A5_MOTT>(0, Adc5::SampleTime::Cycles25);
-	Adc5::setInjectedConversionChannel<A5_BRDGT>(1, Adc5::SampleTime::Cycles25);
+    if (!Adc5::setInjectedConversionSequenceLength(2)) { return false; }
+	if (!Adc5::setInjectedConversionChannel<A5_MOTT>(0, Adc5::SampleTime::Cycles25)) { return false; }
+    if (!Adc5::setInjectedConversionChannel<A5_BRDGT>(1, Adc5::SampleTime::Cycles25)) { return false; }
 
     // Enable ADC interrupt vector and set priority
     // use only one ADC interrupt vector for all ADCs
@@ -135,15 +146,18 @@ void initialize()
 	Adc5::enableInjectedConversionExternalTrigger(Adc5::ExternalTriggerPolarity::RisingEdge,
 												  Adc5::RegularConversionExternalTrigger::Event7);
 
-    Adc1::setChannelOffset<A1_IA>(Adc1::OffsetSlot::Slot0, 2048);
-    Adc2::setChannelOffset<A2_IB>(Adc2::OffsetSlot::Slot0, 2048);
-    Adc3::setChannelOffset<A3_IC>(Adc3::OffsetSlot::Slot0, 2048);
+    if (!Adc1::setChannelOffset<A1_IA>(Adc1::OffsetSlot::Slot0, 2048)) { return false; }
+    if (!Adc2::setChannelOffset<A2_IB>(Adc2::OffsetSlot::Slot0, 2048)) { return false; }
+    if (!Adc3::setChannelOffset<A3_IC>(Adc3::OffsetSlot::Slot0, 2048)) { return false; }
 
 	Adc1::startInjectedConversionSequence();
     Adc2::startInjectedConversionSequence();
     Adc3::startInjectedConversionSequence();
     Adc4::startInjectedConversionSequence();
     Adc5::startInjectedConversionSequence();
+
+
+    return true;  // Return true if initialization is successful
 }
 
 /**
@@ -178,7 +192,7 @@ getPhaseCurrents(void) noexcept
     currents.b = adcToCurrent(Adc2::getInjectedConversionValue(0));
     currents.c = adcToCurrent(Adc3::getInjectedConversionValue(0));
 
-    return currents - currentOffsets;  // Subtract the offsets to get the actual current values
+	return currents;
 }
 
 

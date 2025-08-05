@@ -25,6 +25,7 @@
 
 #include "pulse_width.hpp"
 #include <modm/platform.hpp>
+#include <modm/debug/logger.hpp>
 
 using namespace modm::platform;
 using namespace std::chrono_literals;
@@ -33,7 +34,16 @@ using namespace std::chrono_literals;
 namespace unimoc::hardware::pulse_width
 {
 
-void initialize()
+/**
+ * \brief Initializes the PWM output for three-phase motor control.
+ *
+ * This function sets up the GPIO pins for PWM output, configures the timer,
+ * and initializes the PWM channels for the three phases (A, B, C).
+ *
+ * \return true if initialization is successful, false otherwise.
+ */
+bool
+initialize(void)
 {
     // Initialize GPIO pins for PWM output
     // Phase A: GPIO B6, A7
@@ -70,22 +80,26 @@ void initialize()
 					Timer8::MasterMode2::Update);
 
     Timer8::setPrescaler(1); // Set prescaler to 1 for maximum frequency
-    Timer8::setPeriod<SystemClock>(62.5us, true); // Set period to 62.5 microseconds (16 kHz PWM frequency)
+    auto period_set = Timer8::setPeriod<SystemClock>(62.5us, true); // Set period to 62.5 microseconds (16 kHz PWM frequency)
+	if (period_set == 0) { return false; }
+    MODM_LOG_INFO << "Timer8 period set to: " << period_set << modm::endl;
 
 	Timer8::configureOutputChannel<GpioOutputB6::Ch1>(
 		Timer8::OutputCompareMode::Pwm, Timer8::PinState::Enable,
 		Timer8::OutputComparePolarity::ActiveHigh, Timer8::PinState::Enable,
 		Timer8::OutputComparePolarity::ActiveHigh, Timer8::OutputComparePreload::Enable);
-    
+
     Timer8::configureOutputChannel<GpioOutputB8::Ch2>(
         Timer8::OutputCompareMode::Pwm, Timer8::PinState::Enable,
         Timer8::OutputComparePolarity::ActiveHigh, Timer8::PinState::Enable,
         Timer8::OutputComparePolarity::ActiveHigh, Timer8::OutputComparePreload::Enable);
-    
+
     Timer8::configureOutputChannel<GpioOutputB9::Ch3>(
         Timer8::OutputCompareMode::Pwm, Timer8::PinState::Enable,
         Timer8::OutputComparePolarity::ActiveHigh, Timer8::PinState::Enable,
         Timer8::OutputComparePolarity::ActiveHigh, Timer8::OutputComparePreload::Enable);
+
+    return true; // Return true if initialization is successful
 }
 
 
