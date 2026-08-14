@@ -82,5 +82,26 @@
           "jobs": 4
         }
       }
+    ],
+    "workflowPresets": [
+      {
+        "name": "Hosted configure, build and test",
+        "displayName": "Hosted configure, build and test",
+        "description": "Configure, build and run tests on the host",
+        "steps": [
+          {
+            "type": "configure",
+            "name": "Hosted build with tests"
+          },
+          {
+            "type": "build",
+            "name": "Hosted build with tests"
+          },
+          {
+            "type": "test",
+            "name": "Hosted Test"
+          }
+        ]
+      }
     ]
   }
