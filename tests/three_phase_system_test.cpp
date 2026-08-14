@@ -51,6 +51,8 @@ TEST_F(ThreePhaseTest, DefaultConstructor)
 	// Default constructor should initialize values (implementation dependent)
 	// Just verify object is created without throwing
 	EXPECT_NO_THROW(ThreePhase());
+
+	(void)phase; // Suppress unused variable warning
 }
 
 // Test parameterized constructor
@@ -463,4 +465,12 @@ TEST_F(ThreePhaseTest, OperationsImmutability)
 	EXPECT_FLOAT_EQ(phase2.a, 4.0f);
 	EXPECT_FLOAT_EQ(phase2.b, 5.0f);
 	EXPECT_FLOAT_EQ(phase2.c, 6.0f);
+
+	EXPECT_FLOAT_EQ(sum.a, 5.0f);
+	EXPECT_FLOAT_EQ(sum.b, 7.0f);
+	EXPECT_FLOAT_EQ(sum.c, 9.0f);
+
+	EXPECT_FLOAT_EQ(diff.a, -3.0f);
+	EXPECT_FLOAT_EQ(diff.b, -3.0f);
+	EXPECT_FLOAT_EQ(diff.c, -3.0f);
 }

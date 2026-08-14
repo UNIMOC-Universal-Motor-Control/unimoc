@@ -16,6 +16,15 @@ enable_testing()
 
 # Add test executable
 add_executable(system_test system_test.cpp)
+
+# define the same hardware limits for the test executable as for the main project
+target_compile_definitions(system_test PUBLIC
+    HARDWARE_MAX_PHASE_CURRENT_A=100.0
+    HARDWARE_MAX_MOTOR_CURRENT_A=80.0
+    HARDWARE_MAX_BATTERY_DRIVE_CURRENT_A=50.0
+    HARDWARE_MAX_BATTERY_CHARGE_CURRENT_A=20.0
+)
+
 target_link_libraries(system_test gtest gtest_main)
 target_link_libraries(system_test unimoc_lib)
 # Add test to CMake
