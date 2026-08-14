@@ -55,6 +55,14 @@
           "HARDWARE_DIRECTORY": "${sourceDir}/hardware/host",
           "RUNNING_ON_HOST": "ON"
         }
+      },
+      {
+        "name": "Hosted build with tests + clang-tidy",
+        "inherits": "Hosted build with tests",
+        "cacheVariables": {
+          "ENABLE_CLANG_TIDY": "ON",
+          "CMAKE_CXX_COMPILER": "clang++"
+        }
       }
     ],
     "buildPresets": [
@@ -72,12 +80,24 @@
             "name": "Hosted build with tests",
             "configurePreset": "Hosted build with tests",
             "displayName": "Build and Test on Host"
+        },
+        {
+          "name": "Hosted build with tests + clang-tidy",
+          "configurePreset": "Hosted build with tests + clang-tidy",
+          "displayName": "Build and Test on Host with clang-tidy"
         }
     ],
     "testPresets": [
       {
         "name": "Hosted Test",
         "configurePreset": "Hosted build with tests",
+        "execution": {
+          "jobs": 4
+        }
+      },
+      {
+        "name": "Hosted Test + clang-tidy",
+        "configurePreset": "Hosted build with tests + clang-tidy",
         "execution": {
           "jobs": 4
         }
@@ -100,6 +120,25 @@
           {
             "type": "test",
             "name": "Hosted Test"
+          }
+        ]
+      },
+      {
+        "name": "Hosted configure, build and test + clang tidy",
+        "displayName": "Hosted configure, build and test + clang tidy",
+        "description": "Configure, build, run tests, and execute clang-tidy on the host",
+        "steps": [
+          {
+            "type": "configure",
+            "name": "Hosted build with tests + clang-tidy"
+          },
+          {
+            "type": "build",
+            "name": "Hosted build with tests + clang-tidy"
+          },
+          {
+            "type": "test",
+            "name": "Hosted Test + clang-tidy"
           }
         ]
       }

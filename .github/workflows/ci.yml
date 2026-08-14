@@ -8,30 +8,7 @@ on:
 
 jobs:
   hosted-test:
-    name: Hosted build & test (Linux x86-64)
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          submodules: true
-
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update -q
-          sudo apt-get install -y ninja-build
-
-      - name: Install CMake 4.x
-        run: pip install "cmake>=4,<5" --quiet
-
-      - name: Configure, build and test
-        run: cmake --workflow --preset "Hosted configure, build and test"
-
-  clang-tidy:
-    name: clang-tidy static analysis
+    name: Hosted build, test & clang-tidy (Linux x86-64)
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -50,13 +27,8 @@ jobs:
       - name: Install CMake 4.x
         run: pip install "cmake>=4,<5" --quiet
 
-      - name: Configure
-        run: cmake --preset "Hosted build with tests" \
-          -DENABLE_CLANG_TIDY=ON \
-          -DCMAKE_CXX_COMPILER=clang++
-
-      - name: Build (runs clang-tidy)
-        run: cmake --build build/hosted --target system_test
+      - name: Configure, build, test and clang-tidy
+        run: cmake --workflow --preset "Hosted configure, build and test + clang tidy"
 
   batterycase-build:
     name: BatteryCase Controller firmware build (ARM Cortex-M4)
