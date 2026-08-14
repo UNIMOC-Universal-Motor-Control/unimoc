@@ -65,5 +65,14 @@ Before finishing a change:
 4. Update `README.md` when user-visible behavior, configuration, build steps,
 	 or hardware bring-up behavior changes.
 
+## Skills
+
+based on [mattpocock's skills](https://github.com/mattpocock/skills)
+Skills are organized into bucket folders under skills/:
+ - engineering/ — daily code work
+ - productivity/ — daily non-code workflow tools
+
+
+
 
 
