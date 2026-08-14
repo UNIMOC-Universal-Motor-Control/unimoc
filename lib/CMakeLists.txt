@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 4.00)
 add_library(unimoc_lib)
 
 # Include the headers from the inc subfolder
-target_include_directories(unimoc_lib PUBLIC 
+target_include_directories(unimoc_lib PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/system
     ${CMAKE_CURRENT_SOURCE_DIR}/units
     ${CMAKE_CURRENT_SOURCE_DIR}/control
@@ -20,3 +20,6 @@ target_sources(unimoc_lib
     system/three_phase_system.cpp)
 
 target_link_libraries(unimoc_lib PUBLIC project_options project_warnings)
+
+
+add_subdirectory(cymon)
