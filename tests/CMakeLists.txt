@@ -9,10 +9,7 @@ FetchContent_Declare(
     GIT_TAG main # Or a specific release tag
 )
 FetchContent_MakeAvailable(googletest)
-
-# use googletest if tests are enabled
-enable_testing()
-
+include(GoogleTest)
 
 # Add test executable
 add_executable(system_test system_test.cpp)
@@ -27,12 +24,10 @@ target_compile_definitions(system_test PUBLIC
 
 target_link_libraries(system_test gtest gtest_main)
 target_link_libraries(system_test unimoc_lib)
-# Add test to CMake
-add_test(NAME SystemTest COMMAND system_test)
+gtest_discover_tests(system_test)
 
 # Add three phase system test executable
 add_executable(three_phase_system_test three_phase_system_test.cpp)
 target_link_libraries(three_phase_system_test gtest gtest_main)
 target_link_libraries(three_phase_system_test unimoc_lib)
-# Add test to CMake
-add_test(NAME ThreePhaseSystemTest COMMAND three_phase_system_test)
+gtest_discover_tests(three_phase_system_test)

@@ -117,5 +117,9 @@
 		"[jsonc]": {
 			"editor.defaultFormatter": "vscode.json-language-features"
 		},
+		"cmake.ctest.testExplorerIntegrationEnabled": true,
+		"chat.tools.terminal.autoApprove": {
+			"ctest": true
+		},
 	}
 }

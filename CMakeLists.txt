@@ -61,6 +61,7 @@ else()
 endif()
 
 if(ENABLE_TESTS)
+  include(CTest)
   add_subdirectory(tests)
 else()
   # add the projects code folders
