@@ -8,8 +8,11 @@ Implement the work described by the user in the spec or tickets.
 
 Use /tdd where possible, at pre-agreed seams.
 
-Run typechecking regularly, single test files regularly, and the full test suite once at the end.
+For this repository, use the `hosted-build-test` skill for focused and full
+hosted validation. Run focused tests regularly and the full hosted workflow
+once at the end.
 
 Once done, use /code-review to review the work.
 
-Commit your work to the current branch.
+Do not stage or commit the work automatically. Report the changes and
+validation results; only create a commit when the user explicitly requests it.

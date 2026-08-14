@@ -1,10 +1,10 @@
 # UNIMOC Agent Notes
 
 UNIMOC is a platform-independent C++23 motor-control library and firmware
-for field-oriented control of multi-phase electric motors. One controller typically
-drives one motor; multiple controllers can be networked through Cyphal/UAVCAN
+for field-oriented control of multi-phase electric motors. One drive typically
+controls one motor; multiple drives can be networked through Cyphal/UAVCAN
 over CAN-FD. Read `README.md` for the supported motor types and public
-features.
+features, and read `CONTEXT.md` for the project's domain vocabulary.
 
 ## Project Layout
 
@@ -20,16 +20,18 @@ features.
 
 ## Build And Test
 
-Use the CMake presets and Ninja. The normal host validation workflow is:
+Use the CMake presets and Ninja on both Windows and Linux hosts. The canonical
+host validation workflow is documented in
+[the hosted-build-test skill](.github/skills/engineering/hosted-build-test/SKILL.md).
+The normal workflow is:
 
 ```sh
-cmake --preset "Hosted build with tests"
-cmake --build --preset "Hosted build with tests"
-ctest --preset "Hosted Test" --output-on-failure
+cmake --workflow --preset "Hosted configure, build and test"
 ```
 
-For static analysis, use the corresponding `Hosted build with tests +
-clang-tidy` configure/build and `Hosted Test + clang-tidy` test presets.
+For static analysis and formatting, use the `hosted-build-test` skill. It
+covers the `clang-tidy` workflow preset and `clang-format` checks on both host
+platforms.
 Firmware presets are `BatteryCaseController Debug` and `BatteryCaseController
 Release`; they require the ARM GCC and modm dependencies described in
 `README.md`.
@@ -37,9 +39,10 @@ Release`; they require the ARM GCC and modm dependencies described in
 ## Coding Guidelines
 
 - prefer #pragma once over include guards. remove include guards when applicable.
-- General coding style is google code c++. Read `.clang-format` for additional infos.
+- Use the Google C++ style configured in `.clang-format`.
 - Run the repository's clang-format configuration when changing C++.
-- File naming is allways snake_case for code.
+- Preserve the existing public-header naming convention; new files should match
+	the convention of the directory they belong to.
 - Use C++23
 - Keep algorithms deterministic, portable, and free of HAL dependencies.
 - Prefer small, focused changes. Preserve public APIs unless the task requires
@@ -52,6 +55,14 @@ Release`; they require the ARM GCC and modm dependencies described in
 	Cyphal register or subject IDs. Do not assume hardware behavior from hosted
 	tests; document hardware-specific assumptions and validate firmware changes
 	with the appropriate target build.
+
+## Git Safety
+
+- Do not stage or commit changes unless the user explicitly requests it.
+- Do not create branches, reset, checkout files, abort, or continue a merge or
+  rebase unless the user explicitly requests that operation.
+- Leave the working tree and merge state available for the user when a workflow
+  reaches a git lifecycle boundary.
 
 ## Change Checklist
 
@@ -67,10 +78,17 @@ Before finishing a change:
 
 ## Skills
 
-based on [mattpocock's skills](https://github.com/mattpocock/skills)
-Skills are organized into bucket folders under skills/:
- - engineering/ — daily code work
- - productivity/ — daily non-code workflow tools
+Based on [mattpocock's skills](https://github.com/mattpocock/skills), adapted for
+VS Code Copilot and this C++23 project. Skills are organized under
+`.github/skills/`:
+
+- [Engineering](.github/skills/engineering/README.md) — daily code work.
+- [Productivity](.github/skills/productivity/README.md) — daily non-code workflow tools.
+- [Hosted build and test](.github/skills/engineering/hosted-build-test/SKILL.md) —
+	Windows/Linux hosted validation, clang-tidy, and clang-format.
+
+Use the repository's `SKILL.md` files as the source of truth for these
+workflows.
 
 
 
