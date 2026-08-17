@@ -43,10 +43,14 @@ namespace unimoc
 namespace system
 {
 // transform dq vector to alpha beta vector.
-constexpr StatorReference
-RotorReference::inverse_park(const RotorAngle &angle) const noexcept
+template <typename T>
+constexpr StatorReference<T>
+RotorReference<T>::inverse_park(const RotorAngle &angle) const noexcept
 {
-	return StatorReference(d * angle.cos - q * angle.sin, d * angle.sin + q * angle.cos);
+	return StatorReference<T>(d * angle.cos - q * angle.sin, d * angle.sin + q * angle.cos);
 }
+
+template StatorReference<float>
+RotorReference<float>::inverse_park(const RotorAngle &angle) const noexcept;
 }  // namespace system
 }  // namespace unimoc

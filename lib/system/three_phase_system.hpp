@@ -24,10 +24,8 @@
  */
 #pragma once
 
-#ifndef UNIMOC_SYSTEM_THREE_PHASE_H_
-#define UNIMOC_SYSTEM_THREE_PHASE_H_
-
 #include <array>
+#include <cmath>
 
 #include "stator_system.hpp"
 
@@ -42,20 +40,14 @@ namespace unimoc
 namespace system
 {
 
-// Forward declaration of StatorReference to avoid circular dependency
-struct StatorReference;
-
-///< @brief ThreePhase class
-/// This class represents a three-phase system with three components: a, b, and c.
-/// It provides methods to perform operations such as addition, subtraction, and transformation
-/// to a two-phase alpha-beta system using the Clarke transformation.
+template <typename T = float>
 struct ThreePhase
 {
-	float a;
-	float b;
-	float c;
+	T a;
+	T b;
+	T c;
 	constexpr ThreePhase() = default;
-	constexpr ThreePhase(float _a, float _b, float _c) : a(_a), b(_b), c(_c) {}
+	constexpr ThreePhase(T a_in, T b_in, T c_in) : a(a_in), b(b_in), c(c_in) {}
 
 	// copy constructor
 	constexpr ThreePhase(const ThreePhase &other) : a(other.a), b(other.b), c(other.c) {}
@@ -113,18 +105,24 @@ struct ThreePhase
 
 	// transform to array
 	constexpr auto
-	to_array() const noexcept -> std::array<float, 3>
+	to_array() const noexcept -> std::array<T, 3>
 	{
 		return {a, b, c};
 	}
 
 	// clarke transformation
 	// transform abc 3 phase vector to alpha beta vector.
-	constexpr StatorReference
-	clark() const noexcept;
+	constexpr StatorReference<T>
+	clark() const noexcept
+	{
+		constexpr T sqrt3by2 = static_cast<T>(0.86602540378443864676);
+		constexpr T two_by_three = static_cast<T>(2.0f / 3.0f);
+
+		return StatorReference<T>(
+			two_by_three * (a - (static_cast<T>(0.5f) * b) - (static_cast<T>(0.5f) * c)),
+			two_by_three * ((sqrt3by2 * b) - (sqrt3by2 * c)));
+	}
 };
 
 }  // namespace system
 }  // namespace unimoc
-
-#endif /* UNIMOC_SYSTEM_THREE_PHASE_H_ */

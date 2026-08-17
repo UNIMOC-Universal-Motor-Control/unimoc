@@ -30,7 +30,7 @@
 #include <atomic>
 #include <cstdint>
 #include "SinCos.hpp"
-#include "StatorReference.hpp"
+#include "stator_system.hpp"
 
 /**
  * @namespace unimoc global namespace

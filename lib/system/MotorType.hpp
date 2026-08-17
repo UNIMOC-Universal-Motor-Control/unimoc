@@ -24,9 +24,6 @@
  */
 #pragma once
 
-#ifndef UNIMOC_SYSTEM_MOTOR_TYPE_H_
-#define UNIMOC_SYSTEM_MOTOR_TYPE_H_
-
 /**
  * @namespace unimoc global namespace
  */
@@ -80,5 +77,3 @@ enum class MotorType : unsigned char
 
 }  // namespace system
 }  // namespace unimoc
-
-#endif /* UNIMOC_SYSTEM_MOTOR_TYPE_H_ */

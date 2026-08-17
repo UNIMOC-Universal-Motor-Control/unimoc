@@ -26,8 +26,8 @@
 #include <cmath>
 #include <cstdint>
 #include "SinCos.hpp"
-#include "RotorReference.hpp"
-#include "StatorReference.hpp"
+#include "rotor_system.hpp"
+#include "stator_system.hpp"
 
 namespace unimoc
 {

@@ -30,8 +30,8 @@
 #include <algorithm>
 #include <array>
 #include <concepts>
-#include "ThreePhase.hpp"
-#include "StatorReference.hpp"
+#include "three_phase_system.hpp"
+#include "stator_system.hpp"
 
 /**
  * @namespace unimoc global namespace

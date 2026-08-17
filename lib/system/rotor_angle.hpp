@@ -24,9 +24,6 @@
  */
 #pragma once
 
-#ifndef UNIMOC_SYSTEM_ROTOR_ANGLE_H_
-#define UNIMOC_SYSTEM_ROTOR_ANGLE_H_
-
 #include <array>
 #include <cmath>
 /**
@@ -131,5 +128,3 @@ namespace unimoc
 		};
 	} // namespace system
 } // namespace unimoc
-
-#endif /* UNIMOC_SYSTEM_ROTOR_ANGLE_H_ */

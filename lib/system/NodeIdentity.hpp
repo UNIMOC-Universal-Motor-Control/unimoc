@@ -24,9 +24,6 @@
  */
 #pragma once
 
-#ifndef UNIMOC_SYSTEM_NODE_IDENTITY_H_
-#define UNIMOC_SYSTEM_NODE_IDENTITY_H_
-
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
@@ -164,5 +161,3 @@ struct NodeIdentity
 
 }  // namespace system
 }  // namespace unimoc
-
-#endif /* UNIMOC_SYSTEM_NODE_IDENTITY_H_ */

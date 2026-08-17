@@ -31,7 +31,7 @@
 #include <cmath>
 #include <concepts>
 #include <numbers>
-#include "StatorReference.hpp"
+#include "stator_system.hpp"
 #include "MechanicalObserver.hpp"
 
 /**

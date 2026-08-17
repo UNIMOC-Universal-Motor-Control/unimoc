@@ -24,9 +24,6 @@
  */
 #pragma once
 
-#ifndef UNIMOC_SYSTEM_CYPHAL_INTERFACE_H_
-#define UNIMOC_SYSTEM_CYPHAL_INTERFACE_H_
-
 #include <cstdint>
 
 /**
@@ -781,5 +778,3 @@ inline constexpr uint16_t CMD_MEASURE_BALANCE   = 0x0103u;
 }  // namespace cyphal
 }  // namespace system
 }  // namespace unimoc
-
-#endif /* UNIMOC_SYSTEM_CYPHAL_INTERFACE_H_ */

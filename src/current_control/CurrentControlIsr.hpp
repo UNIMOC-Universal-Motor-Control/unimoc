@@ -30,8 +30,8 @@
 #include <atomic>
 #include <cstdint>
 #include "NvmSettings.hpp"
-#include "RotorReference.hpp"
-#include "StatorReference.hpp"
+#include "rotor_system.hpp"
+#include "stator_system.hpp"
 #include "SubStepBuffer.hpp"
 #include "MechanicalObserver.hpp"
 #include "CurrentController.hpp"

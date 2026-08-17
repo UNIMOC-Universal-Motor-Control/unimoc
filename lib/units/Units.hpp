@@ -24,8 +24,6 @@
  */
 #pragma once
 
-#ifndef UNIMOC_UNITLS_H_
-#define UNIMOC_UNITLS_H_
 
 #include <numbers>  // For std::numbers::pi_v, C++20
 #include <ratio>
@@ -812,5 +810,3 @@ using common_unit_type_mixed_t = typename common_unit_type_mixed<T1, T2>::type;
 
 }  // namespace unit
 }  // namespace unimoc
-
-#endif /* UNIMOC_UNITLS_H_ */

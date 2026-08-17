@@ -28,7 +28,7 @@
 #define UNIMOC_CURRENT_CONTROL_SLOW_UPDATE_H_
 
 #include "NvmSettings.hpp"
-#include "RotorReference.hpp"
+#include "rotor_system.hpp"
 #include "PmsmFluxObserver.hpp"
 #include "CurrentControlIsr.hpp"
 

@@ -24,11 +24,9 @@
  */
 #pragma once
 
-#ifndef UNIMOC_SYSTEM_STATOR_REFERENCE_H_
-#define UNIMOC_SYSTEM_STATOR_REFERENCE_H_
-
 #include <array>
 #include <cmath>
+#include <concepts>
 
 /**
  * @namespace unimoc global namespace
@@ -42,7 +40,10 @@ namespace system
 {
 
 // Forward declaration of RotorReference to avoid circular dependency
+template <typename T>
 struct RotorReference;
+template <std::floating_point T>
+struct SinCos;
 // Forward declaration of RotorAngle to avoid circular dependency
 class RotorAngle;
 
@@ -52,13 +53,14 @@ class RotorAngle;
 /// of the stator voltage or current in the stationary reference frame.
 /// The alpha axis is aligned with the stator winding, while the beta axis is
 /// perpendicular to it.
+template <typename T = float>
 struct StatorReference
 {
-	float alpha;
-	float beta;
+	T alpha;
+	T beta;
 
 	constexpr StatorReference() = default;
-	constexpr StatorReference(float _alpha, float _beta) : alpha(_alpha), beta(_beta) {}
+	constexpr StatorReference(T alpha_in, T beta_in) : alpha(alpha_in), beta(beta_in) {}
 
 	// copy constructor
 	constexpr StatorReference(const StatorReference &other) : alpha(other.alpha), beta(other.beta)
@@ -119,25 +121,47 @@ struct StatorReference
 		return StatorReference(alpha - other.alpha, beta - other.beta);
 	}
 
+	// multiplication operator
+	constexpr RotorReference<T>
+	operator*(const RotorReference<T> &other) const
+	{
+		return RotorReference<T>(alpha * other.d - beta * other.q,
+									alpha * other.q + beta * other.d);
+	}
+
+	// division operator
+	constexpr StatorReference
+	operator/(const StatorReference &other) const
+	{
+		return StatorReference(alpha / other.alpha, beta / other.beta);
+	}
+
 	// transform to array
 	constexpr auto
-	to_array() const noexcept -> std::array<float, 2>
+	to_array() const noexcept -> std::array<T, 2>
 	{
 		return {alpha, beta};
 	}
 
 	// length of the vector
-	constexpr float
+	constexpr T
 	length() const noexcept
 	{
 		return std::sqrt(alpha * alpha + beta * beta);
 	}
 
 	// transform alpha beta vector to dq vector.
-	constexpr RotorReference
+	constexpr RotorReference<T>
+	park(const SinCos<T> &angle) const noexcept
+	{
+		return RotorReference<T>(
+			alpha * angle.cos + beta * angle.sin,
+			-alpha * angle.sin + beta * angle.cos);
+	}
+
+	// transform alpha beta vector to dq vector.
+	constexpr RotorReference<T>
 	park(const RotorAngle &angle) const noexcept;
 };
 }  // namespace system
 }  // namespace unimoc
-
-#endif /* UNIMOC_SYSTEM_STATOR_REFERENCE_H_ */

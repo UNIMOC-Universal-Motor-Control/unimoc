@@ -24,9 +24,6 @@
  */
 #pragma once
 
-#ifndef UNIMOC_SYSTEM_CONTROL_MODE_H_
-#define UNIMOC_SYSTEM_CONTROL_MODE_H_
-
 #include <cmath>
 #include <concepts>
 #include <optional>
@@ -121,5 +118,3 @@ select_control_mode_from_udral_servo_rotation(const T angular_position,
 
 }  // namespace system
 }  // namespace unimoc
-
-#endif /* UNIMOC_SYSTEM_CONTROL_MODE_H_ */

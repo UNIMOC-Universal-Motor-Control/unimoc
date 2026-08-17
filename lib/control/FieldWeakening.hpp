@@ -30,7 +30,7 @@
 #include <algorithm>
 #include <cmath>
 #include <concepts>
-#include "StatorReference.hpp"
+#include "stator_system.hpp"
 
 /**
  * @namespace unimoc global namespace

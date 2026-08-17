@@ -29,8 +29,8 @@
 
 #include <cmath>
 #include <concepts>
-#include "RotorReference.hpp"
-#include "StatorReference.hpp"
+#include "rotor_system.hpp"
+#include "stator_system.hpp"
 #include "MechanicalObserver.hpp"
 
 /**

@@ -37,17 +37,5 @@ namespace unimoc
  */
 namespace system
 {
-// clarke transformation
-// transform abc 3 phase vector to alpha beta vector.
-constexpr StatorReference
-ThreePhase::clark() const noexcept
-{
-	constexpr float sqrt3by2 = std::sqrt(3.0f) / 2.0f;
-	constexpr float _2by3 = 2.0f / 3.0f;
-
-	return StatorReference{_2by3 * (a - (0.5f * b) - (0.5f * c)),
-						   _2by3 * ((sqrt3by2 * b) - (sqrt3by2 * c))};
-}
-
 }  // namespace system
 }  // namespace unimoc

@@ -24,9 +24,6 @@
  */
 #pragma once
 
-#ifndef UNIMOC_SYSTEM_NVM_SETTINGS_H_
-#define UNIMOC_SYSTEM_NVM_SETTINGS_H_
-
 #include <algorithm>
 #include <cstdint>
 #include "ControlMode.hpp"
@@ -561,5 +558,3 @@ struct NvmSettings
 
 }  // namespace system
 }  // namespace unimoc
-
-#endif /* UNIMOC_SYSTEM_NVM_SETTINGS_H_ */

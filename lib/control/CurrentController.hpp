@@ -29,7 +29,7 @@
 
 #include <cmath>
 #include <concepts>
-#include "RotorReference.hpp"
+#include "rotor_system.hpp"
 
 /**
  * @namespace unimoc global namespace

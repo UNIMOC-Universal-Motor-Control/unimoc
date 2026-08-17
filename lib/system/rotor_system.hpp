@@ -24,11 +24,9 @@
  */
 #pragma once
 
-#ifndef UNIMOC_SYSTEM_ROTOR_REFERENCE_H_
-#define UNIMOC_SYSTEM_ROTOR_REFERENCE_H_
-
 #include <array>
 #include <cmath>
+#include <concepts>
 
 /**
  * @namespace unimoc global namespace
@@ -41,7 +39,10 @@ namespace unimoc
 namespace system
 {
 // Forward declaration of StatorReference to avoid circular dependency
+template <typename T>
 struct StatorReference;
+template <std::floating_point T>
+struct SinCos;
 // Forward declaration of RotorAngle to avoid circular dependency
 class RotorAngle;
 
@@ -50,15 +51,16 @@ class RotorAngle;
 /// It contains two components: d (direct axis) and q (quadrature axis).
 /// The d-axis is aligned with the rotor's magnetic field, while the q-axis is perpendicular to
 /// it.
+template <typename T = float>
 struct RotorReference
 {
-	float d;  // direct axis component
-	float q;  // quadrature axis component
+	T d;
+	T q;
 
 	// default constructor
 	constexpr RotorReference() = default;
 	// constructor with parameters
-	constexpr RotorReference(float _d, float _q) : d(_d), q(_q) {}
+	constexpr RotorReference(T d_in, T q_in) : d(d_in), q(q_in) {}
 	// copy constructor
 	constexpr RotorReference(const RotorReference &other) : d(other.d), q(other.q) {}
 	// move constructor
@@ -147,37 +149,44 @@ struct RotorReference
 
 	// scalar multiplication operator
 	constexpr RotorReference
-	operator*(const float &scalar) const
+	operator*(const T &scalar) const
 	{
 		return RotorReference(d * scalar, q * scalar);
 	}
 
 	// scalar division operator
 	constexpr RotorReference
-	operator/(const float &scalar) const
+	operator/(const T &scalar) const
 	{
 		return RotorReference(d / scalar, q / scalar);
 	}
 
 	// transform to array
-	constexpr std::array<float, 2>
+	constexpr std::array<T, 2>
 	to_array() const noexcept
 	{
 		return {d, q};
 	}
 
 	// length of the vector
-	constexpr float
+	constexpr T
 	length() const noexcept
 	{
 		return std::sqrt(d * d + q * q);
 	}
 
 	// transform dq vector to alpha beta vector.
-	constexpr StatorReference
+	constexpr StatorReference<T>
+	inverse_park(const SinCos<T> &angle) const noexcept
+	{
+		return StatorReference<T>(
+			d * angle.cos - q * angle.sin,
+			d * angle.sin + q * angle.cos);
+	}
+
+	// transform dq vector to alpha beta vector.
+	constexpr StatorReference<T>
 	inverse_park(const RotorAngle &angle) const noexcept;
 };
 }  // namespace system
 }  // namespace unimoc
-
-#endif /* UNIMOC_SYSTEM_ROTOR_REFERENCE_H_ */

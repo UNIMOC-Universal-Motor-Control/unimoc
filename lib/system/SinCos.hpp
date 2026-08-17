@@ -24,9 +24,6 @@
  */
 #pragma once
 
-#ifndef UNIMOC_SYSTEM_SIN_COS_H_
-#define UNIMOC_SYSTEM_SIN_COS_H_
-
 #include <array>
 #include <cmath>
 #include <concepts>
@@ -149,5 +146,3 @@ namespace unimoc
         };
     } // namespace system
 } // namespace unimoc
-
-#endif /* UNIMOC_SYSTEM_SIN_COS_H_ */

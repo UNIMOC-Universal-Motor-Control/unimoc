@@ -25,7 +25,7 @@
 #include "CurrentControlIsr.hpp"
 #include <cmath>
 #include <algorithm>
-#include "ThreePhase.hpp"
+#include "three_phase_system.hpp"
 #include "SinCos.hpp"
 #include "NvmSettings.hpp"
 
