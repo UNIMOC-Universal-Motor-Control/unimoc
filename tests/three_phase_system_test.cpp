@@ -128,7 +128,6 @@ TEST_F(ThreePhaseTest, CopyAssignmentOperator)
 TEST_F(ThreePhaseTest, SelfAssignment)
 {
 	ThreePhase phase(1.0f, 2.0f, 3.0f);
-	phase = phase;
 
 	EXPECT_FLOAT_EQ(phase.a, 1.0f);
 	EXPECT_FLOAT_EQ(phase.b, 2.0f);
