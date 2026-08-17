@@ -46,8 +46,7 @@ namespace unimoc
         {
 		private:
             // private method to compute sine and cosine from angle
-			constexpr void
-			update_sin_cos(const float angle) noexcept;
+			void update_sin_cos(const float angle) noexcept;
 
 		public:
 			float angle; // angle in radians
