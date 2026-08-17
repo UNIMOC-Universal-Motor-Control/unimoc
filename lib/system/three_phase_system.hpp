@@ -105,7 +105,7 @@ struct ThreePhase
 
 	// transform to array
 	constexpr auto
-	to_array() const noexcept -> std::array<T, 3>
+	ToArray() const noexcept -> std::array<T, 3>
 	{
 		return {a, b, c};
 	}
@@ -113,13 +113,13 @@ struct ThreePhase
 	// clarke transformation
 	// transform abc 3 phase vector to alpha beta vector.
 	constexpr StatorReference<T>
-	clark() const noexcept
+	ToStatorReference() const noexcept
 	{
 		constexpr T sqrt3by2 = static_cast<T>(0.86602540378443864676);
-		constexpr T two_by_three = static_cast<T>(2.0f / 3.0f);
+		constexpr T two_by_three = static_cast<T>(2.0 / 3.0);
 
 		return StatorReference<T>(
-			two_by_three * (a - (static_cast<T>(0.5f) * b) - (static_cast<T>(0.5f) * c)),
+			two_by_three * (a - (static_cast<T>(0.5) * b) - (static_cast<T>(0.5) * c)),
 			two_by_three * ((sqrt3by2 * b) - (sqrt3by2 * c)));
 	}
 };

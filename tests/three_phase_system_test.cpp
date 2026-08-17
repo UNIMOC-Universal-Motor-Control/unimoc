@@ -296,12 +296,12 @@ TEST_F(ThreePhaseTest, SubtractionWithNegativeValues)
 	EXPECT_FLOAT_EQ(result.c, 6.0f);
 }
 
-// Test to_array conversion
+// Test ToArray conversion
 TEST_F(ThreePhaseTest, ToArrayConversion)
 {
 	ThreePhase phase(1.5f, 2.5f, 3.5f);
 
-	auto arr = phase.to_array();
+	auto arr = phase.ToArray();
 
 	EXPECT_EQ(arr.size(), 3);
 	EXPECT_FLOAT_EQ(arr[0], 1.5f);
@@ -309,24 +309,24 @@ TEST_F(ThreePhaseTest, ToArrayConversion)
 	EXPECT_FLOAT_EQ(arr[2], 3.5f);
 }
 
-// Test to_array with zero values
+// Test ToArray with zero values
 TEST_F(ThreePhaseTest, ToArrayWithZeros)
 {
 	ThreePhase phase(0.0f, 0.0f, 0.0f);
 
-	auto arr = phase.to_array();
+	auto arr = phase.ToArray();
 
 	EXPECT_FLOAT_EQ(arr[0], 0.0f);
 	EXPECT_FLOAT_EQ(arr[1], 0.0f);
 	EXPECT_FLOAT_EQ(arr[2], 0.0f);
 }
 
-// Test to_array with negative values
+// Test ToArray with negative values
 TEST_F(ThreePhaseTest, ToArrayWithNegativeValues)
 {
 	ThreePhase phase(-1.0f, -2.0f, -3.0f);
 
-	auto arr = phase.to_array();
+	auto arr = phase.ToArray();
 
 	EXPECT_FLOAT_EQ(arr[0], -1.0f);
 	EXPECT_FLOAT_EQ(arr[1], -2.0f);
@@ -430,7 +430,7 @@ TEST_F(ThreePhaseTest, MultipleOperations)
 	EXPECT_FLOAT_EQ(diff.c, 15.0f);
 
 	// Convert to array
-	auto arr = sum.to_array();
+	auto arr = sum.ToArray();
 	EXPECT_FLOAT_EQ(arr[0], 15.0f);
 	EXPECT_FLOAT_EQ(arr[1], 30.0f);
 	EXPECT_FLOAT_EQ(arr[2], 45.0f);

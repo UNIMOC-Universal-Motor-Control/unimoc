@@ -16,8 +16,7 @@ target_sources(unimoc_lib
     PRIVATE
     system/rotor_angle.cpp
     system/rotor_system.cpp
-    system/stator_system.cpp
-    system/three_phase_system.cpp)
+    system/stator_system.cpp)
 
 target_link_libraries(unimoc_lib PUBLIC project_options project_warnings)
 

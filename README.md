@@ -102,7 +102,7 @@ lib/
 │   ├── StatorReference.hpp       # α/β stationary reference frame
 │   └── ThreePhase.hpp            # Three-phase (a/b/c) vector
 └── units/
-    └── Units.hpp                 # SI unit wrappers
+    └── units.hpp                 # SI unit wrappers
 ```
 
 ---

@@ -113,7 +113,7 @@ namespace unimoc
 
             // transform to array
 			inline constexpr std::array<float, 2>
-			to_array() const noexcept
+			ToArray() const noexcept
 			{
                 return {sin, cos};
             }

@@ -27,7 +27,6 @@
 #include <array>
 #include <cmath>
 #include <concepts>
-#include "Units.hpp"
 
 /**
  * @namespace unimoc global namespace
@@ -125,7 +124,7 @@ namespace unimoc
             }
 
             // transform to array
-            constexpr auto to_array() const noexcept -> std::array<T, 2>
+            constexpr auto ToArray() const noexcept -> std::array<T, 2>
             {
                 return {sin, cos};
             }

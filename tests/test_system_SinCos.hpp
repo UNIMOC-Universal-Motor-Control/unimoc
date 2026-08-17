@@ -89,7 +89,7 @@ namespace unimoc
             TEST_F(SinCosTest, ToArray)
             {
                 SinCosF sinCos(0.5f, 0.866f);
-                auto array = sinCos.to_array();
+                auto array = sinCos.ToArray();
                 EXPECT_NEAR(array[0], 0.5f, 1e-6f);
                 EXPECT_NEAR(array[1], 0.866f, 1e-6f);
             }

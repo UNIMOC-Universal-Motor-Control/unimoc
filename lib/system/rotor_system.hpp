@@ -163,7 +163,7 @@ struct RotorReference
 
 	// transform to array
 	constexpr std::array<T, 2>
-	to_array() const noexcept
+	ToArray() const noexcept
 	{
 		return {d, q};
 	}

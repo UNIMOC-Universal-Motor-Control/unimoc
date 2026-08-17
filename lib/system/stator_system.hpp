@@ -138,7 +138,7 @@ struct StatorReference
 
 	// transform to array
 	constexpr auto
-	to_array() const noexcept -> std::array<T, 2>
+	ToArray() const noexcept -> std::array<T, 2>
 	{
 		return {alpha, beta};
 	}

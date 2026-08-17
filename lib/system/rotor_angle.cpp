@@ -45,17 +45,20 @@ static constexpr size_t TABLE_SIZE = 512;
 
 // Precomputed sine values for 512 points in the range [0, 2*pi]
 // +1 one to include the value for 2*pi
-static constexpr std::array<float, TABLE_SIZE + 1> sin_table = [] {
+// std::sin is no constexpr, TODO create a python script to generate the table and include it as a header file
+static const std::array<float, TABLE_SIZE + 1> sin_table = [] {
 	std::array<float, TABLE_SIZE + 1> table = {};
 	for (size_t i = 0; i <= TABLE_SIZE; ++i)
 	{
-		table[i] = std::sin((2 * std::numbers::pi_v<float> * static_cast<float>(i)) / static_cast<float>(TABLE_SIZE));
+		float fidx = static_cast<float>(i);
+		float ftable_size = static_cast<float>(TABLE_SIZE);
+		table[i] = std::sin((2 * std::numbers::pi_v<float> * fidx) / ftable_size);
 	}
 	return table;
 }();
 
 // private method to compute sine and cosine from angle
-constexpr void
+void
 RotorAngle::update_sin_cos(const float currentAngle) noexcept
 {
 	// Precomputed constants

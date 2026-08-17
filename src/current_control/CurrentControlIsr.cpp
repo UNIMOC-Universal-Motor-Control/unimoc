@@ -248,7 +248,7 @@ void CurrentControlIsr::on_jeoc() noexcept
     //    Using the two-sensor variant: I_c = −I_a − I_b
     // -------------------------------------------------------------------------
     const system::ThreePhase<float> i_abc{i_a, i_b, -i_a - i_b};
-    const system::StatorReference<float> i_ab = i_abc.clark();
+    const system::StatorReference<float> i_ab = i_abc.ToStatorReference();
 
     // -------------------------------------------------------------------------
     // 5. Store current sample in the active buffer for SlowUpdate
