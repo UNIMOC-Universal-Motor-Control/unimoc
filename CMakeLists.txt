@@ -4,7 +4,7 @@ if(POLICY CMP0175)
   cmake_policy(SET CMP0175 NEW)
 endif()
 
-# Projektname und Version
+# Project name and version
 project(unimoc LANGUAGES C CXX ASM)
 
 add_library(project_options INTERFACE)
