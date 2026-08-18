@@ -14,3 +14,8 @@ QualifierAlignment: Left
 IncludeBlocks: Merge
 
 CommentPragmas: '(@copydoc|@copybrief|@see|@overload|@snippet)'
+
+ColumnLimit: 150
+BinPackArguments: false
+BinPackParameters: false
+PenaltyBreakBeforeFirstCallParameter: 1000
