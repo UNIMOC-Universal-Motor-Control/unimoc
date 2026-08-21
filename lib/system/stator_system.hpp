@@ -215,6 +215,23 @@ struct Stator
 	}
 
 	/**
+	 * @brief Returns the squared Euclidean length of the stator vector.
+	 * @return The squared length in the component representation type.
+	 *
+	 * @note Prefer this for limit and threshold-based derating comparisons. It
+	 * avoids the multi-cycle floating-point square-root instruction; compare it
+	 * with a limit squared. The result has squared component units, so it is
+	 * returned as the representation rather than as `T`.
+	 */
+	constexpr Representation
+	LengthSquared() const noexcept
+	{
+		const Representation alpha_value = alpha.Value();
+		const Representation beta_value = beta.Value();
+		return (alpha_value * alpha_value) + (beta_value * beta_value);
+	}
+
+	/**
 	 * @brief Applies the Park transform to a stator vector.
 	 * @param angle Electrical rotor angle supplying sine and cosine.
 	 * @return The vector in the rotating d/q reference frame.

@@ -212,6 +212,23 @@ struct Rotor
 	}
 
 	/**
+	 * @brief Returns the squared Euclidean length of the rotor vector.
+	 * @return The squared length in the component representation type.
+	 *
+	 * @note Prefer this for limit and threshold-based derating comparisons. It
+	 * avoids the multi-cycle floating-point square-root instruction; compare it
+	 * with a limit squared. The result has squared component units, so it is
+	 * returned as the representation rather than as `T`.
+	 */
+	constexpr Representation
+	LengthSquared() const noexcept
+	{
+		const Representation d_value = d.Value();
+		const Representation q_value = q.Value();
+		return (d_value * d_value) + (q_value * q_value);
+	}
+
+	/**
 	 * @brief Applies the inverse Park transform to a rotor vector.
 	 * @param angle Electrical rotor angle supplying sine and cosine.
 	 * @return The vector in the stationary alpha/beta reference frame.

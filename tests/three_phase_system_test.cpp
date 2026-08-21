@@ -429,6 +429,20 @@ TEST_F(ThreePhaseTest, ParkAndInverseParkRoundTrip)
 	EXPECT_NEAR(restored.beta.Value(), original.beta.Value(), 1.0e-5f);
 }
 
+TEST_F(ThreePhaseTest, LengthSquaredAvoidsSquareRootForStatorAndRotor)
+{
+	constexpr Stator stator{3.0f, 4.0f};
+	constexpr Rotor rotor{3.0f, 4.0f};
+
+	static_assert(std::same_as<decltype(stator.LengthSquared()), float>);
+	static_assert(std::same_as<decltype(rotor.LengthSquared()), float>);
+	static_assert(stator.LengthSquared() == 25.0f);
+	static_assert(rotor.LengthSquared() == 25.0f);
+
+	EXPECT_FLOAT_EQ(stator.LengthSquared(), 25.0f);
+	EXPECT_FLOAT_EQ(rotor.LengthSquared(), 25.0f);
+}
+
 TEST_F(ThreePhaseTest, ParkTransformIsConstexpr)
 {
 	constexpr Stator stator{1.0f, 2.0f};
