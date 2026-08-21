@@ -97,7 +97,7 @@ bool SlowUpdate::run_once() noexcept
     const SubStepBuffer& old_buf = state.double_buf.buf[old_active];
 
     // Stack copies from the old half (ISR now writes only to new_active).
-    system::StatorReference<float> i_ab_snap[NUM_SUB_STEPS];
+    system::Stator<float> i_ab_snap[NUM_SUB_STEPS];
     system::SinCos<float>          sc_snap[NUM_SUB_STEPS];
 
     for (uint8_t k = 0u; k < NUM_SUB_STEPS; ++k)
@@ -155,7 +155,7 @@ bool SlowUpdate::run_once() noexcept
     if (isr_->hfi_active)
     {
         // Compute mean stator-frame current for HFI
-        system::StatorReference<float> i_ab_mean{0.0f, 0.0f};
+        system::Stator<float> i_ab_mean{0.0f, 0.0f};
         for (uint8_t k = 0u; k < NUM_SUB_STEPS; ++k)
         {
             i_ab_mean.alpha += i_ab_snap[k].alpha;

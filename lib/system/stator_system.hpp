@@ -1,26 +1,15 @@
 /*
-       __  ___   ________  _______  ______
-      / / / / | / /  _/  |/  / __ \/ ____/
-     / / / /  |/ // // /|_/ / / / / /
-    / /_/ / /|  // // /  / / /_/ / /___
-    \____/_/ |_/___/_/  /_/\____/\____/
-
-    Universal Motor Control  2025 Alexander <tecnologic86@gmail.com> Evers
-
-    This file is part of UNIMOC.
-
-    UNIMOC is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *       __  ___   ________  _______  ______
+ *      / / / / | / /  _/  |/  / __ \/ ____/
+ *     / / / /  |/ // // /|_/ / / / / /
+ *     / /_/ / /|  // //  / / /_/ / /___
+ *     \____/_/ |_/___/_/  /_/\____/\____/
+ *
+ *     @file stator_system.hpp
+ *     @brief Stationary alpha/beta reference frame and transformations.
+ *
+ *     This file is part of UNIMOC and is licensed under GPL-3.0-or-later.
+ *     See the repository LICENSE file for details.
  */
 #pragma once
 
@@ -29,139 +18,193 @@
 #include <concepts>
 
 /**
- * @namespace unimoc global namespace
+ * @namespace unimoc Global UNIMOC namespace.
  */
-namespace unimoc
-{
 /**
- * @namespace coordinate systems.
+ * @namespace unimoc::system Coordinate-system data types.
  */
-namespace system
+namespace unimoc::system
 {
 
-// Forward declaration of RotorReference to avoid circular dependency
+/** Forward declaration of the rotating reference frame. */
 template <typename T>
 struct RotorReference;
+/** Forward declaration of precomputed sine and cosine values. */
 template <std::floating_point T>
 struct SinCos;
-// Forward declaration of RotorAngle to avoid circular dependency
+/** Forward declaration of a rotor angle. */
 class RotorAngle;
 
-///< @brief StatorReference class
-/// This class represents a reference frame in a rotating alpha beta system.
-/// It contains two components: alpha and beta, which are orthogonal components
-/// of the stator voltage or current in the stationary reference frame.
-/// The alpha axis is aligned with the stator winding, while the beta axis is
-/// perpendicular to it.
+/**
+ * @brief Stores a vector in the stationary alpha/beta reference frame.
+ *
+ * The alpha axis is aligned with the stator reference axis and the beta axis
+ * is orthogonal to it. Values use the representation type supplied as `T`.
+ *
+ * @tparam T Representation type used for alpha and beta.
+ */
 template <typename T = float>
-struct StatorReference
+struct Stator
 {
-	T alpha;
-	T beta;
+       /// Alpha-axis component.
+       T alpha;
+       /// Beta-axis component.
+       T beta;
 
-	constexpr StatorReference() = default;
-	constexpr StatorReference(T alpha_in, T beta_in) : alpha(alpha_in), beta(beta_in) {}
+       /** @brief Constructs a zero-valued stator vector. */
+       constexpr Stator() = default;
 
-	// copy constructor
-	constexpr StatorReference(const StatorReference &other) : alpha(other.alpha), beta(other.beta)
-	{}
-	// move constructor
-	constexpr StatorReference(StatorReference &&other) noexcept
-		: alpha(other.alpha), beta(other.beta)
-	{}
-	// copy assignment operator
-	constexpr StatorReference &
-	operator=(const StatorReference &other)
-	{
-		if (this != &other)
-		{
-			alpha = other.alpha;
-			beta = other.beta;
-		}
-		return *this;
-	}
+       /**
+	* @brief Constructs a stator vector from alpha and beta values.
+	* @param alpha_in Alpha-axis component.
+	* @param beta_in Beta-axis component.
+	*/
+       constexpr Stator(T alpha_in, T beta_in) : alpha(alpha_in), beta(beta_in) {}
 
-	// move assignment operator
-	constexpr StatorReference &
-	operator=(StatorReference &&other) noexcept
-	{
-		if (this != &other)
-		{
-			alpha = other.alpha;
-			beta = other.beta;
-		}
-		return *this;
-	}
+       /** @brief Copies a stator vector. */
+       constexpr Stator(const Stator &other) : alpha(other.alpha), beta(other.beta) {}
+       /** @brief Moves a stator vector. */
+       constexpr Stator(Stator &&other) noexcept : alpha(other.alpha), beta(other.beta) {}
 
-	// equality operator
-	constexpr bool
-	operator==(const StatorReference &other) const
-	{
-		return (alpha == other.alpha && beta == other.beta);
-	}
+       /**
+	* @brief Copies the alpha and beta values from another vector.
+	* @param other Vector to copy.
+	* @return This vector after assignment.
+	*/
+       constexpr Stator &
+       operator=(const Stator &other)
+       {
+	       if (this != &other)
+	       {
+		       alpha = other.alpha;
+		       beta = other.beta;
+	       }
+	       return *this;
+       }
 
-	// inequality operator
-	constexpr bool
-	operator!=(const StatorReference &other) const
-	{
-		return !(*this == other);
-	}
+       /**
+	* @brief Moves the alpha and beta values from another vector.
+	* @param other Vector to move.
+	* @return This vector after assignment.
+	*/
+       constexpr Stator &
+       operator=(Stator &&other) noexcept
+       {
+	       if (this != &other)
+	       {
+		       alpha = other.alpha;
+		       beta = other.beta;
+	       }
+	       return *this;
+       }
 
-	// addition operator
-	constexpr StatorReference
-	operator+(const StatorReference &other) const
-	{
-		return StatorReference(alpha + other.alpha, beta + other.beta);
-	}
+       /**
+	* @brief Compares two stator vectors for equality.
+	* @param other Vector to compare.
+	* @return `true` when both components are equal.
+	*/
+       constexpr bool
+       operator==(const Stator &other) const
+       {
+	       return (alpha == other.alpha && beta == other.beta);
+       }
 
-	// subtraction operator
-	constexpr StatorReference
-	operator-(const StatorReference &other) const
-	{
-		return StatorReference(alpha - other.alpha, beta - other.beta);
-	}
+       /**
+	* @brief Compares two stator vectors for inequality.
+	* @param other Vector to compare.
+	* @return `true` when at least one component differs.
+	*/
+       constexpr bool
+       operator!=(const Stator &other) const
+       {
+	       return !(*this == other);
+       }
 
-	// multiplication operator
-	constexpr RotorReference<T>
-	operator*(const RotorReference<T> &other) const
-	{
-		return RotorReference<T>(alpha * other.d - beta * other.q,
-									alpha * other.q + beta * other.d);
-	}
+       /**
+	* @brief Adds two stator vectors component-wise.
+	* @param other Vector to add.
+	* @return The component-wise sum.
+	*/
+       constexpr Stator
+       operator+(const Stator &other) const
+       {
+	       return Stator(alpha + other.alpha, beta + other.beta);
+       }
 
-	// division operator
-	constexpr StatorReference
-	operator/(const StatorReference &other) const
-	{
-		return StatorReference(alpha / other.alpha, beta / other.beta);
-	}
+       /**
+	* @brief Subtracts two stator vectors component-wise.
+	* @param other Vector to subtract.
+	* @return The component-wise difference.
+	*/
+       constexpr Stator
+       operator-(const Stator &other) const
+       {
+	       return Stator(alpha - other.alpha, beta - other.beta);
+       }
 
-	// transform to array
-	constexpr auto
-	ToArray() const noexcept -> std::array<T, 2>
-	{
-		return {alpha, beta};
-	}
+       /**
+	* @brief Multiplies a stator vector by a rotor vector.
+	* @param other Rotor vector used for the component-wise complex product.
+	* @return The resulting rotor vector.
+	*/
+       constexpr RotorReference<T>
+       operator*(const RotorReference<T> &other) const
+       {
+	       return RotorReference<T>(alpha * other.d - beta * other.q,
+								alpha * other.q + beta * other.d);
+       }
 
-	// length of the vector
-	constexpr T
-	length() const noexcept
-	{
-		return std::sqrt(alpha * alpha + beta * beta);
-	}
+       /**
+	* @brief Divides two stator vectors component-wise.
+	* @param other Vector used as the divisor.
+	* @return The component-wise quotient.
+	*/
+       constexpr Stator
+       operator/(const Stator &other) const
+       {
+	       return Stator(alpha / other.alpha, beta / other.beta);
+       }
 
-	// transform alpha beta vector to dq vector.
-	constexpr RotorReference<T>
-	park(const SinCos<T> &angle) const noexcept
-	{
-		return RotorReference<T>(
-			alpha * angle.cos + beta * angle.sin,
-			-alpha * angle.sin + beta * angle.cos);
-	}
+       /**
+	* @brief Returns the alpha and beta values in that order.
+	* @return An array containing alpha and beta.
+	*/
+       constexpr auto
+       ToArray() const noexcept -> std::array<T, 2>
+       {
+	       return {alpha, beta};
+       }
 
-	// transform alpha beta vector to dq vector.
-	constexpr RotorReference<T>
-	park(const RotorAngle &angle) const noexcept;
+       /**
+	* @brief Returns the Euclidean length of the stator vector.
+	* @return The vector length.
+	*/
+       constexpr T
+       Length() const noexcept
+       {
+	       return std::sqrt(alpha * alpha + beta * beta);
+       }
+
+       /**
+	* @brief Applies the Park transform to a stator vector.
+	* @param angle Precomputed sine and cosine of the rotor angle.
+	* @return The vector in the rotating d/q reference frame.
+	*/
+       constexpr RotorReference<T>
+       ToRotor(const SinCos<T> &angle) const noexcept
+       {
+	       return RotorReference<T>(
+		       alpha * angle.cos + beta * angle.sin,
+		       -alpha * angle.sin + beta * angle.cos);
+       }
+
+       /**
+	* @brief Applies the Park transform using a rotor angle.
+	* @param angle Rotor angle used for the transform.
+	* @return The vector in the rotating d/q reference frame.
+	*/
+	RotorReference<T>
+       ToRotor(const RotorAngle &angle) const noexcept;
 };
-}  // namespace system
-}  // namespace unimoc
+
+}  // namespace unimoc::system

@@ -29,28 +29,28 @@
 #include <numbers>
 
 #include "rotor_angle.hpp"    // Include the header file for RotorAngle
-#include "rotor_system.hpp"  // Include the header file for RotorReference
-#include "stator_system.hpp"  // Include the header file for StatorReference
+#include "rotor_system.hpp"
+#include "stator_system.hpp"
 
 /**
- * @namespace unimoc global namespace
+ * @namespace unimoc Global UNIMOC namespace.
  */
 namespace unimoc
 {
 /**
- * @namespace coordinate systems.
+ * @namespace unimoc::system Coordinate-system data types.
  */
 namespace system
 {
-// transform dq vector to alpha beta vector.
+/** Applies the inverse Park transform using the precomputed values in a RotorAngle. */
 template <typename T>
-constexpr StatorReference<T>
+Stator<T>
 RotorReference<T>::inverse_park(const RotorAngle &angle) const noexcept
 {
-	return StatorReference<T>(d * angle.cos - q * angle.sin, d * angle.sin + q * angle.cos);
+	return Stator<T>(d * angle.cos - q * angle.sin, d * angle.sin + q * angle.cos);
 }
 
-template StatorReference<float>
+template Stator<float>
 RotorReference<float>::inverse_park(const RotorAngle &angle) const noexcept;
 }  // namespace system
 }  // namespace unimoc

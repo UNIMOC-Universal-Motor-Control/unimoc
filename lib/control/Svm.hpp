@@ -78,7 +78,7 @@ struct Svm
      * @return   Three-phase duty cycles [0, 1] clamped to [duty_min, duty_max].
      */
     [[nodiscard]] constexpr system::ThreePhase<unit::DimensionlessRatio>
-    calculate(const system::StatorReference<T>& v) const noexcept
+    calculate(const system::Stator<T>& v) const noexcept
     {
         // --- Inverse Clarke (amplitude-invariant) ---
         // Transforms the α/β reference into three phase-voltage references.

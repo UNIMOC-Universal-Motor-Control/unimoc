@@ -165,8 +165,8 @@ struct AsmFluxObserver
      * @param mech_obs MechanicalObserver whose PLL receives the flux-angle correction.
      */
     constexpr void
-    update(const system::StatorReference<T>& v_ab,
-           const system::StatorReference<T>& i_ab,
+    update(const system::Stator<T>& v_ab,
+           const system::Stator<T>& i_ab,
            const T                           dt,
            MechanicalObserver<T>&            mech_obs) noexcept
     {

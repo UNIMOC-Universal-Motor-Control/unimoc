@@ -38,9 +38,9 @@ namespace unimoc
  */
 namespace system
 {
-// Forward declaration of StatorReference to avoid circular dependency
+// Forward declaration of Stator to avoid circular dependency.
 template <typename T>
-struct StatorReference;
+struct Stator;
 template <std::floating_point T>
 struct SinCos;
 // Forward declaration of RotorAngle to avoid circular dependency
@@ -176,16 +176,16 @@ struct RotorReference
 	}
 
 	// transform dq vector to alpha beta vector.
-	constexpr StatorReference<T>
+	       constexpr Stator<T>
 	inverse_park(const SinCos<T> &angle) const noexcept
 	{
-		return StatorReference<T>(
+		       return Stator<T>(
 			d * angle.cos - q * angle.sin,
 			d * angle.sin + q * angle.cos);
 	}
 
 	// transform dq vector to alpha beta vector.
-	constexpr StatorReference<T>
+	Stator<T>
 	inverse_park(const RotorAngle &angle) const noexcept;
 };
 }  // namespace system

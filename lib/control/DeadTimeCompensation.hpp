@@ -92,8 +92,8 @@ struct DeadTimeCompensation
      * @return      Compensation voltage vector (normalised by V_dc) to add to
      *              the α/β voltage reference.
      */
-    [[nodiscard]] constexpr system::StatorReference<T>
-    calculate(const system::StatorReference<T>& i_ab) const noexcept
+    [[nodiscard]] constexpr system::Stator<T>
+    calculate(const system::Stator<T>& i_ab) const noexcept
     {
         // --- Reconstruct three-phase currents from α/β ---
         constexpr T k = static_cast<T>(0.8660254037844386);  // √3 / 2
@@ -120,7 +120,7 @@ struct DeadTimeCompensation
         T d_alpha = two_thirds * (dva - static_cast<T>(0.5) * dvb - static_cast<T>(0.5) * dvc);
         T d_beta  = two_thirds * (k * dvb - k * dvc);
 
-        return system::StatorReference<T>{d_alpha, d_beta};
+        return system::Stator<T>{d_alpha, d_beta};
     }
 };
 

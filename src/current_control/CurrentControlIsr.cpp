@@ -249,7 +249,7 @@ void CurrentControlIsr::on_jeoc() noexcept
     // -------------------------------------------------------------------------
     const system::ThreePhase<unit::Current> i_abc{
         unit::Current{i_a}, unit::Current{i_b}, unit::Current{-i_a - i_b}};
-    const system::StatorReference<float> i_ab = i_abc.ToStatorReference();
+    const system::Stator<float> i_ab = i_abc.ToStator();
 
     // -------------------------------------------------------------------------
     // 5. Store current sample in the active buffer for SlowUpdate
@@ -259,7 +259,7 @@ void CurrentControlIsr::on_jeoc() noexcept
     // -------------------------------------------------------------------------
     // 6. Park transform: I_α, I_β → I_d, I_q
     // -------------------------------------------------------------------------
-    const system::RotorReference<float> i_dq = i_ab.park(sc);
+    const system::RotorReference<float> i_dq = i_ab.ToRotor(sc);
 
     // -------------------------------------------------------------------------
     // 7. Current PI with decoupling feedforward
@@ -274,7 +274,7 @@ void CurrentControlIsr::on_jeoc() noexcept
     // 8. HFI voltage injection (α/β frame, added before inverse Park)
     //    The injection voltage is computed from the current step's sin/cos.
     // -------------------------------------------------------------------------
-    system::StatorReference<float> v_inj{0.0f, 0.0f};
+    system::Stator<float> v_inj{0.0f, 0.0f};
     if (hfi_active)
     {
         v_inj = hfi.get_injection_voltage(sc.sin, sc.cos);
@@ -283,7 +283,7 @@ void CurrentControlIsr::on_jeoc() noexcept
     // -------------------------------------------------------------------------
     // 9. Inverse Park: U_d, U_q → U_α, U_β
     // -------------------------------------------------------------------------
-    system::StatorReference<float> u_ab = u_dq.inverse_park(sc);
+    system::Stator<float> u_ab = u_dq.inverse_park(sc);
 
     // Add HFI injection in the α/β frame
     u_ab = u_ab + v_inj;
@@ -298,7 +298,7 @@ void CurrentControlIsr::on_jeoc() noexcept
     //     SVM expects the voltage vector normalised by V_dc.
     // -------------------------------------------------------------------------
     const float v_dc_safe = (v_dc > 1.0f) ? v_dc : 1.0f;  // prevent /0
-    system::StatorReference<float> u_ab_norm{u_ab.alpha / v_dc_safe,
+    system::Stator<float> u_ab_norm{u_ab.alpha / v_dc_safe,
                                              u_ab.beta  / v_dc_safe};
     const system::ThreePhase<unit::DimensionlessRatio> duties = svm.calculate(u_ab_norm);
 

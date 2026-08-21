@@ -98,7 +98,7 @@ struct FieldWeakening
      * @return     Field-weakening i_d correction [A]  (≤ 0).
      */
     constexpr T
-    update(const system::StatorReference<T>& v_s, const T dt) noexcept
+    update(const system::Stator<T>& v_s, const T dt) noexcept
     {
         const T v_mag = std::sqrt(v_s.alpha * v_s.alpha + v_s.beta * v_s.beta);
         const T error = v_max - v_mag;

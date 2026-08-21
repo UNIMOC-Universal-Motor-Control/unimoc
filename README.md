@@ -100,8 +100,8 @@ lib/
 │   ├── NvmSettings.hpp           # Aggregate of all NVM-backed parameters
 │   ├── RotorReference.hpp        # dq rotating reference frame
 │   ├── SinCos.hpp                # Unit-circle helper
-│   ├── StatorReference.hpp       # α/β stationary reference frame
-│   └── ThreePhase.hpp            # Three-phase (a/b/c) vector
+│   ├── stator_system.hpp         # α/β stationary reference frame
+│   └── three_phase_system.hpp    # Three-phase (a/b/c) vector
 └── units/
     └── units.hpp                 # SI unit wrappers
 ```

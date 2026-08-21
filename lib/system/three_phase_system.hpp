@@ -160,15 +160,15 @@ struct ThreePhase
 
 	/**
 	 * @brief Applies the Clarke transform to the three-phase vector.
-	 * @return The alpha/beta stator reference using the unit representation.
+	* @return The alpha/beta stator vector using the unit representation.
 	 */
-	constexpr StatorReference<Representation>
-	ToStatorReference() const noexcept
+       constexpr Stator<Representation>
+	ToStator() const noexcept
 	{
 		constexpr Representation sqrt3by2 = static_cast<Representation>(0.86602540378443864676);
 		constexpr Representation two_by_three = static_cast<Representation>(2.0 / 3.0);
 
-		return StatorReference<Representation>(
+			   return Stator<Representation>(
 			two_by_three * (a.Value() - (static_cast<Representation>(0.5) * b.Value()) -
 									(static_cast<Representation>(0.5) * c.Value())),
 			two_by_three * ((sqrt3by2 * b.Value()) - (sqrt3by2 * c.Value())));

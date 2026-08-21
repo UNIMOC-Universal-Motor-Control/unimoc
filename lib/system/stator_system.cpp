@@ -25,32 +25,30 @@
 #include <array>
 #include <cmath>
 #include "stator_system.hpp"
-#include "rotor_system.hpp" // Include the header file for RotorReference
-#include "rotor_angle.hpp" // Include the header file for RotorAngle
+#include "rotor_system.hpp"
+#include "rotor_angle.hpp"
 
 /**
- * @namespace unimoc global namespace
+ * @namespace unimoc Global UNIMOC namespace.
  */
 namespace unimoc
 {
 /**
- * @namespace coordinate systems.
+ * @namespace unimoc::system Coordinate-system data types.
  */
 namespace system
 {
 
-   // transform alpha beta vector to dq vector.
-   template <typename T>
-   constexpr RotorReference<T>
-   StatorReference<T>::park(const RotorAngle &angle) const noexcept
-	{
-      return RotorReference<T>{
-			alpha * angle.cos + beta * angle.sin,
-			-alpha * angle.sin + beta * angle.cos
-		};
-	}
+/** Applies the Park transform using the precomputed values in a RotorAngle. */
+template <typename T>
+RotorReference<T>
+Stator<T>::ToRotor(const RotorAngle &angle) const noexcept
+{
+	return RotorReference<T>{alpha * angle.cos + beta * angle.sin,
+							-alpha * angle.sin + beta * angle.cos};
+}
 
-   template RotorReference<float>
-   StatorReference<float>::park(const RotorAngle &angle) const noexcept;
+template RotorReference<float>
+Stator<float>::ToRotor(const RotorAngle &angle) const noexcept;
 }  // namespace system
 }  // namespace unimoc
