@@ -176,9 +176,9 @@ struct PmsmFluxObserver
      *                 flux-derived angle correction.
      */
     constexpr void
-    calculate(const system::RotorReference<T>& u_dq,
-              const system::RotorReference<T>& i_dq,
-              const system::RotorReference<T>& set_flux,
+    calculate(const system::Rotor<T>& u_dq,
+              const system::Rotor<T>& i_dq,
+              const system::Rotor<T>& set_flux,
               const T                          dt,
               MechanicalObserver<T>&           mech_obs) noexcept
     {

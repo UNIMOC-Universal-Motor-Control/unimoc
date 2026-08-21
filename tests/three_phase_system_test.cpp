@@ -27,15 +27,14 @@
 #include <cmath>
 #include <concepts>
 
-#include "SinCos.hpp"
 #include "rotor_angle.hpp"
 #include "rotor_system.hpp"
 #include "three_phase_system.hpp"
 
 using ThreePhase = unimoc::system::ThreePhase<unimoc::unit::DimensionlessRatio>;
-using Stator = unimoc::system::Stator<float>;
-using Rotor = unimoc::system::RotorReference<float>;
-using SinCos = unimoc::system::SinCos<float>;
+using Stator = unimoc::system::Stator<unimoc::unit::DimensionlessRatio>;
+using Rotor = unimoc::system::Rotor<unimoc::unit::DimensionlessRatio>;
+using RotorAngle = unimoc::system::RotorAngle;
 
 static_assert(unimoc::unit::UnitLike<unimoc::unit::Current>);
 static_assert(!unimoc::unit::UnitLike<float>);
@@ -43,9 +42,13 @@ static_assert(!unimoc::unit::UnitLike<float>);
 template <typename T>
 concept CanInstantiateThreePhase = requires { typename unimoc::system::ThreePhase<T>; };
 
+template <typename T>
+concept CanInstantiateStator = requires { typename unimoc::system::Stator<T>; };
+
 static_assert(!CanInstantiateThreePhase<float>);
+static_assert(!CanInstantiateStator<float>);
 static_assert(std::same_as<decltype(unimoc::system::ThreePhase<unimoc::unit::Current>{}.ToStator()),
-						  Stator>);
+						  unimoc::system::Stator<unimoc::unit::Current>>);
 
 // Test fixture for ThreePhase tests
 class ThreePhaseTest : public ::testing::Test
@@ -346,8 +349,8 @@ TEST_F(ThreePhaseTest, ToStatorUsesUnitRepresentation)
 
 	const auto stator = phase.ToStator();
 
-	EXPECT_FLOAT_EQ(stator.alpha, -1.0f);
-	EXPECT_NEAR(stator.beta, -0.577350269f, 1.0e-6f);
+	EXPECT_FLOAT_EQ(stator.alpha.Value(), -1.0f);
+	EXPECT_NEAR(stator.beta.Value(), -0.577350269f, 1.0e-6f);
 }
 
 TEST_F(ThreePhaseTest, ToStatorRejectsZeroSequence)
@@ -356,8 +359,8 @@ TEST_F(ThreePhaseTest, ToStatorRejectsZeroSequence)
 
 	const auto stator = phase.ToStator();
 
-	EXPECT_FLOAT_EQ(stator.alpha, 0.0f);
-	EXPECT_FLOAT_EQ(stator.beta, 0.0f);
+	EXPECT_FLOAT_EQ(stator.alpha.Value(), 0.0f);
+	EXPECT_FLOAT_EQ(stator.beta.Value(), 0.0f);
 }
 
 TEST_F(ThreePhaseTest, ToStatorTransformsBalancedPhaseVector)
@@ -366,86 +369,85 @@ TEST_F(ThreePhaseTest, ToStatorTransformsBalancedPhaseVector)
 
 	const auto stator = phase.ToStator();
 
-	EXPECT_FLOAT_EQ(stator.alpha, 1.0f);
-	EXPECT_NEAR(stator.beta, 0.0f, 1.0e-6f);
+	EXPECT_FLOAT_EQ(stator.alpha.Value(), 1.0f);
+	EXPECT_NEAR(stator.beta.Value(), 0.0f, 1.0e-6f);
 }
 
 TEST_F(ThreePhaseTest, StatorToRotorAtZeroAngle)
 {
 	const Stator stator{1.0f, 2.0f};
-	const SinCos angle{0.0f, 1.0f};
+	const RotorAngle angle;
 
 	const auto rotor = stator.ToRotor(angle);
 
-	EXPECT_FLOAT_EQ(rotor.d, 1.0f);
-	EXPECT_FLOAT_EQ(rotor.q, 2.0f);
+	EXPECT_NEAR(rotor.d.Value(), 1.0f, 1.0e-5f);
+	EXPECT_NEAR(rotor.q.Value(), 2.0f, 1.0e-5f);
 }
 
 TEST_F(ThreePhaseTest, StatorToRotorAtQuarterTurn)
 {
 	const Stator stator{1.0f, 2.0f};
-	const SinCos angle{1.0f, 0.0f};
+	const RotorAngle angle = RotorAngle::FromRaw(0x4000'0000);
 
 	const auto rotor = stator.ToRotor(angle);
 
-	EXPECT_FLOAT_EQ(rotor.d, 2.0f);
-	EXPECT_FLOAT_EQ(rotor.q, -1.0f);
+	EXPECT_NEAR(rotor.d.Value(), 2.0f, 1.0e-5f);
+	EXPECT_NEAR(rotor.q.Value(), -1.0f, 1.0e-5f);
 }
 
 TEST_F(ThreePhaseTest, RotorToStatorAtZeroAngle)
 {
 	const Rotor rotor{1.0f, 2.0f};
-	const SinCos angle{0.0f, 1.0f};
+	const RotorAngle angle;
 
-	const auto stator = rotor.inverse_park(angle);
+	const auto stator = rotor.ToStator(angle);
 
-	EXPECT_FLOAT_EQ(stator.alpha, 1.0f);
-	EXPECT_FLOAT_EQ(stator.beta, 2.0f);
+	EXPECT_NEAR(stator.alpha.Value(), 1.0f, 1.0e-5f);
+	EXPECT_NEAR(stator.beta.Value(), 2.0f, 1.0e-5f);
 }
 
 TEST_F(ThreePhaseTest, RotorToStatorAtQuarterTurn)
 {
 	const Rotor rotor{1.0f, 2.0f};
-	const SinCos angle{1.0f, 0.0f};
+	const RotorAngle angle = RotorAngle::FromRaw(0x4000'0000);
 
-	const auto stator = rotor.inverse_park(angle);
+	const auto stator = rotor.ToStator(angle);
 
-	EXPECT_FLOAT_EQ(stator.alpha, -2.0f);
-	EXPECT_FLOAT_EQ(stator.beta, 1.0f);
+	EXPECT_NEAR(stator.alpha.Value(), -2.0f, 1.0e-5f);
+	EXPECT_NEAR(stator.beta.Value(), 1.0f, 1.0e-5f);
 }
 
 TEST_F(ThreePhaseTest, ParkAndInverseParkRoundTrip)
 {
 	const Stator original{1.25f, -0.75f};
-	const SinCos angle{0.6f, 0.8f};
+	const RotorAngle angle = RotorAngle::FromAngle(unimoc::unit::Angle{0.6435011f});
 
 	const Rotor rotor = original.ToRotor(angle);
-	const Stator restored = rotor.inverse_park(angle);
+	const Stator restored = rotor.ToStator(angle);
 
-	EXPECT_NEAR(restored.alpha, original.alpha, 1.0e-6f);
-	EXPECT_NEAR(restored.beta, original.beta, 1.0e-6f);
+	EXPECT_NEAR(restored.alpha.Value(), original.alpha.Value(), 1.0e-5f);
+	EXPECT_NEAR(restored.beta.Value(), original.beta.Value(), 1.0e-5f);
 }
 
-TEST_F(ThreePhaseTest, ParkTransformAcceptsRotorAngle)
+TEST_F(ThreePhaseTest, ParkTransformIsConstexpr)
 {
-	const Stator stator{1.0f, 2.0f};
-	const unimoc::system::RotorAngle angle;
+	constexpr Stator stator{1.0f, 2.0f};
+	constexpr Rotor rotor = stator.ToRotor(RotorAngle{});
 
-	const auto rotor = stator.ToRotor(angle);
-
-	EXPECT_FLOAT_EQ(rotor.d, 1.0f);
-	EXPECT_FLOAT_EQ(rotor.q, 2.0f);
+	static_assert(rotor.d.Value() == 1.0f);
+	static_assert(rotor.q.Value() == 2.0f);
+	EXPECT_FLOAT_EQ(rotor.d.Value(), 1.0f);
 }
 
-TEST_F(ThreePhaseTest, InverseParkTransformAcceptsRotorAngle)
+TEST_F(ThreePhaseTest, ClarkeAndParkPreserveTheUnitType)
 {
-	const Rotor rotor{1.0f, 2.0f};
-	const unimoc::system::RotorAngle angle;
+	const unimoc::system::ThreePhase<unimoc::unit::Current> phase{1.0f, -0.5f, -0.5f};
 
-	const auto stator = rotor.inverse_park(angle);
+	const unimoc::system::Stator<unimoc::unit::Current> stator = phase.ToStator();
+	const unimoc::system::Rotor<unimoc::unit::Current> rotor =
+		stator.ToRotor(RotorAngle{});
 
-	EXPECT_FLOAT_EQ(stator.alpha, 1.0f);
-	EXPECT_FLOAT_EQ(stator.beta, 2.0f);
+	EXPECT_NEAR(rotor.d.Value(), 1.0f, 1.0e-5f);
 }
 
 // Test constexpr functionality (compile-time evaluation)

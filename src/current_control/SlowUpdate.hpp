@@ -136,7 +136,7 @@ public:
      *
      * @param sp  Flux setpoint in the rotor frame [Wb].
      */
-    void set_flux_setpoint(const system::RotorReference<float>& sp) noexcept
+    void set_flux_setpoint(const system::Rotor<float>& sp) noexcept
     {
         flux_setpoint_ = sp;
     }
@@ -174,7 +174,7 @@ private:
     CurrentControlIsr* isr_{nullptr};
 
     /// Flux setpoint used by flux_obs.calculate() — written by outer loop.
-    system::RotorReference<float> flux_setpoint_{0.0f, 0.0f};
+    system::Rotor<float> flux_setpoint_{0.0f, 0.0f};
 };
 
 }  // namespace current_control

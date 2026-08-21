@@ -191,9 +191,9 @@ struct CurrentController
      * @return        Rotor-frame d/q voltage demand [V], clamped to the
      *                voltage circle of radius v_max * v_dc.
      */
-    constexpr system::RotorReference<T>
-    update(const system::RotorReference<T>& i_ref,
-           const system::RotorReference<T>& i_meas,
+    constexpr system::Rotor<T>
+    update(const system::Rotor<T>& i_ref,
+           const system::Rotor<T>& i_meas,
            const T                          omega,
            const T                          dt,
            const T                          v_dc) noexcept
@@ -239,7 +239,7 @@ struct CurrentController
         integrator_d += (ki_d * e_d + kb_d * (u_d - u_d_raw)) * dt;
         integrator_q += (ki_q * e_q + kb_q * (u_q - u_q_raw)) * dt;
 
-        return system::RotorReference<T>{u_d, u_q};
+        return system::Rotor<T>{u_d, u_q};
     }
 
     /**

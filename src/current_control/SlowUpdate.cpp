@@ -107,14 +107,14 @@ bool SlowUpdate::run_once() noexcept
     }
 
     // Snapshot last voltage demand (written by ISR before samples_ready was set)
-    const system::RotorReference<float> u_dq_last = state.u_dq_last;
+    const system::Rotor<float> u_dq_last = state.u_dq_last;
 
     // -------------------------------------------------------------------------
     // 4. Angle-advance correction: re-Park each sample with the sin/cos that
     //    was active when it was captured.  This corrects for the changing
     //    electrical angle across the four sub-steps.
     // -------------------------------------------------------------------------
-    system::RotorReference<float> i_dq[NUM_SUB_STEPS];
+    system::Rotor<float> i_dq[NUM_SUB_STEPS];
     for (uint8_t k = 0u; k < NUM_SUB_STEPS; ++k)
     {
         i_dq[k] = i_ab_snap[k].park(sc_snap[k]);
@@ -123,7 +123,7 @@ bool SlowUpdate::run_once() noexcept
     // -------------------------------------------------------------------------
     // 5. Mean d/q current over the four sub-steps
     // -------------------------------------------------------------------------
-    system::RotorReference<float> i_dq_mean{0.0f, 0.0f};
+    system::Rotor<float> i_dq_mean{0.0f, 0.0f};
     for (uint8_t k = 0u; k < NUM_SUB_STEPS; ++k)
     {
         i_dq_mean.d += i_dq[k].d;

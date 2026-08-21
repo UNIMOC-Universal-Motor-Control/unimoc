@@ -31,3 +31,9 @@ add_executable(three_phase_system_test three_phase_system_test.cpp)
 target_link_libraries(three_phase_system_test gtest gtest_main)
 target_link_libraries(three_phase_system_test unimoc_lib)
 gtest_discover_tests(three_phase_system_test)
+
+# Add rotor angle test executable
+add_executable(rotor_angle_test rotor_angle_test.cpp)
+target_link_libraries(rotor_angle_test gtest gtest_main)
+target_link_libraries(rotor_angle_test unimoc_lib)
+gtest_discover_tests(rotor_angle_test)

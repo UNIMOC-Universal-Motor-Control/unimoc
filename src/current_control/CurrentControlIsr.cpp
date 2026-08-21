@@ -259,12 +259,12 @@ void CurrentControlIsr::on_jeoc() noexcept
     // -------------------------------------------------------------------------
     // 6. Park transform: I_α, I_β → I_d, I_q
     // -------------------------------------------------------------------------
-    const system::RotorReference<float> i_dq = i_ab.ToRotor(sc);
+    const system::Rotor<float> i_dq = i_ab.ToRotor(sc);
 
     // -------------------------------------------------------------------------
     // 7. Current PI with decoupling feedforward
     // -------------------------------------------------------------------------
-    const system::RotorReference<float> u_dq =
+    const system::Rotor<float> u_dq =
         cc.update(state.i_ref, i_dq, mech_obs.omega, state.dt_fast, v_dc);
 
     // Store for SlowUpdate (flux observer needs last voltage)

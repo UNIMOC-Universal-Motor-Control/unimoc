@@ -1,129 +1,456 @@
 /*
-       __  ___   ________  _______  ______
-      / / / / | / /  _/  |/  / __ \/ ____/
-     / / / /  |/ // // /|_/ / / / / /
-    / /_/ / /|  // // /  / / /_/ / /___
-    \____/_/ |_/___/_/  /_/\____/\____/
-
-    Universal Motor Control  2025 Alexander <tecnologic86@gmail.com> Evers
-
-    This file is part of UNIMOC.
-
-    UNIMOC is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *	   __  ___   ________  _______  ______
+ *	  / / / / | / /  _/  |/  / __ \/ ____/
+ *	 / / / /  |/ // // /|_/ / / / / /
+ *	/ /_/ / /|  // // /  / / /_/ / /___
+ *	\____/_/ |_/___/_/  /_/\____/\____/
+ *
+ *	@file rotor_angle.hpp
+ *	@brief Fixed-point electrical rotor angle with revolution counter and sine/cosine lookup.
+ *
+ *	This file is part of UNIMOC and is licensed under GPL-3.0-or-later.
+ *	See the repository LICENSE file for details.
  */
 #pragma once
 
 #include <array>
-#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <numbers>
+
+#include "units.hpp"
+
 /**
- * @namespace unimoc global namespace
+ * @namespace unimoc Global UNIMOC namespace.
  */
-namespace unimoc
+/**
+ * @namespace unimoc::system Coordinate-system data types.
+ */
+namespace unimoc::system
 {
-    /**
-     * @namespace coordinate systems.
-     */
-    namespace system
-    {
-        /// @brief RotorAngle class
-        ///
-        /// This class is used to represent the sine and cosine values of an angle.
-        ///
-        /// It provides methods to compute the sine and cosine values, normalize them, and perform arithmetic operations.   
-        ///        
-        class RotorAngle
-        {
-		private:
-            // private method to compute sine and cosine from angle
-			void update_sin_cos(const float angle) noexcept;
 
-		public:
-			float angle; // angle in radians
-			float sin;   // sine of the angle
-            float cos;   // cosine of the angle
+/**
+ * @namespace unimoc::system::detail Implementation helpers for the rotor angle.
+ */
+namespace detail
+{
 
-            // default constructor destructor
-			constexpr RotorAngle() noexcept : angle(0.0f), sin(0.0f), cos(1.0f) {}
-			constexpr ~RotorAngle() = default;
+/// Number of entries in the sine lookup table, excluding the wrap-around entry.
+inline constexpr std::size_t kSinTableSize = 512U;
+/// Number of low bits of the Q1.31 phase used as the interpolation fraction.
+inline constexpr std::uint32_t kSinTableFractionBits = 23U;
+/// Mask selecting the interpolation fraction bits of the Q1.31 phase.
+inline constexpr std::uint32_t kSinTableFractionMask = (1U << kSinTableFractionBits) - 1U;
+/// Scale converting the fraction bits into a normalised fraction in [0, 1).
+inline constexpr float kSinTableFractionScale =
+	1.0F / static_cast<float>(1U << kSinTableFractionBits);
 
-			// constructor with angle
-			constexpr RotorAngle(const float rotorAngle) noexcept;
-			// constructor with angle and sine and cosine
-			constexpr RotorAngle(const float rotorAngle, const float angleSine, const float angleCosine) noexcept
-				: angle(rotorAngle), sin(angleSine), cos(angleCosine)
-			{}
+/// Number of Q1.31 counts per full revolution.
+inline constexpr std::int64_t kCountsPerRevolution = 0x1'0000'0000LL;
+/// Number of Q1.31 counts per half revolution, the positive wrap limit.
+inline constexpr std::int64_t kCountsPerHalfRevolution = 0x8000'0000LL;
+/// Number of Q1.31 counts per full revolution as a float.
+inline constexpr float kCountsPerRevolutionF = static_cast<float>(kCountsPerRevolution);
+/// Radians represented by a single Q1.31 count.
+inline constexpr float kRadiansPerCount =
+	static_cast<float>(2.0 * std::numbers::pi_v<double> / static_cast<double>(kCountsPerRevolution));
+/// Revolutions represented by one radian.
+inline constexpr float kRevolutionsPerRadian =
+	static_cast<float>(1.0 / (2.0 * std::numbers::pi_v<double>));
+/// Radians per full revolution.
+inline constexpr float kRadiansPerRevolution = 2.0F * std::numbers::pi_v<float>;
 
-			// copy constructor
-			constexpr RotorAngle(const RotorAngle &other) noexcept
-                : angle(other.angle), sin(other.sin), cos(other.cos) {}
-			// move constructor
-			constexpr RotorAngle(RotorAngle &&other) noexcept
-                : angle(other.angle), sin(other.sin), cos(other.cos) {}
-			// copy assignment operator
-			constexpr RotorAngle &
-			operator=(const RotorAngle &other) noexcept
-            {
-                if (this != &other)
-                {
-                    angle = other.angle;
-                    sin = other.sin;
-                    cos = other.cos;
-                }
-                return *this;
-            }
+/**
+ * @brief Evaluates the sine Taylor series for compile-time table generation.
+ * @param x Argument in radians, accurate for |x| <= pi/4.
+ * @return The sine of @p x.
+ */
+constexpr double
+TaylorSin(double x) noexcept
+{
+	const double x2 = x * x;
+	double term = x;
+	double sum = x;
+	for (int n = 1; n <= 12; ++n)
+	{
+		term *= -x2 / static_cast<double>((2 * n) * ((2 * n) + 1));
+		sum += term;
+	}
+	return sum;
+}
 
-			// move assignment operator
-			constexpr RotorAngle &
-			operator=(RotorAngle &&other) noexcept
-            {
-                if (this != &other)
-                {
-                    angle = other.angle;
-                    sin = other.sin;
-                    cos = other.cos;
-                }
-                return *this;
-            }
+/**
+ * @brief Evaluates the cosine Taylor series for compile-time table generation.
+ * @param x Argument in radians, accurate for |x| <= pi/4.
+ * @return The cosine of @p x.
+ */
+constexpr double
+TaylorCos(double x) noexcept
+{
+	const double x2 = x * x;
+	double term = 1.0;
+	double sum = 1.0;
+	for (int n = 1; n <= 12; ++n)
+	{
+		term *= -x2 / static_cast<double>(((2 * n) - 1) * (2 * n));
+		sum += term;
+	}
+	return sum;
+}
 
-			// equality operator
-			inline constexpr bool
-			operator==(const RotorAngle &other) const noexcept
-			{
-                return (sin == other.sin && cos == other.cos && angle == other.angle);
-            }
+/**
+ * @brief Computes a sine table entry using octant reduction.
+ * @param index Table index; entry @p index represents sin(2*pi*index/kSinTableSize).
+ * @return The sine value of the table entry.
+ */
+constexpr double
+SinTableEntry(std::size_t index) noexcept
+{
+	constexpr double kPi = std::numbers::pi_v<double>;
 
-            // inequality operator
-			inline constexpr bool
-			operator!=(const RotorAngle &other) const noexcept
-			{
-                return !(*this == other);
-            }
+	std::size_t i = index % kSinTableSize;
+	bool negate = false;
+	if (i >= kSinTableSize / 2U)
+	{
+		i -= kSinTableSize / 2U;
+		negate = true;
+	}
+	if (i > kSinTableSize / 4U) { i = (kSinTableSize / 2U) - i; }
 
-            // transform to array
-			inline constexpr std::array<float, 2>
-			ToArray() const noexcept
-			{
-                return {sin, cos};
-            }
+	const double x =
+		(2.0 * kPi * static_cast<double>(i)) / static_cast<double>(kSinTableSize);
+	const double value = (i <= kSinTableSize / 8U) ? TaylorSin(x) : TaylorCos((kPi / 2.0) - x);
+	return negate ? -value : value;
+}
 
-			// sine cosine difference
-			constexpr RotorAngle
-			operator-(const RotorAngle &other) const noexcept;
+/// Sine over one full revolution; the extra entry repeats the value at 2*pi.
+inline constexpr std::array<float, kSinTableSize + 1U> kSinTable = []
+{
+	std::array<float, kSinTableSize + 1U> table{};
+	for (std::size_t i = 0U; i <= kSinTableSize; ++i)
+	{
+		table[i] = static_cast<float>(SinTableEntry(i));
+	}
+	return table;
+}();
 
-            // addition operator
-			constexpr RotorAngle
-			operator+(const RotorAngle &other) const noexcept;
-		};
-	} // namespace system
-} // namespace unimoc
+/**
+ * @brief Interpolates a table segment with a cubic Hermite polynomial.
+ * @param f1 Function value at the start of the segment.
+ * @param f2 Function value at the end of the segment.
+ * @param d1 Derivative with respect to the angle at the start of the segment.
+ * @param d2 Derivative with respect to the angle at the end of the segment.
+ * @param h Normalised position inside the segment, in [0, 1).
+ * @return The interpolated function value.
+ */
+constexpr float
+HermiteInterpolate(float f1, float f2, float d1, float d2, float h) noexcept
+{
+	// Derivatives are given per radian, so they are scaled to the segment width.
+	constexpr float kSegment = kRadiansPerRevolution / static_cast<float>(kSinTableSize);
+
+	const float df = f2 - f1;
+	float tmp = (kSegment * (d1 + d2)) - (2.0F * df);
+	tmp = (h * tmp) + ((3.0F * df) - ((d2 + (2.0F * d1)) * kSegment));
+	tmp = (h * tmp) + (d1 * kSegment);
+	return (h * tmp) + f1;
+}
+
+/**
+ * @brief Rounds a float to the nearest integer, away from zero on ties.
+ * @param value Value to round.
+ * @return The rounded value.
+ */
+constexpr std::int64_t
+RoundToInt64(float value) noexcept
+{
+	return static_cast<std::int64_t>(value >= 0.0F ? value + 0.5F : value - 0.5F);
+}
+
+}  // namespace detail
+
+/**
+ * @brief Electrical rotor angle stored as a Q1.31 phase plus a revolution counter.
+ *
+ * The Q1.31 phase covers exactly one revolution, so the full 32-bit range maps to
+ * [-pi, pi): `INT32_MIN` is -pi and the value wraps back to -pi after +pi. Wrapping is
+ * therefore free and the accumulated position never drifts, because every advance is
+ * applied in integer arithmetic. The revolution counter records how often the +pi/-pi
+ * seam has been crossed.
+ *
+ * This type represents the electrical angle only. Converting to or from a mechanical
+ * angle, including any pole-pair scaling, is the responsibility of the caller.
+ */
+class RotorAngle
+{
+public:
+	/** @brief Constructs a zero angle with zero revolutions. */
+	constexpr RotorAngle() noexcept = default;
+
+	/**
+	 * @brief Constructs a rotor angle from an angle relative to zero.
+	 * @param angle Electrical angle; magnitudes beyond one revolution set the counter.
+	 * @return The corresponding rotor angle.
+	 */
+	static constexpr RotorAngle
+	FromAngle(unit::Angle angle) noexcept
+	{
+		RotorAngle result;
+		result.Advance(angle);
+		return result;
+	}
+
+	/**
+	 * @brief Constructs a rotor angle from its raw fixed-point state.
+	 * @param raw Q1.31 phase inside the current revolution.
+	 * @param revolutions Number of completed revolutions.
+	 * @return The corresponding rotor angle.
+	 */
+	static constexpr RotorAngle
+	FromRaw(std::int32_t raw, std::int32_t revolutions = 0) noexcept
+	{
+		RotorAngle result;
+		result.raw_ = raw;
+		result.revolutions_ = revolutions;
+		result.UpdateSinCos();
+		return result;
+	}
+
+	/**
+	 * @brief Advances the angle by an offset and updates the revolution counter.
+	 * @param offset Angle to add; may span any number of revolutions.
+	 *
+	 * @note The offset is converted from a float and rounded to the nearest Q1.31 count, so a
+	 * single call carries at most half a count of quantisation error. That error does not
+	 * compound, because the phase itself is accumulated in integer counts.
+	 */
+	constexpr void
+	Advance(unit::Angle offset) noexcept
+	{
+		const float revolutions = offset.Value() * detail::kRevolutionsPerRadian;
+		std::int64_t carry = static_cast<std::int64_t>(revolutions);
+		const float fraction = revolutions - static_cast<float>(carry);
+		std::int64_t counts = detail::RoundToInt64(fraction * detail::kCountsPerRevolutionF);
+
+		// Keep the residual within half a revolution so it fits a single wrapping add.
+		if (counts >= detail::kCountsPerHalfRevolution)
+		{
+			counts -= detail::kCountsPerRevolution;
+			++carry;
+		}
+		else if (counts < -detail::kCountsPerHalfRevolution)
+		{
+			counts += detail::kCountsPerRevolution;
+			--carry;
+		}
+
+		revolutions_ += static_cast<std::int32_t>(carry);
+		AddRaw(static_cast<std::int32_t>(counts));
+		UpdateSinCos();
+	}
+
+	/**
+	 * @brief Returns the angle inside the current revolution.
+	 * @return The angle in [-pi, pi).
+	 */
+	constexpr unit::Angle
+	AngleInRevolution() const noexcept
+	{
+		return unit::Angle(static_cast<float>(raw_) * detail::kRadiansPerCount);
+	}
+
+	/**
+	 * @brief Returns the number of completed revolutions.
+	 * @return The signed revolution count.
+	 */
+	constexpr std::int32_t
+	Revolutions() const noexcept
+	{
+		return revolutions_;
+	}
+
+	/**
+	 * @brief Returns the absolute angle including all completed revolutions.
+	 * @return The absolute angle in radians.
+	 *
+	 * @note This getter is a float convenience. It loses resolution once the revolution
+	 * count grows large; use AbsoluteRaw() when exactness is required.
+	 */
+	constexpr unit::Angle
+	AbsoluteAngle() const noexcept
+	{
+		return unit::Angle((static_cast<float>(revolutions_) * detail::kRadiansPerRevolution) +
+						   AngleInRevolution().Value());
+	}
+
+	/**
+	 * @brief Returns the Q1.31 phase inside the current revolution.
+	 * @return The raw fixed-point phase.
+	 */
+	constexpr std::int32_t
+	Raw() const noexcept
+	{
+		return raw_;
+	}
+
+	/**
+	 * @brief Returns the exact absolute position in Q1.31 counts.
+	 * @return The absolute position, counting 2^32 counts per revolution.
+	 */
+	constexpr std::int64_t
+	AbsoluteRaw() const noexcept
+	{
+		return (static_cast<std::int64_t>(revolutions_) * detail::kCountsPerRevolution) +
+			   static_cast<std::int64_t>(raw_);
+	}
+
+	/**
+	 * @brief Returns the sine of the angle inside the current revolution.
+	 * @return The interpolated sine value.
+	 */
+	constexpr unit::DimensionlessRatio
+	Sin() const noexcept
+	{
+		return sin_;
+	}
+
+	/**
+	 * @brief Returns the cosine of the angle inside the current revolution.
+	 * @return The interpolated cosine value.
+	 */
+	constexpr unit::DimensionlessRatio
+	Cos() const noexcept
+	{
+		return cos_;
+	}
+
+	/**
+	 * @brief Advances this angle by an offset.
+	 * @param offset Angle to add.
+	 * @return This angle after the advance.
+	 */
+	constexpr RotorAngle &
+	operator+=(unit::Angle offset) noexcept
+	{
+		Advance(offset);
+		return *this;
+	}
+
+	/**
+	 * @brief Retards this angle by an offset.
+	 * @param offset Angle to subtract.
+	 * @return This angle after the advance.
+	 */
+	constexpr RotorAngle &
+	operator-=(unit::Angle offset) noexcept
+	{
+		Advance(-offset);
+		return *this;
+	}
+
+	/**
+	 * @brief Returns this angle advanced by an offset.
+	 * @param offset Angle to add.
+	 * @return The advanced angle.
+	 */
+	constexpr RotorAngle
+	operator+(unit::Angle offset) const noexcept
+	{
+		RotorAngle result = *this;
+		result.Advance(offset);
+		return result;
+	}
+
+	/**
+	 * @brief Returns this angle retarded by an offset.
+	 * @param offset Angle to subtract.
+	 * @return The retarded angle.
+	 */
+	constexpr RotorAngle
+	operator-(unit::Angle offset) const noexcept
+	{
+		RotorAngle result = *this;
+		result.Advance(-offset);
+		return result;
+	}
+
+	/**
+	 * @brief Returns the shortest-path difference between two angles.
+	 * @param other Angle to subtract.
+	 * @return The difference in (-pi, pi], ignoring the revolution counters.
+	 */
+	constexpr unit::Angle
+	operator-(const RotorAngle &other) const noexcept
+	{
+		const std::int32_t delta = static_cast<std::int32_t>(
+			static_cast<std::uint32_t>(raw_) - static_cast<std::uint32_t>(other.raw_));
+		return unit::Angle(static_cast<float>(delta) * detail::kRadiansPerCount);
+	}
+
+	/**
+	 * @brief Compares two rotor angles for equality.
+	 * @param other Angle to compare.
+	 * @return `true` when phase and revolution count match.
+	 */
+	constexpr bool
+	operator==(const RotorAngle &other) const noexcept
+	{
+		return (raw_ == other.raw_) && (revolutions_ == other.revolutions_);
+	}
+
+	/**
+	 * @brief Compares two rotor angles for inequality.
+	 * @param other Angle to compare.
+	 * @return `true` when phase or revolution count differ.
+	 */
+	constexpr bool
+	operator!=(const RotorAngle &other) const noexcept
+	{
+		return !(*this == other);
+	}
+
+private:
+	/**
+	 * @brief Adds a raw phase delta and counts a seam crossing.
+	 * @param delta Q1.31 phase delta with a magnitude of at most half a revolution.
+	 */
+	constexpr void
+	AddRaw(std::int32_t delta) noexcept
+	{
+		// Wrapping is done unsigned because signed overflow is undefined behaviour.
+		const std::int32_t next = static_cast<std::int32_t>(static_cast<std::uint32_t>(raw_) +
+														   static_cast<std::uint32_t>(delta));
+		if (((raw_ ^ next) & (delta ^ next)) < 0) { revolutions_ += (delta >= 0) ? 1 : -1; }
+		raw_ = next;
+	}
+
+	/** @brief Recomputes sine and cosine from the lookup table. */
+	constexpr void
+	UpdateSinCos() noexcept
+	{
+		const std::uint32_t phase = static_cast<std::uint32_t>(raw_);
+		const std::size_t index_sin = phase >> detail::kSinTableFractionBits;
+		const std::size_t index_cos =
+			(index_sin + (detail::kSinTableSize / 4U)) % detail::kSinTableSize;
+		const float h = static_cast<float>(phase & detail::kSinTableFractionMask) *
+						detail::kSinTableFractionScale;
+
+		sin_ = unit::DimensionlessRatio(detail::HermiteInterpolate(
+			detail::kSinTable[index_sin], detail::kSinTable[index_sin + 1U],
+			detail::kSinTable[index_cos], detail::kSinTable[index_cos + 1U], h));
+		cos_ = unit::DimensionlessRatio(detail::HermiteInterpolate(
+			detail::kSinTable[index_cos], detail::kSinTable[index_cos + 1U],
+			-detail::kSinTable[index_sin], -detail::kSinTable[index_sin + 1U], h));
+	}
+
+	/// Q1.31 phase inside the current revolution.
+	std::int32_t raw_{0};
+	/// Number of completed revolutions.
+	std::int32_t revolutions_{0};
+	/// Sine of the phase inside the current revolution.
+	unit::DimensionlessRatio sin_{0.0F};
+	/// Cosine of the phase inside the current revolution.
+	unit::DimensionlessRatio cos_{1.0F};
+};
+
+}  // namespace unimoc::system

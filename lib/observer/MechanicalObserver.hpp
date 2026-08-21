@@ -195,7 +195,7 @@ struct MechanicalObserver
      * @param dt    Control period [s].
      */
     constexpr void
-    predict(const system::RotorReference<T>& i_dq, const T dt) noexcept
+    predict(const system::Rotor<T>& i_dq, const T dt) noexcept
     {
         const T tsj = dt / J;
 

@@ -98,8 +98,8 @@ lib/
 │   ├── MotorType.hpp             # MotorType enum: PMSM / ASM / EESM
 │   ├── NodeIdentity.hpp          # Node name + hw/sw version (UID read from hardware)
 │   ├── NvmSettings.hpp           # Aggregate of all NVM-backed parameters
-│   ├── RotorReference.hpp        # dq rotating reference frame
-│   ├── SinCos.hpp                # Unit-circle helper
+│   ├── rotor_angle.hpp           # Q1.31 electrical angle + revolution counter, sin/cos LUT
+│   ├── rotor_system.hpp          # d/q rotating reference frame
 │   ├── stator_system.hpp         # α/β stationary reference frame
 │   └── three_phase_system.hpp    # Three-phase (a/b/c) vector
 └── units/

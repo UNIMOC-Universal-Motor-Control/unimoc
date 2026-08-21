@@ -89,7 +89,7 @@ dt_slow_from_pwm_frequency(system::PwmFrequency freq) noexcept
  *  - `double_buf`  : atomic active index; SubStepBuffer access follows the
  *                    ownership protocol described in SubStepBuffer.hpp.
  *  - `i_ref`       : written by the outer control loop (lower priority);
- *                    read by the ISR.  A two-word RotorReference<float> on
+ *                    read by the ISR.  A two-word Rotor<float> on
  *                    Cortex-M is not atomically accessible; the outer loop
  *                    should use a critical section or double-buffered update.
  *  - `u_dq_last`   : written by the ISR; read by the slow-update task.
@@ -106,11 +106,11 @@ struct CurrentControlState
     DoubleBuffer double_buf{};
 
     /// Current setpoint in the rotor frame [A].  Written by the outer loop.
-    system::RotorReference<float> i_ref{0.0f, 0.0f};
+    system::Rotor<float> i_ref{0.0f, 0.0f};
 
     /// Last voltage demand computed by the ISR, rotor frame [V].
     /// Read by SlowUpdate for the PMSM flux observer.
-    system::RotorReference<float> u_dq_last{0.0f, 0.0f};
+    system::Rotor<float> u_dq_last{0.0f, 0.0f};
 
     /// Set to true by the ISR at sub-step 3; cleared by SlowUpdate.
     volatile bool samples_ready{false};
@@ -252,11 +252,11 @@ public:
      *
      * @note The caller must ensure mutual exclusion (e.g. disable the ADC JEOC
      *       IRQ while writing, or use a double-buffered update) because
-     *       RotorReference<float> is not atomically writable on Cortex-M.
+     *       Rotor<float> is not atomically writable on Cortex-M.
      *
      * @param ref  New d/q current reference [A].
      */
-    void set_current_ref(const system::RotorReference<float>& ref) noexcept
+    void set_current_ref(const system::Rotor<float>& ref) noexcept
     {
         state.i_ref = ref;
     }
