@@ -23,6 +23,31 @@ features, and read `CONTEXT.md` for the project's domain vocabulary.
 Use the CMake presets and Ninja on both Windows and Linux hosts. The canonical
 host validation workflow is documented in
 [the hosted-build-test skill](.github/skills/engineering/hosted-build-test/SKILL.md).
+
+### Active refactor validation scope
+
+The system library is currently under active review and is not yet a
+production baseline. Until the user explicitly expands this scope, treat only
+the following as validated:
+
+- `lib/units/units.hpp`
+- `lib/system/three_phase_system.hpp`
+- `tests/three_phase_system_test.cpp` and its `three_phase_system_test` target
+
+For changes confined to this scope, use focused hosted validation first:
+
+```sh
+cmake --build --preset "Hosted build with tests" --target three_phase_system_test
+ctest --preset "Hosted Test" -R "ThreePhaseTest" --output-on-failure
+```
+
+Do not run or require the full hosted workflow merely because an in-progress
+system, observer, control, firmware, or integration file changed. Such code
+may be compiled or tested when needed to investigate the specific change, but
+failures outside the active scope are expected refactor work rather than a
+regression in the validated baseline. Revisit this section whenever the user
+declares another path or test production-valid.
+
 The normal workflow is:
 
 ```sh
@@ -68,8 +93,9 @@ Release`; they require the ARM GCC and modm dependencies described in
 
 Before finishing a change:
 
-1. Build and run the focused hosted tests, or the full hosted workflow when
-	 practical.
+1. Build and run the focused tests for the active refactor validation scope;
+	 use the full hosted workflow only when the user expands the scope or the
+	 change requires cross-library validation.
 2. Run clang-tidy for changes that affect C++ diagnostics or public headers.
 3. Check the diff for accidental changes to generated files, build output, or
 	 submodules.
