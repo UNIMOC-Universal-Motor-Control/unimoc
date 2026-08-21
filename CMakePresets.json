@@ -65,6 +65,16 @@
           "ENABLE_CLANG_TIDY": "ON",
           "CMAKE_CXX_COMPILER": "clang++"
         }
+      },
+      {
+        "name": "Doxygen",
+        "displayName": "Generate UNIMOC Doxygen documentation",
+        "description": "Generate API documentation for UNIMOC-owned C++ code",
+        "inherits": "Hosted build with tests",
+        "binaryDir": "${sourceDir}/build/doxygen",
+        "cacheVariables": {
+          "ENABLE_DOXYGEN": "ON"
+        }
       }
     ],
     "buildPresets": [
@@ -87,6 +97,12 @@
           "name": "Hosted build with tests + clang-tidy",
           "configurePreset": "Hosted build with tests + clang-tidy",
           "displayName": "Build and Test on Host with clang-tidy"
+        },
+        {
+          "name": "Doxygen",
+          "configurePreset": "Doxygen",
+          "displayName": "Generate UNIMOC Doxygen documentation",
+          "targets": ["doxygen-docs"]
         }
     ],
     "testPresets": [
@@ -141,6 +157,21 @@
           {
             "type": "test",
             "name": "Hosted Test + clang-tidy"
+          }
+        ]
+      },
+      {
+        "name": "Generate Doxygen documentation",
+        "displayName": "Generate Doxygen documentation",
+        "description": "Configure and generate documentation for UNIMOC-owned C++ code",
+        "steps": [
+          {
+            "type": "configure",
+            "name": "Doxygen"
+          },
+          {
+            "type": "build",
+            "name": "Doxygen"
           }
         ]
       }

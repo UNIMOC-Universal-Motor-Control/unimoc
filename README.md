@@ -32,6 +32,7 @@ algorithm headers are fully portable and tested on x86-64 Linux via
    - [Aborting or Recovering from FAULT](#aborting-or-recovering-from-fault)
 7. [Getting Started](#getting-started)
    - [Building the Hosted Tests](#building-the-hosted-tests)
+   - [Generating the API Documentation](#generating-the-api-documentation)
    - [Building Firmware (STM32)](#building-firmware-stm32)
 8. [Contributing](#contributing)
 9. [License](#license)
@@ -648,6 +649,17 @@ cmake --build build/hosted --target system_test
 ```
 
 Expected output: all tests pass.
+
+### Generating the API Documentation
+
+Requirements: CMake 4.x, Ninja, Doxygen, and Graphviz (`dot`).
+
+```bash
+cmake --workflow --preset "Generate Doxygen documentation"
+```
+
+The generated HTML documentation is placed in `build/doxygen/html/` and
+contains only UNIMOC-owned C++ code.
 
 ### Building Firmware (STM32)
 
