@@ -191,9 +191,9 @@ void CurrentControlIsr::on_jeoc() noexcept
             return static_cast<uint32_t>(
                 std::roundf(std::clamp(dv, 0.0f, 1.0f) * static_cast<float>(arr_fd)));
         };
-        timer_set_ccr(1u, to_ccr_fd(forced_duties.a));
-        timer_set_ccr(2u, to_ccr_fd(forced_duties.b));
-        timer_set_ccr(3u, to_ccr_fd(forced_duties.c));
+        timer_set_ccr(1u, to_ccr_fd(forced_duties.a.Value()));
+        timer_set_ccr(2u, to_ccr_fd(forced_duties.b.Value()));
+        timer_set_ccr(3u, to_ccr_fd(forced_duties.c.Value()));
         sub_step_ = (sub_step_ + 1u) & 3u;
         if (sub_step_ == 0u) { state.samples_ready = true; }
         return;
@@ -247,7 +247,8 @@ void CurrentControlIsr::on_jeoc() noexcept
     // 4. Clarke transform: I_a, I_b → I_α, I_β
     //    Using the two-sensor variant: I_c = −I_a − I_b
     // -------------------------------------------------------------------------
-    const system::ThreePhase<float> i_abc{i_a, i_b, -i_a - i_b};
+    const system::ThreePhase<unit::Current> i_abc{
+        unit::Current{i_a}, unit::Current{i_b}, unit::Current{-i_a - i_b}};
     const system::StatorReference<float> i_ab = i_abc.ToStatorReference();
 
     // -------------------------------------------------------------------------
@@ -299,7 +300,7 @@ void CurrentControlIsr::on_jeoc() noexcept
     const float v_dc_safe = (v_dc > 1.0f) ? v_dc : 1.0f;  // prevent /0
     system::StatorReference<float> u_ab_norm{u_ab.alpha / v_dc_safe,
                                              u_ab.beta  / v_dc_safe};
-    const system::ThreePhase<float> duties = svm.calculate(u_ab_norm);
+    const system::ThreePhase<unit::DimensionlessRatio> duties = svm.calculate(u_ab_norm);
 
     // -------------------------------------------------------------------------
     // 12. Write CCR registers directly (preload disabled, takes effect now)
@@ -311,9 +312,9 @@ void CurrentControlIsr::on_jeoc() noexcept
         return static_cast<uint32_t>(std::roundf(d * static_cast<float>(arr)));
     };
 
-    timer_set_ccr(1u, to_ccr(duties.a));
-    timer_set_ccr(2u, to_ccr(duties.b));
-    timer_set_ccr(3u, to_ccr(duties.c));
+    timer_set_ccr(1u, to_ccr(duties.a.Value()));
+    timer_set_ccr(2u, to_ccr(duties.b.Value()));
+    timer_set_ccr(3u, to_ccr(duties.c.Value()));
 
     // -------------------------------------------------------------------------
     // 13. Advance sub-step; at wrap-around signal the slow-update task
@@ -331,9 +332,9 @@ void CurrentControlIsr::on_jeoc() noexcept
 
 void CurrentControlIsr::force_duty(float da, float db, float dc) noexcept
 {
-    forced_duties.a = std::clamp(da, svm.duty_min, svm.duty_max);
-    forced_duties.b = std::clamp(db, svm.duty_min, svm.duty_max);
-    forced_duties.c = std::clamp(dc, svm.duty_min, svm.duty_max);
+    forced_duties.a = unit::DimensionlessRatio{std::clamp(da, svm.duty_min, svm.duty_max)};
+    forced_duties.b = unit::DimensionlessRatio{std::clamp(db, svm.duty_min, svm.duty_max)};
+    forced_duties.c = unit::DimensionlessRatio{std::clamp(dc, svm.duty_min, svm.duty_max)};
     force_duty_active = true;
 }
 

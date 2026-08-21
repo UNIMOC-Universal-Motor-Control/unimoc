@@ -6,8 +6,7 @@
  *	\____/_/ |_/___/_/  /_/\____/\____/
  *
  *	@file units.hpp
- *	@brief Strongly typed SI units, unit arithmetic, literals, and type
- * traits.
+ *	@brief Strongly typed SI units, unit arithmetic, literals, and type traits.
  *
  *	This file is part of UNIMOC and is licensed under GPL-3.0-or-later.
  *	See the repository LICENSE file for details.
@@ -167,6 +166,23 @@ class Unit {
  private:
   Rep val_;
 };
+
+/**
+ * @brief Identifies specializations of the UNIMOC unit type.
+ * @tparam T Type to inspect.
+ */
+template <typename T>
+struct IsUnit : std::false_type {};
+
+template <typename Rep, typename Period, typename Tag>
+struct IsUnit<Unit<Rep, Period, Tag>> : std::true_type {};
+
+/**
+ * @brief Constrains a type to a UNIMOC unit specialization.
+ * @tparam T Type to constrain.
+ */
+template <typename T>
+concept UnitLike = IsUnit<T>::value;
 
 // SI unit types (base type float, period std::ratio<1> for base SI units)
 /// Angle in radians (rad).

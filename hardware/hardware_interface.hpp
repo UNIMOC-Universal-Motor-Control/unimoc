@@ -60,18 +60,18 @@ struct HardwareInterface
 	/**
 	 * @brief Functions to get the phase currents and voltages, and to set the phase duties.
 	 */
-	const std::function<system::ThreePhase(void)>& getPhaseCurrents;
+	const std::function<system::ThreePhase<unit::Current>(void)>& getPhaseCurrents;
 
 	/**
 	 * @brief Function to get the phase voltages.
 	 */
-	const std::function<system::ThreePhase(void)>& getPhaseVoltages;
+	const std::function<system::ThreePhase<unit::Voltage>(void)>& getPhaseVoltages;
 
 	/**
 	 * @brief Function to set the phase duties.
 	 * @param duties An array of floats representing the phase duties.
 	 */
-	const std::function<void(system::ThreePhase)>& setPhaseDutys;
+	const std::function<void(system::ThreePhase<unit::DimensionlessRatio>)>& setPhaseDutys;
 
 	/**
 	 * @brief Constructor for the HardwareInterface class.
@@ -80,9 +80,9 @@ struct HardwareInterface
 	 * @param setPhaseDutys Function to set the phase duties.
 	 */
 	HardwareInterface(const std::function<bool(void)>& _initialize,
-					  const std::function<system::ThreePhase(void)>& _getPhaseCurrents,
-					  const std::function<system::ThreePhase(void)>& _getPhaseVoltages,
-					  const std::function<void(system::ThreePhase)>& _setPhaseDutys)
+					  const std::function<system::ThreePhase<unit::Current>(void)>& _getPhaseCurrents,
+					  const std::function<system::ThreePhase<unit::Voltage>(void)>& _getPhaseVoltages,
+					  const std::function<void(system::ThreePhase<unit::DimensionlessRatio>)>& _setPhaseDutys)
 		: initialize(_initialize),
 		  getPhaseCurrents(_getPhaseCurrents),
 		  getPhaseVoltages(_getPhaseVoltages),

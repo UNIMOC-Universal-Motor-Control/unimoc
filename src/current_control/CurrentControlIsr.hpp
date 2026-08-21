@@ -340,7 +340,10 @@ public:
 
     /// Fixed duty cycles applied to CCR1/2/3 while force_duty_active is true.
     /// Clamped to [svm.duty_min, svm.duty_max] by force_duty().
-    system::ThreePhase<float> forced_duties{0.5f, 0.5f, 0.5f};
+    system::ThreePhase<unit::DimensionlessRatio> forced_duties{
+        unit::DimensionlessRatio{0.5f},
+        unit::DimensionlessRatio{0.5f},
+        unit::DimensionlessRatio{0.5f}};
 
 private:
     CurrentControlIsr() = default;

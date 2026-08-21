@@ -111,11 +111,11 @@ constexpr uint16_t dutyCycleToCompareValue(float dutyCycle, uint16_t period) noe
 }
 
 //! \brief Sets the PWM duty cycles for the three phases (A, B, C).
-void setPhaseDuties(const system::ThreePhase& duties) noexcept
+void setPhaseDuties(const system::ThreePhase<unit::DimensionlessRatio>& duties) noexcept
 {
-	Timer8::setCompareValue<GpioOutputB6::Ch1>(dutyCycleToCompareValue(duties.a, Timer8::getOverflow()));
-    Timer8::setCompareValue<GpioOutputB8::Ch2>(dutyCycleToCompareValue(duties.b, Timer8::getOverflow()));
-    Timer8::setCompareValue<GpioOutputB9::Ch3>(dutyCycleToCompareValue(duties.c, Timer8::getOverflow()));
+	Timer8::setCompareValue<GpioOutputB6::Ch1>(dutyCycleToCompareValue(duties.a.Value(), Timer8::getOverflow()));
+    Timer8::setCompareValue<GpioOutputB8::Ch2>(dutyCycleToCompareValue(duties.b.Value(), Timer8::getOverflow()));
+    Timer8::setCompareValue<GpioOutputB9::Ch3>(dutyCycleToCompareValue(duties.c.Value(), Timer8::getOverflow()));
 }
 } // namespace unimoc::hardware::pulse_width
 

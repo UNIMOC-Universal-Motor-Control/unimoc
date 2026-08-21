@@ -181,15 +181,15 @@ adcToCurrent(uint32_t adcValue) noexcept
  * @param phase The phase to read the current from (0 for A, 1 for B, 2 for C).
  * @return The current value in Amperes.
  */
-system::ThreePhase
+system::ThreePhase<unit::Current>
 getPhaseCurrents(void) noexcept
 {
-	system::ThreePhase currents;
+    system::ThreePhase<unit::Current> currents;
 
 	// Read the injected conversion values for each phase
-	currents.a = adcToCurrent(Adc1::getInjectedConversionValue(0));
-    currents.b = adcToCurrent(Adc2::getInjectedConversionValue(0));
-    currents.c = adcToCurrent(Adc3::getInjectedConversionValue(0));
+    currents.a = unit::Current{adcToCurrent(Adc1::getInjectedConversionValue(0))};
+    currents.b = unit::Current{adcToCurrent(Adc2::getInjectedConversionValue(0))};
+    currents.c = unit::Current{adcToCurrent(Adc3::getInjectedConversionValue(0))};
 
 	return currents;
 }
@@ -214,15 +214,15 @@ float adcToVoltage(uint32_t adcValue) noexcept
  * @param phase The phase to read the voltage from (0 for A, 1 for B, 2 for C).
  * @return The voltage value in Volts.
  */
-system::ThreePhase
+system::ThreePhase<unit::Voltage>
 getPhaseVoltages(void) noexcept
 {
-    system::ThreePhase voltages;
+    system::ThreePhase<unit::Voltage> voltages;
 
     // Read the injected conversion values for each phase voltage
-    voltages.a = adcToVoltage(Adc1::getInjectedConversionValue(1));
-    voltages.b = adcToVoltage(Adc2::getInjectedConversionValue(1));
-    voltages.c = adcToVoltage(Adc3::getInjectedConversionValue(1));
+    voltages.a = unit::Voltage{adcToVoltage(Adc1::getInjectedConversionValue(1))};
+    voltages.b = unit::Voltage{adcToVoltage(Adc2::getInjectedConversionValue(1))};
+    voltages.c = unit::Voltage{adcToVoltage(Adc3::getInjectedConversionValue(1))};
 
     return voltages; // Return the phase voltages
 }

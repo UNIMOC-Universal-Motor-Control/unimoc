@@ -27,7 +27,10 @@
 #include <cmath>
 #include "three_phase_system.hpp"
 
-using namespace unimoc::system;
+using ThreePhase = unimoc::system::ThreePhase<unimoc::unit::DimensionlessRatio>;
+
+static_assert(unimoc::unit::UnitLike<unimoc::unit::Current>);
+static_assert(!unimoc::unit::UnitLike<float>);
 
 // Test fixture for ThreePhase tests
 class ThreePhaseTest : public ::testing::Test
@@ -60,9 +63,9 @@ TEST_F(ThreePhaseTest, ParameterizedConstructor)
 {
 	ThreePhase phase(1.5f, 2.5f, 3.5f);
 
-	EXPECT_FLOAT_EQ(phase.a, 1.5f);
-	EXPECT_FLOAT_EQ(phase.b, 2.5f);
-	EXPECT_FLOAT_EQ(phase.c, 3.5f);
+	EXPECT_FLOAT_EQ(phase.a.Value(), 1.5f);
+	EXPECT_FLOAT_EQ(phase.b.Value(), 2.5f);
+	EXPECT_FLOAT_EQ(phase.c.Value(), 3.5f);
 }
 
 // Test parameterized constructor with zero values
@@ -70,9 +73,9 @@ TEST_F(ThreePhaseTest, ConstructorWithZeros)
 {
 	ThreePhase phase(0.0f, 0.0f, 0.0f);
 
-	EXPECT_FLOAT_EQ(phase.a, 0.0f);
-	EXPECT_FLOAT_EQ(phase.b, 0.0f);
-	EXPECT_FLOAT_EQ(phase.c, 0.0f);
+	EXPECT_FLOAT_EQ(phase.a.Value(), 0.0f);
+	EXPECT_FLOAT_EQ(phase.b.Value(), 0.0f);
+	EXPECT_FLOAT_EQ(phase.c.Value(), 0.0f);
 }
 
 // Test parameterized constructor with negative values
@@ -80,9 +83,9 @@ TEST_F(ThreePhaseTest, ConstructorWithNegativeValues)
 {
 	ThreePhase phase(-1.0f, -2.0f, -3.0f);
 
-	EXPECT_FLOAT_EQ(phase.a, -1.0f);
-	EXPECT_FLOAT_EQ(phase.b, -2.0f);
-	EXPECT_FLOAT_EQ(phase.c, -3.0f);
+	EXPECT_FLOAT_EQ(phase.a.Value(), -1.0f);
+	EXPECT_FLOAT_EQ(phase.b.Value(), -2.0f);
+	EXPECT_FLOAT_EQ(phase.c.Value(), -3.0f);
 }
 
 // Test copy constructor
@@ -91,13 +94,13 @@ TEST_F(ThreePhaseTest, CopyConstructor)
 	ThreePhase original(1.0f, 2.0f, 3.0f);
 	ThreePhase copy(original);
 
-	EXPECT_FLOAT_EQ(copy.a, 1.0f);
-	EXPECT_FLOAT_EQ(copy.b, 2.0f);
-	EXPECT_FLOAT_EQ(copy.c, 3.0f);
+	EXPECT_FLOAT_EQ(copy.a.Value(), 1.0f);
+	EXPECT_FLOAT_EQ(copy.b.Value(), 2.0f);
+	EXPECT_FLOAT_EQ(copy.c.Value(), 3.0f);
 
 	// Verify independence
-	copy.a = 10.0f;
-	EXPECT_FLOAT_EQ(original.a, 1.0f);
+	copy.a = unimoc::unit::DimensionlessRatio{10.0f};
+	EXPECT_FLOAT_EQ(original.a.Value(), 1.0f);
 }
 
 // Test move constructor
@@ -106,9 +109,9 @@ TEST_F(ThreePhaseTest, MoveConstructor)
 	ThreePhase original(1.0f, 2.0f, 3.0f);
 	ThreePhase moved(std::move(original));
 
-	EXPECT_FLOAT_EQ(moved.a, 1.0f);
-	EXPECT_FLOAT_EQ(moved.b, 2.0f);
-	EXPECT_FLOAT_EQ(moved.c, 3.0f);
+	EXPECT_FLOAT_EQ(moved.a.Value(), 1.0f);
+	EXPECT_FLOAT_EQ(moved.b.Value(), 2.0f);
+	EXPECT_FLOAT_EQ(moved.c.Value(), 3.0f);
 }
 
 // Test copy assignment operator
@@ -119,9 +122,9 @@ TEST_F(ThreePhaseTest, CopyAssignmentOperator)
 
 	copy = original;
 
-	EXPECT_FLOAT_EQ(copy.a, 1.0f);
-	EXPECT_FLOAT_EQ(copy.b, 2.0f);
-	EXPECT_FLOAT_EQ(copy.c, 3.0f);
+	EXPECT_FLOAT_EQ(copy.a.Value(), 1.0f);
+	EXPECT_FLOAT_EQ(copy.b.Value(), 2.0f);
+	EXPECT_FLOAT_EQ(copy.c.Value(), 3.0f);
 }
 
 // Test move assignment operator
@@ -132,9 +135,9 @@ TEST_F(ThreePhaseTest, MoveAssignmentOperator)
 
 	moved = std::move(original);
 
-	EXPECT_FLOAT_EQ(moved.a, 1.0f);
-	EXPECT_FLOAT_EQ(moved.b, 2.0f);
-	EXPECT_FLOAT_EQ(moved.c, 3.0f);
+	EXPECT_FLOAT_EQ(moved.a.Value(), 1.0f);
+	EXPECT_FLOAT_EQ(moved.b.Value(), 2.0f);
+	EXPECT_FLOAT_EQ(moved.c.Value(), 3.0f);
 }
 
 // Test equality operator with equal values
@@ -191,9 +194,9 @@ TEST_F(ThreePhaseTest, AdditionOperator)
 
 	ThreePhase result = phase1 + phase2;
 
-	EXPECT_FLOAT_EQ(result.a, 5.0f);
-	EXPECT_FLOAT_EQ(result.b, 7.0f);
-	EXPECT_FLOAT_EQ(result.c, 9.0f);
+	EXPECT_FLOAT_EQ(result.a.Value(), 5.0f);
+	EXPECT_FLOAT_EQ(result.b.Value(), 7.0f);
+	EXPECT_FLOAT_EQ(result.c.Value(), 9.0f);
 }
 
 // Test addition with zero
@@ -204,9 +207,9 @@ TEST_F(ThreePhaseTest, AdditionWithZero)
 
 	ThreePhase result = phase1 + zero;
 
-	EXPECT_FLOAT_EQ(result.a, 1.0f);
-	EXPECT_FLOAT_EQ(result.b, 2.0f);
-	EXPECT_FLOAT_EQ(result.c, 3.0f);
+	EXPECT_FLOAT_EQ(result.a.Value(), 1.0f);
+	EXPECT_FLOAT_EQ(result.b.Value(), 2.0f);
+	EXPECT_FLOAT_EQ(result.c.Value(), 3.0f);
 }
 
 // Test addition with negative values
@@ -217,9 +220,9 @@ TEST_F(ThreePhaseTest, AdditionWithNegativeValues)
 
 	ThreePhase result = phase1 + phase2;
 
-	EXPECT_FLOAT_EQ(result.a, 0.0f);
-	EXPECT_FLOAT_EQ(result.b, 0.0f);
-	EXPECT_FLOAT_EQ(result.c, 0.0f);
+	EXPECT_FLOAT_EQ(result.a.Value(), 0.0f);
+	EXPECT_FLOAT_EQ(result.b.Value(), 0.0f);
+	EXPECT_FLOAT_EQ(result.c.Value(), 0.0f);
 }
 
 // Test addition commutativity
@@ -242,9 +245,9 @@ TEST_F(ThreePhaseTest, SubtractionOperator)
 
 	ThreePhase result = phase1 - phase2;
 
-	EXPECT_FLOAT_EQ(result.a, 4.0f);
-	EXPECT_FLOAT_EQ(result.b, 5.0f);
-	EXPECT_FLOAT_EQ(result.c, 6.0f);
+	EXPECT_FLOAT_EQ(result.a.Value(), 4.0f);
+	EXPECT_FLOAT_EQ(result.b.Value(), 5.0f);
+	EXPECT_FLOAT_EQ(result.c.Value(), 6.0f);
 }
 
 // Test subtraction with zero
@@ -255,9 +258,9 @@ TEST_F(ThreePhaseTest, SubtractionWithZero)
 
 	ThreePhase result = phase1 - zero;
 
-	EXPECT_FLOAT_EQ(result.a, 1.0f);
-	EXPECT_FLOAT_EQ(result.b, 2.0f);
-	EXPECT_FLOAT_EQ(result.c, 3.0f);
+	EXPECT_FLOAT_EQ(result.a.Value(), 1.0f);
+	EXPECT_FLOAT_EQ(result.b.Value(), 2.0f);
+	EXPECT_FLOAT_EQ(result.c.Value(), 3.0f);
 }
 
 // Test subtraction with itself
@@ -267,9 +270,9 @@ TEST_F(ThreePhaseTest, SubtractionWithSelf)
 
 	ThreePhase result = phase - phase;
 
-	EXPECT_FLOAT_EQ(result.a, 0.0f);
-	EXPECT_FLOAT_EQ(result.b, 0.0f);
-	EXPECT_FLOAT_EQ(result.c, 0.0f);
+	EXPECT_FLOAT_EQ(result.a.Value(), 0.0f);
+	EXPECT_FLOAT_EQ(result.b.Value(), 0.0f);
+	EXPECT_FLOAT_EQ(result.c.Value(), 0.0f);
 }
 
 // Test subtraction with negative values
@@ -280,9 +283,9 @@ TEST_F(ThreePhaseTest, SubtractionWithNegativeValues)
 
 	ThreePhase result = phase1 - phase2;
 
-	EXPECT_FLOAT_EQ(result.a, 2.0f);
-	EXPECT_FLOAT_EQ(result.b, 4.0f);
-	EXPECT_FLOAT_EQ(result.c, 6.0f);
+	EXPECT_FLOAT_EQ(result.a.Value(), 2.0f);
+	EXPECT_FLOAT_EQ(result.b.Value(), 4.0f);
+	EXPECT_FLOAT_EQ(result.c.Value(), 6.0f);
 }
 
 // Test ToArray conversion
@@ -293,9 +296,9 @@ TEST_F(ThreePhaseTest, ToArrayConversion)
 	auto arr = phase.ToArray();
 
 	EXPECT_EQ(arr.size(), 3);
-	EXPECT_FLOAT_EQ(arr[0], 1.5f);
-	EXPECT_FLOAT_EQ(arr[1], 2.5f);
-	EXPECT_FLOAT_EQ(arr[2], 3.5f);
+	EXPECT_FLOAT_EQ(arr[0].Value(), 1.5f);
+	EXPECT_FLOAT_EQ(arr[1].Value(), 2.5f);
+	EXPECT_FLOAT_EQ(arr[2].Value(), 3.5f);
 }
 
 // Test ToArray with zero values
@@ -305,9 +308,9 @@ TEST_F(ThreePhaseTest, ToArrayWithZeros)
 
 	auto arr = phase.ToArray();
 
-	EXPECT_FLOAT_EQ(arr[0], 0.0f);
-	EXPECT_FLOAT_EQ(arr[1], 0.0f);
-	EXPECT_FLOAT_EQ(arr[2], 0.0f);
+	EXPECT_FLOAT_EQ(arr[0].Value(), 0.0f);
+	EXPECT_FLOAT_EQ(arr[1].Value(), 0.0f);
+	EXPECT_FLOAT_EQ(arr[2].Value(), 0.0f);
 }
 
 // Test ToArray with negative values
@@ -317,9 +320,19 @@ TEST_F(ThreePhaseTest, ToArrayWithNegativeValues)
 
 	auto arr = phase.ToArray();
 
-	EXPECT_FLOAT_EQ(arr[0], -1.0f);
-	EXPECT_FLOAT_EQ(arr[1], -2.0f);
-	EXPECT_FLOAT_EQ(arr[2], -3.0f);
+	EXPECT_FLOAT_EQ(arr[0].Value(), -1.0f);
+	EXPECT_FLOAT_EQ(arr[1].Value(), -2.0f);
+	EXPECT_FLOAT_EQ(arr[2].Value(), -3.0f);
+}
+
+TEST_F(ThreePhaseTest, ToStatorReferenceUsesUnitRepresentation)
+{
+	const unimoc::system::ThreePhase<unimoc::unit::Current> phase{1.0f, 2.0f, 3.0f};
+
+	const auto stator = phase.ToStatorReference();
+
+	EXPECT_FLOAT_EQ(stator.alpha, -1.0f);
+	EXPECT_NEAR(stator.beta, -0.577350269f, 1.0e-6f);
 }
 
 // Test constexpr functionality (compile-time evaluation)
@@ -327,9 +340,9 @@ TEST_F(ThreePhaseTest, ConstexprConstructor)
 {
 	constexpr ThreePhase phase(1.0f, 2.0f, 3.0f);
 
-	EXPECT_FLOAT_EQ(phase.a, 1.0f);
-	EXPECT_FLOAT_EQ(phase.b, 2.0f);
-	EXPECT_FLOAT_EQ(phase.c, 3.0f);
+	EXPECT_FLOAT_EQ(phase.a.Value(), 1.0f);
+	EXPECT_FLOAT_EQ(phase.b.Value(), 2.0f);
+	EXPECT_FLOAT_EQ(phase.c.Value(), 3.0f);
 }
 
 // Test constexpr addition
@@ -339,9 +352,9 @@ TEST_F(ThreePhaseTest, ConstexprAddition)
 	constexpr ThreePhase phase2(4.0f, 5.0f, 6.0f);
 	constexpr ThreePhase result = phase1 + phase2;
 
-	EXPECT_FLOAT_EQ(result.a, 5.0f);
-	EXPECT_FLOAT_EQ(result.b, 7.0f);
-	EXPECT_FLOAT_EQ(result.c, 9.0f);
+	EXPECT_FLOAT_EQ(result.a.Value(), 5.0f);
+	EXPECT_FLOAT_EQ(result.b.Value(), 7.0f);
+	EXPECT_FLOAT_EQ(result.c.Value(), 9.0f);
 }
 
 // Test constexpr subtraction
@@ -351,9 +364,9 @@ TEST_F(ThreePhaseTest, ConstexprSubtraction)
 	constexpr ThreePhase phase2(1.0f, 2.0f, 3.0f);
 	constexpr ThreePhase result = phase1 - phase2;
 
-	EXPECT_FLOAT_EQ(result.a, 4.0f);
-	EXPECT_FLOAT_EQ(result.b, 5.0f);
-	EXPECT_FLOAT_EQ(result.c, 6.0f);
+	EXPECT_FLOAT_EQ(result.a.Value(), 4.0f);
+	EXPECT_FLOAT_EQ(result.b.Value(), 5.0f);
+	EXPECT_FLOAT_EQ(result.c.Value(), 6.0f);
 }
 
 // Test constexpr equality
@@ -371,9 +384,9 @@ TEST_F(ThreePhaseTest, LargeValues)
 {
 	ThreePhase phase(1000.0f, 2000.0f, 3000.0f);
 
-	EXPECT_FLOAT_EQ(phase.a, 1000.0f);
-	EXPECT_FLOAT_EQ(phase.b, 2000.0f);
-	EXPECT_FLOAT_EQ(phase.c, 3000.0f);
+	EXPECT_FLOAT_EQ(phase.a.Value(), 1000.0f);
+	EXPECT_FLOAT_EQ(phase.b.Value(), 2000.0f);
+	EXPECT_FLOAT_EQ(phase.c.Value(), 3000.0f);
 }
 
 // Test with very small values
@@ -381,9 +394,9 @@ TEST_F(ThreePhaseTest, SmallValues)
 {
 	ThreePhase phase(0.001f, 0.002f, 0.003f);
 
-	EXPECT_FLOAT_EQ(phase.a, 0.001f);
-	EXPECT_FLOAT_EQ(phase.b, 0.002f);
-	EXPECT_FLOAT_EQ(phase.c, 0.003f);
+	EXPECT_FLOAT_EQ(phase.a.Value(), 0.001f);
+	EXPECT_FLOAT_EQ(phase.b.Value(), 0.002f);
+	EXPECT_FLOAT_EQ(phase.c.Value(), 0.003f);
 }
 
 // Test addition and subtraction chaining
@@ -395,9 +408,9 @@ TEST_F(ThreePhaseTest, ArithmeticChaining)
 
 	ThreePhase result = phase1 + phase2 - phase3;
 
-	EXPECT_FLOAT_EQ(result.a, -2.0f);
-	EXPECT_FLOAT_EQ(result.b, -1.0f);
-	EXPECT_FLOAT_EQ(result.c, 0.0f);
+	EXPECT_FLOAT_EQ(result.a.Value(), -2.0f);
+	EXPECT_FLOAT_EQ(result.b.Value(), -1.0f);
+	EXPECT_FLOAT_EQ(result.c.Value(), 0.0f);
 }
 
 // Test multiple operations
@@ -408,21 +421,21 @@ TEST_F(ThreePhaseTest, MultipleOperations)
 
 	// Add
 	ThreePhase sum = phase1 + phase2;
-	EXPECT_FLOAT_EQ(sum.a, 15.0f);
-	EXPECT_FLOAT_EQ(sum.b, 30.0f);
-	EXPECT_FLOAT_EQ(sum.c, 45.0f);
+	EXPECT_FLOAT_EQ(sum.a.Value(), 15.0f);
+	EXPECT_FLOAT_EQ(sum.b.Value(), 30.0f);
+	EXPECT_FLOAT_EQ(sum.c.Value(), 45.0f);
 
 	// Subtract
 	ThreePhase diff = phase1 - phase2;
-	EXPECT_FLOAT_EQ(diff.a, 5.0f);
-	EXPECT_FLOAT_EQ(diff.b, 10.0f);
-	EXPECT_FLOAT_EQ(diff.c, 15.0f);
+	EXPECT_FLOAT_EQ(diff.a.Value(), 5.0f);
+	EXPECT_FLOAT_EQ(diff.b.Value(), 10.0f);
+	EXPECT_FLOAT_EQ(diff.c.Value(), 15.0f);
 
 	// Convert to array
 	auto arr = sum.ToArray();
-	EXPECT_FLOAT_EQ(arr[0], 15.0f);
-	EXPECT_FLOAT_EQ(arr[1], 30.0f);
-	EXPECT_FLOAT_EQ(arr[2], 45.0f);
+	EXPECT_FLOAT_EQ(arr[0].Value(), 15.0f);
+	EXPECT_FLOAT_EQ(arr[1].Value(), 30.0f);
+	EXPECT_FLOAT_EQ(arr[2].Value(), 45.0f);
 }
 
 // Test floating point precision edge cases
@@ -433,8 +446,8 @@ TEST_F(ThreePhaseTest, FloatingPointPrecision)
 
 	// Due to floating point precision, these might not be exactly equal
 	// but should be very close
-	EXPECT_NEAR(phase1.a, phase2.a, 1e-6f);
-	EXPECT_FLOAT_EQ(phase1.b, phase2.b);
+	EXPECT_NEAR(phase1.a.Value(), phase2.a.Value(), 1e-6f);
+	EXPECT_FLOAT_EQ(phase1.b.Value(), phase2.b.Value());
 }
 
 // Test that operations don't modify original objects
@@ -447,19 +460,19 @@ TEST_F(ThreePhaseTest, OperationsImmutability)
 	ThreePhase diff = phase1 - phase2;
 
 	// Original objects should remain unchanged
-	EXPECT_FLOAT_EQ(phase1.a, 1.0f);
-	EXPECT_FLOAT_EQ(phase1.b, 2.0f);
-	EXPECT_FLOAT_EQ(phase1.c, 3.0f);
+	EXPECT_FLOAT_EQ(phase1.a.Value(), 1.0f);
+	EXPECT_FLOAT_EQ(phase1.b.Value(), 2.0f);
+	EXPECT_FLOAT_EQ(phase1.c.Value(), 3.0f);
 
-	EXPECT_FLOAT_EQ(phase2.a, 4.0f);
-	EXPECT_FLOAT_EQ(phase2.b, 5.0f);
-	EXPECT_FLOAT_EQ(phase2.c, 6.0f);
+	EXPECT_FLOAT_EQ(phase2.a.Value(), 4.0f);
+	EXPECT_FLOAT_EQ(phase2.b.Value(), 5.0f);
+	EXPECT_FLOAT_EQ(phase2.c.Value(), 6.0f);
 
-	EXPECT_FLOAT_EQ(sum.a, 5.0f);
-	EXPECT_FLOAT_EQ(sum.b, 7.0f);
-	EXPECT_FLOAT_EQ(sum.c, 9.0f);
+	EXPECT_FLOAT_EQ(sum.a.Value(), 5.0f);
+	EXPECT_FLOAT_EQ(sum.b.Value(), 7.0f);
+	EXPECT_FLOAT_EQ(sum.c.Value(), 9.0f);
 
-	EXPECT_FLOAT_EQ(diff.a, -3.0f);
-	EXPECT_FLOAT_EQ(diff.b, -3.0f);
-	EXPECT_FLOAT_EQ(diff.c, -3.0f);
+	EXPECT_FLOAT_EQ(diff.a.Value(), -3.0f);
+	EXPECT_FLOAT_EQ(diff.b.Value(), -3.0f);
+	EXPECT_FLOAT_EQ(diff.c.Value(), -3.0f);
 }

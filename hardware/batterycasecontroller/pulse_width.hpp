@@ -65,7 +65,7 @@ initialize(void) noexcept;
  * @param duties The phase duties to set, represented as a ThreePhase structure.
  */
 void
-setPhaseDuties(const system::ThreePhase& duties) noexcept;
+setPhaseDuties(const system::ThreePhase<unit::DimensionlessRatio>& duties) noexcept;
 
 }  // namespace pulse_width
 }  // namespace hardware

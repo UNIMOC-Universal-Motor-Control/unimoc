@@ -37,19 +37,21 @@ static bool initializeStub()
 	return true;
 }
 
-static system::ThreePhase getPhaseCurrentsStub()
+static system::ThreePhase<unit::Current> getPhaseCurrentsStub()
 {
 	// Stub: Return zero currents
-	return system::ThreePhase{0.0f, 0.0f, 0.0f};
+	return system::ThreePhase<unit::Current>{
+		unit::Current{0.0f}, unit::Current{0.0f}, unit::Current{0.0f}};
 }
 
-static system::ThreePhase getPhaseVoltagesStub()
+static system::ThreePhase<unit::Voltage> getPhaseVoltagesStub()
 {
 	// Stub: Return zero voltages
-	return system::ThreePhase{0.0f, 0.0f, 0.0f};
+	return system::ThreePhase<unit::Voltage>{
+		unit::Voltage{0.0f}, unit::Voltage{0.0f}, unit::Voltage{0.0f}};
 }
 
-static void setPhaseDutysStub(system::ThreePhase duties)
+static void setPhaseDutysStub(system::ThreePhase<unit::DimensionlessRatio> duties)
 {
 	// Stub: Accept duties but do nothing
 	(void)duties;

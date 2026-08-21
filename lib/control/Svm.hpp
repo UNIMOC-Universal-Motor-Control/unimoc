@@ -77,7 +77,7 @@ struct Svm
      * @param v  Voltage vector with alpha/beta components normalised by V_dc.
      * @return   Three-phase duty cycles [0, 1] clamped to [duty_min, duty_max].
      */
-    [[nodiscard]] constexpr system::ThreePhase<T>
+    [[nodiscard]] constexpr system::ThreePhase<unit::DimensionlessRatio>
     calculate(const system::StatorReference<T>& v) const noexcept
     {
         // --- Inverse Clarke (amplitude-invariant) ---
@@ -106,7 +106,10 @@ struct Svm
         db = std::clamp(db, duty_min, duty_max);
         dc = std::clamp(dc, duty_min, duty_max);
 
-        return system::ThreePhase<T>{da, db, dc};
+        return system::ThreePhase<unit::DimensionlessRatio>{
+            unit::DimensionlessRatio{da},
+            unit::DimensionlessRatio{db},
+            unit::DimensionlessRatio{dc}};
     }
 };
 

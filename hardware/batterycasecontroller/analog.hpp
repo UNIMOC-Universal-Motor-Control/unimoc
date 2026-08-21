@@ -94,14 +94,14 @@ initialize(void) noexcept;
  * @param phase The phase to read the current from (0 for A, 1 for B, 2 for C).
  * @return The current value in Amperes.
  */
-system::ThreePhase getPhaseCurrents(void) noexcept;
+system::ThreePhase<unit::Current> getPhaseCurrents(void) noexcept;
 
 /**
  * @brief Reads the voltage from the specified phase.
  * @param phase The phase to read the voltage from (0 for A, 1 for B, 2 for C).
  * @return The voltage value in Volts.
  */
-system::ThreePhase getPhaseVoltages(void) noexcept;
+system::ThreePhase<unit::Voltage> getPhaseVoltages(void) noexcept;
 
 /**
  * @brief Reads the DC link voltage.
@@ -131,7 +131,7 @@ float getBridgeTemperature(void) noexcept;
  * @brief Sets the phase duties for the motor control.
  * @param duties The phase duties to set, represented as a ThreePhase structure.
  */
-void setPhaseDuties(const system::ThreePhase& duties) noexcept;
+void setPhaseDuties(const system::ThreePhase<unit::DimensionlessRatio>& duties) noexcept;
 
 }  // namespace analog
 }  // namespace hardware
