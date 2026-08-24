@@ -96,7 +96,7 @@ Before finishing a change:
 1. Build and run the focused tests for the active refactor validation scope;
 	 use the full hosted workflow only when the user expands the scope or the
 	 change requires cross-library validation.
-2. Run clang-tidy for changes that affect C++ diagnostics or public headers.
+2. Run clang-tidy for changes that affect C++ diagnostics or public headers. Fix issues in the change or add a `NOLINT` comment with a justification.
 3. Check the diff for accidental changes to generated files, build output, or
 	 submodules.
 4. Update `README.md` when user-visible behavior, configuration, build steps,

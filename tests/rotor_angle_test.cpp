@@ -30,8 +30,8 @@ constexpr float kPi = std::numbers::pi_v<float>;
 constexpr float kTwoPi = 2.0F * kPi;
 constexpr std::int64_t kCountsPerRevolution = 0x1'0000'0000LL;
 
-/// Sine and cosine tolerance of the 512 entry cubic Hermite table.
-constexpr float kTrigTolerance = 1.0e-5F;
+/// Sine and cosine tolerance of the 512 entry linearly interpolated table.
+constexpr float kTrigTolerance = 2.0e-5F;
 }  // namespace
 
 // Compile-time usability of the whole interface.
