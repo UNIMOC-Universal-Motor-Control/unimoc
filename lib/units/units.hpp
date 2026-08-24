@@ -83,7 +83,7 @@ class Unit {
    * @brief Returns the stored numeric value.
    * @return The value expressed in this unit's period.
    */
-  constexpr Rep Value() const { return val_; }
+  [[nodiscard]] constexpr Rep Value() const { return val_; }
 
   /**
    * @brief Converts this unit to another unit of the same type but with a
@@ -942,84 +942,84 @@ constexpr Unit<float, std::milli, InductanceTag> operator""_mH(unsigned long lon
  * @tparam T Unit type whose `tag` member is inspected.
  */
 template <typename T>
-struct is_angle : std::is_base_of<AngleTag, typename T::tag> {};
+struct IsAngle : std::is_base_of<AngleTag, typename T::tag> {};
 
 /**
  * @brief Tests whether a type carries the angular-velocity tag.
  * @tparam T Unit type whose `tag` member is inspected.
  */
 template <typename T>
-struct is_angular_velocity : std::is_base_of<AngularVelocityTag, typename T::tag> {};
+struct IsAngularVelocity : std::is_base_of<AngularVelocityTag, typename T::tag> {};
 
 /**
  * @brief Tests whether a type carries the torque tag.
  * @tparam T Unit type whose `tag` member is inspected.
  */
 template <typename T>
-struct is_torque : std::is_base_of<TorqueTag, typename T::tag> {};
+struct IsTorque : std::is_base_of<TorqueTag, typename T::tag> {};
 
 /**
  * @brief Tests whether a type carries the angular-acceleration tag.
  * @tparam T Unit type whose `tag` member is inspected.
  */
 template <typename T>
-struct is_angular_acceleration : std::is_base_of<AngularAccelerationTag, typename T::tag> {};
+struct IsAngularAcceleration : std::is_base_of<AngularAccelerationTag, typename T::tag> {};
 
 /**
  * @brief Tests whether a type carries the current tag.
  * @tparam T Unit type whose `tag` member is inspected.
  */
 template <typename T>
-struct is_current : std::is_base_of<CurrentTag, typename T::tag> {};
+struct IsCurrent : std::is_base_of<CurrentTag, typename T::tag> {};
 
 /**
  * @brief Tests whether a type carries the voltage tag.
  * @tparam T Unit type whose `tag` member is inspected.
  */
 template <typename T>
-struct is_voltage : std::is_base_of<VoltageTag, typename T::tag> {};
+struct IsVoltage : std::is_base_of<VoltageTag, typename T::tag> {};
 
 /**
  * @brief Tests whether a type carries the power tag.
  * @tparam T Unit type whose `tag` member is inspected.
  */
 template <typename T>
-struct is_power : std::is_base_of<PowerTag, typename T::tag> {};
+struct IsPower : std::is_base_of<PowerTag, typename T::tag> {};
 
 /**
  * @brief Tests whether a type carries the magnetic-flux tag.
  * @tparam T Unit type whose `tag` member is inspected.
  */
 template <typename T>
-struct is_magnetic_flux : std::is_base_of<MagneticFluxTag, typename T::tag> {};
+struct IsMagneticFlux : std::is_base_of<MagneticFluxTag, typename T::tag> {};
 
 /**
  * @brief Tests whether a type carries the resistance tag.
  * @tparam T Unit type whose `tag` member is inspected.
  */
 template <typename T>
-struct is_resistance : std::is_base_of<ResistanceTag, typename T::tag> {};
+struct IsResistance : std::is_base_of<ResistanceTag, typename T::tag> {};
 
 /**
  * @brief Tests whether a type carries the inductance tag.
  * @tparam T Unit type whose `tag` member is inspected.
  */
 template <typename T>
-struct is_inductance : std::is_base_of<InductanceTag, typename T::tag> {};
+struct IsInductance : std::is_base_of<InductanceTag, typename T::tag> {};
 
 /**
  * @brief Tests whether a type carries the time tag.
  * @tparam T Unit type whose `tag` member is inspected.
  */
 template <typename T>
-struct is_time : std::is_base_of<TimeTag, typename T::tag> {};
+struct IsTime : std::is_base_of<TimeTag, typename T::tag> {};
 
 /**
  * @brief Tests whether a type carries the frequency tag.
  * @tparam T Unit type whose `tag` member is inspected.
  */
 template <typename T>
-struct is_frequency : std::is_base_of<FrequencyTag, typename T::tag> {};
+struct IsFrequency : std::is_base_of<FrequencyTag, typename T::tag> {};
 
 /**
  * @brief Computes a common unit type for two units with the same tag.
@@ -1030,11 +1030,11 @@ struct is_frequency : std::is_base_of<FrequencyTag, typename T::tag> {};
  * operands. The tag must match exactly.
  */
 template <typename T1, typename T2>
-struct common_unit_type {
+struct CommonUnitType {
   static_assert(std::is_same_v<typename T1::tag, typename T2::tag>, "Units must have the same tag to find common type.");
   /// Common unit type derived from the two input representations and periods.
-  using type = Unit<typename std::common_type<typename T1::representation, typename T2::representation>::type,
-                    typename std::common_type<typename T1::period, typename T2::period>::type,
+  using type = Unit<std::common_type_t<typename T1::representation, typename T2::representation>,
+                    std::common_type_t<typename T1::period, typename T2::period>,
                     typename T1::tag>;
 };
 
@@ -1044,7 +1044,7 @@ struct common_unit_type {
  * @tparam T2 Second unit type.
  */
 template <typename T1, typename T2>
-using common_unit_type_t = typename common_unit_type<T1, T2>::type;
+using common_unit_type_t = CommonUnitType<T1, T2>::type;
 
 /**
  * @brief Computes a common type for two units with different tags.
@@ -1055,11 +1055,10 @@ using common_unit_type_t = typename common_unit_type<T1, T2>::type;
  * operands do not identify one physical quantity.
  */
 template <typename T1, typename T2>
-struct common_unit_type_different_tags {
+struct CommonUnitTypeDifferentTags {
   /// Common base-period type with no physical-unit tag.
-  using type =
-      Unit<typename std::common_type<typename T1::representation, typename T2::representation>::type, std::ratio<1>, void>;  // Use void tag for mixed
-                                                                                                                             // types
+  using type = Unit<std::common_type_t<typename T1::representation, typename T2::representation>, std::ratio<1>, void>;  // Use void tag for mixed
+                                                                                                                         // types
 };
 
 /**
@@ -1068,18 +1067,18 @@ struct common_unit_type_different_tags {
  * @tparam T2 Second unit type.
  */
 template <typename T1, typename T2>
-using common_unit_type_different_tags_t = typename common_unit_type_different_tags<T1, T2>::type;
+using common_unit_type_different_tags_t = CommonUnitTypeDifferentTags<T1, T2>::type;
 
 /**
  * @brief Computes a common unit type for matching or different tags.
  * @tparam T1 First unit type.
  * @tparam T2 Second unit type.
  *
- * Matching tags use common_unit_type; different tags use
- * common_unit_type_different_tags.
+ * Matching tags use CommonUnitType; different tags use
+ * CommonUnitTypeDifferentTags.
  */
 template <typename T1, typename T2>
-struct common_unit_type_mixed {
+struct CommonUnitTypeMixed {
   /// Common type selected according to whether the input tags match.
   using type =
       std::conditional_t<std::is_same_v<typename T1::tag, typename T2::tag>, common_unit_type_t<T1, T2>, common_unit_type_different_tags_t<T1, T2>>;
@@ -1091,6 +1090,6 @@ struct common_unit_type_mixed {
  * @tparam T2 Second unit type.
  */
 template <typename T1, typename T2>
-using common_unit_type_mixed_t = typename common_unit_type_mixed<T1, T2>::type;
+using common_unit_type_mixed_t = CommonUnitTypeMixed<T1, T2>::type;
 
 }  // namespace unimoc::unit

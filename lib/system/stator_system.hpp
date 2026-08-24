@@ -45,7 +45,7 @@ template <unimoc::unit::UnitLike T = unimoc::unit::DimensionlessRatio>
 struct Stator
 {
 	/// Unit representation type used by each component.
-	using Representation = typename T::representation;
+	using Representation = T::representation;
 
 	/// Alpha-axis component.
 	T alpha;
@@ -70,43 +70,6 @@ struct Stator
 	constexpr Stator(Representation alpha_in, Representation beta_in)
 		: alpha(T{alpha_in}), beta(T{beta_in})
 	{}
-
-	/** @brief Copies a stator vector. */
-	constexpr Stator(const Stator &other) : alpha(other.alpha), beta(other.beta) {}
-	/** @brief Moves a stator vector. */
-	constexpr Stator(Stator &&other) noexcept : alpha(other.alpha), beta(other.beta) {}
-
-	/**
-	 * @brief Copies the alpha and beta values from another vector.
-	 * @param other Vector to copy.
-	 * @return This vector after assignment.
-	 */
-	constexpr Stator &
-	operator=(const Stator &other)
-	{
-		if (this != &other)
-		{
-			alpha = other.alpha;
-			beta = other.beta;
-		}
-		return *this;
-	}
-
-	/**
-	 * @brief Moves the alpha and beta values from another vector.
-	 * @param other Vector to move.
-	 * @return This vector after assignment.
-	 */
-	constexpr Stator &
-	operator=(Stator &&other) noexcept
-	{
-		if (this != &other)
-		{
-			alpha = other.alpha;
-			beta = other.beta;
-		}
-		return *this;
-	}
 
 	/**
 	 * @brief Compares two stator vectors for equality.
@@ -198,7 +161,7 @@ struct Stator
 	 * @brief Returns the alpha and beta values in that order.
 	 * @return An array containing alpha and beta.
 	 */
-	constexpr auto
+	[[nodiscard]] constexpr auto
 	ToArray() const noexcept -> std::array<T, 2>
 	{
 		return {alpha, beta};
@@ -208,7 +171,7 @@ struct Stator
 	 * @brief Returns the Euclidean length of the stator vector.
 	 * @return The vector length in the component unit.
 	 */
-	constexpr T
+	[[nodiscard]] constexpr T
 	Length() const noexcept
 	{
 		return T{std::sqrt((alpha.Value() * alpha.Value()) + (beta.Value() * beta.Value()))};
@@ -223,12 +186,12 @@ struct Stator
 	 * with a limit squared. The result has squared component units, so it is
 	 * returned as the representation rather than as `T`.
 	 */
-	constexpr Representation
+	[[nodiscard]] constexpr Representation
 	LengthSquared() const noexcept
 	{
-		const Representation alpha_value = alpha.Value();
-		const Representation beta_value = beta.Value();
-		return (alpha_value * alpha_value) + (beta_value * beta_value);
+		const Representation kAlphaValue = alpha.Value();
+		const Representation kBetaValue = beta.Value();
+		return (kAlphaValue * kAlphaValue) + (kBetaValue * kBetaValue);
 	}
 
 	/**
@@ -236,14 +199,14 @@ struct Stator
 	 * @param angle Electrical rotor angle supplying sine and cosine.
 	 * @return The vector in the rotating d/q reference frame.
 	 */
-	constexpr Rotor<T>
+	[[nodiscard]] constexpr Rotor<T>
 	ToRotor(const RotorAngle &angle) const noexcept
 	{
-		const Representation sin = angle.Sin().Value();
-		const Representation cos = angle.Cos().Value();
+		const Representation kSin = angle.Sin().Value();
+		const Representation kCos = angle.Cos().Value();
 
-		return Rotor<T>(T{(alpha.Value() * cos) + (beta.Value() * sin)},
-								 T{(beta.Value() * cos) - (alpha.Value() * sin)});
+		return Rotor<T>(T{(alpha.Value() * kCos) + (beta.Value() * kSin)},
+					 T{(beta.Value() * kCos) - (alpha.Value() * kSin)});
 	}
 };
 

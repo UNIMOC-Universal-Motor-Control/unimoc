@@ -62,11 +62,11 @@ inline constexpr float kRadiansPerRevolution = 2.0F * std::numbers::pi_v<float>;
  * @return The sine of @p angleInRadians.
  */
 constexpr double TaylorSin(double angleInRadians) noexcept {
-  const double x2 = angleInRadians * angleInRadians;
+  const double kX2 = angleInRadians * angleInRadians;
   double term = angleInRadians;
   double sum = angleInRadians;
   for (int order = 1; order <= 12; ++order) {
-    term *= -x2 / static_cast<double>((2 * order) * ((2 * order) + 1));
+    term *= -kX2 / static_cast<double>((2 * order) * ((2 * order) + 1));
     sum += term;
   }
   return sum;
@@ -78,11 +78,11 @@ constexpr double TaylorSin(double angleInRadians) noexcept {
  * @return The cosine of @p angleInRadians.
  */
 constexpr double TaylorCos(double angleInRadians) noexcept {
-  const double x2 = angleInRadians * angleInRadians;
+  const double kX2 = angleInRadians * angleInRadians;
   double term = 1.0;
   double sum = 1.0;
   for (int order = 1; order <= 12; ++order) {
-    term *= -x2 / static_cast<double>(((2 * order) - 1) * (2 * order));
+    term *= -kX2 / static_cast<double>(((2 * order) - 1) * (2 * order));
     sum += term;
   }
   return sum;
@@ -96,20 +96,20 @@ constexpr double TaylorCos(double angleInRadians) noexcept {
 constexpr double SinTableEntry(std::size_t index) noexcept {
   constexpr double kPi = std::numbers::pi_v<double>;
 
-  std::size_t sinTableIndex = index % kSinTableSize;
+  std::size_t sin_table_index = index % kSinTableSize;
   bool negate = false;
 
-  if (sinTableIndex >= kSinTableSize / 2U) {
-    sinTableIndex -= kSinTableSize / 2U;
+  if (sin_table_index >= kSinTableSize / 2U) {
+    sin_table_index -= kSinTableSize / 2U;
     negate = true;
   }
-  if (sinTableIndex > kSinTableSize / 4U) {
-    sinTableIndex = (kSinTableSize / 2U) - sinTableIndex;
+  if (sin_table_index > kSinTableSize / 4U) {
+    sin_table_index = (kSinTableSize / 2U) - sin_table_index;
   }
 
-  const double angleRadians = (2.0 * kPi * static_cast<double>(sinTableIndex)) / static_cast<double>(kSinTableSize);
-  const double computedAngleValue = (sinTableIndex <= kSinTableSize / 8U) ? TaylorSin(angleRadians) : TaylorCos((kPi / 2.0) - angleRadians);
-  return negate ? -computedAngleValue : computedAngleValue;
+  const double kAngleRadians = (2.0 * kPi * static_cast<double>(sin_table_index)) / static_cast<double>(kSinTableSize);
+  const double kComputedAngleValue = (sin_table_index <= kSinTableSize / 8U) ? TaylorSin(kAngleRadians) : TaylorCos((kPi / 2.0) - kAngleRadians);
+  return negate ? -kComputedAngleValue : kComputedAngleValue;
 }
 
 /// Sine over one full revolution plus a quarter-revolution tail for cosine lookup.
@@ -123,12 +123,14 @@ inline constexpr std::array<float, kSinTableSize + kSinTableQuarterSize + 1U> kS
 
 /**
  * @brief Interpolates a table segment linearly.
- * @param f1 Function value at the start of the segment.
- * @param f2 Function value at the end of the segment.
- * @param h Normalised position inside the segment, in [0, 1).
+ * @param functionValueStart Function value at the start of the segment.
+ * @param functionValueEnd Function value at the end of the segment.
+ * @param interpolationFactor Normalised position inside the segment, in [0, 1).
  * @return The interpolated function value.
  */
-constexpr float LinearInterpolate(float f1, float f2, float h) noexcept { return f1 + (h * (f2 - f1)); }
+constexpr float LinearInterpolate(float functionValueStart, float functionValueEnd, float interpolationFactor) noexcept {
+  return functionValueStart + (interpolationFactor * (functionValueEnd - functionValueStart));
+}
 
 /**
  * @brief Rounds a float to the nearest integer, away from zero on ties.
@@ -190,10 +192,10 @@ class RotorAngle {
    * compound, because the phase itself is accumulated in integer counts.
    */
   constexpr void Advance(unit::Angle offset) noexcept {
-    const float revolutions = offset.Value() * detail::kRevolutionsPerRadian;
-    std::int64_t carry = static_cast<std::int64_t>(revolutions);
-    const float fraction = revolutions - static_cast<float>(carry);
-    std::int64_t counts = detail::RoundToInt64(fraction * detail::kCountsPerRevolutionF);
+    const auto kRevolutions = offset.Value() * detail::kRevolutionsPerRadian;
+    auto carry = static_cast<std::int64_t>(kRevolutions);
+    const float kFraction = kRevolutions - static_cast<float>(carry);
+    std::int64_t counts = detail::RoundToInt64(kFraction * detail::kCountsPerRevolutionF);
 
     // Keep the residual within half a revolution so it fits a single wrapping add.
     if (counts >= detail::kCountsPerHalfRevolution) {
@@ -213,13 +215,13 @@ class RotorAngle {
    * @brief Returns the angle inside the current revolution.
    * @return The angle in [-pi, pi).
    */
-  constexpr unit::Angle AngleInRevolution() const noexcept { return unit::Angle(static_cast<float>(raw_) * detail::kRadiansPerCount); }
+  [[nodiscard]] constexpr unit::Angle AngleInRevolution() const noexcept { return unit::Angle(static_cast<float>(raw_) * detail::kRadiansPerCount); }
 
   /**
    * @brief Returns the number of completed revolutions.
    * @return The signed revolution count.
    */
-  constexpr std::int32_t Revolutions() const noexcept { return revolutions_; }
+  [[nodiscard]] constexpr std::int32_t Revolutions() const noexcept { return revolutions_; }
 
   /**
    * @brief Returns the absolute angle including all completed revolutions.
@@ -228,7 +230,7 @@ class RotorAngle {
    * @note This getter is a float convenience. It loses resolution once the revolution
    * count grows large; use AbsoluteRaw() when exactness is required.
    */
-  constexpr unit::Angle AbsoluteAngle() const noexcept {
+  [[nodiscard]] constexpr unit::Angle AbsoluteAngle() const noexcept {
     return unit::Angle((static_cast<float>(revolutions_) * detail::kRadiansPerRevolution) + AngleInRevolution().Value());
   }
 
@@ -236,13 +238,13 @@ class RotorAngle {
    * @brief Returns the Q1.31 phase inside the current revolution.
    * @return The raw fixed-point phase.
    */
-  constexpr std::int32_t Raw() const noexcept { return raw_; }
+  [[nodiscard]] constexpr std::int32_t Raw() const noexcept { return raw_; }
 
   /**
    * @brief Returns the exact absolute position in Q1.31 counts.
    * @return The absolute position, counting 2^32 counts per revolution.
    */
-  constexpr std::int64_t AbsoluteRaw() const noexcept {
+  [[nodiscard]] constexpr std::int64_t AbsoluteRaw() const noexcept {
     return (static_cast<std::int64_t>(revolutions_) * detail::kCountsPerRevolution) + static_cast<std::int64_t>(raw_);
   }
 
@@ -250,13 +252,13 @@ class RotorAngle {
    * @brief Returns the sine of the angle inside the current revolution.
    * @return The interpolated sine value.
    */
-  constexpr unit::DimensionlessRatio Sin() const noexcept { return sin_; }
+  [[nodiscard]] constexpr unit::DimensionlessRatio Sin() const noexcept { return sin_; }
 
   /**
    * @brief Returns the cosine of the angle inside the current revolution.
    * @return The interpolated cosine value.
    */
-  constexpr unit::DimensionlessRatio Cos() const noexcept { return cos_; }
+  [[nodiscard]] constexpr unit::DimensionlessRatio Cos() const noexcept { return cos_; }
 
   /**
    * @brief Advances this angle by an offset.
@@ -306,8 +308,8 @@ class RotorAngle {
    * @return The difference in (-pi, pi], ignoring the revolution counters.
    */
   constexpr unit::Angle operator-(const RotorAngle& other) const noexcept {
-    const std::int32_t delta = static_cast<std::int32_t>(static_cast<std::uint32_t>(raw_) - static_cast<std::uint32_t>(other.raw_));
-    return unit::Angle(static_cast<float>(delta) * detail::kRadiansPerCount);
+    const auto kDelta = static_cast<std::int32_t>(static_cast<std::uint32_t>(raw_) - static_cast<std::uint32_t>(other.raw_));
+    return unit::Angle(static_cast<float>(kDelta) * detail::kRadiansPerCount);
   }
 
   /**
@@ -331,22 +333,27 @@ class RotorAngle {
    */
   constexpr void AddRaw(std::int32_t delta) noexcept {
     // Wrapping is done unsigned because signed overflow is undefined behaviour.
-    const std::int32_t next = static_cast<std::int32_t>(static_cast<std::uint32_t>(raw_) + static_cast<std::uint32_t>(delta));
-    if (((raw_ ^ next) & (delta ^ next)) < 0) {
+    const auto kNext = static_cast<std::int32_t>(static_cast<std::uint32_t>(raw_) + static_cast<std::uint32_t>(delta));
+    if (((raw_ ^ kNext) & (delta ^ kNext)) < 0) {
       revolutions_ += (delta >= 0) ? 1 : -1;
     }
-    raw_ = next;
+    raw_ = kNext;
   }
 
   /** @brief Recomputes sine and cosine from the lookup table. */
   constexpr void UpdateSinCos() noexcept {
-    const std::uint32_t phase = static_cast<std::uint32_t>(raw_);
-    const std::size_t table_index = phase >> detail::kSinTableFractionBits;
-    const float h = static_cast<float>(phase & detail::kSinTableFractionMask) * detail::kSinTableFractionScale;
-    const float* const table = detail::kSinTable.data() + table_index;
+    const auto kPhase = static_cast<std::uint32_t>(raw_);
+    const auto kTableIndex = kPhase >> detail::kSinTableFractionBits;
+    const float kInterpolationFactor = static_cast<float>(kPhase & detail::kSinTableFractionMask) * detail::kSinTableFractionScale;
+    const float* const kTable = detail::kSinTable.data() + kTableIndex;
 
-    sin_ = unit::DimensionlessRatio(detail::LinearInterpolate(table[0U], table[1U], h));
-    cos_ = unit::DimensionlessRatio(detail::LinearInterpolate(table[detail::kSinTableQuarterSize], table[detail::kSinTableQuarterSize + 1U], h));
+    const float kSinValue = detail::LinearInterpolate(kTable[0U], kTable[1U], kInterpolationFactor);
+    const float kCosValue =
+        detail::LinearInterpolate(kTable[detail::kSinTableQuarterSize], kTable[detail::kSinTableQuarterSize + 1U], kInterpolationFactor);
+    const float kNormalization = 1.5F - (0.5F * ((kSinValue * kSinValue) + (kCosValue * kCosValue)));
+
+    sin_ = unit::DimensionlessRatio(kSinValue * kNormalization);
+    cos_ = unit::DimensionlessRatio(kCosValue * kNormalization);
   }
 
   /// Q1.31 phase inside the current revolution.

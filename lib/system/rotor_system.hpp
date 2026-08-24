@@ -42,7 +42,7 @@ template <unimoc::unit::UnitLike T = unimoc::unit::DimensionlessRatio>
 struct Rotor
 {
 	/// Unit representation type used by each component.
-	using Representation = typename T::representation;
+	using Representation = T::representation;
 
 	/// Direct-axis component.
 	T d;
@@ -67,43 +67,6 @@ struct Rotor
 	constexpr Rotor(Representation d_in, Representation q_in)
 		: d(T{d_in}), q(T{q_in})
 	{}
-
-	/** @brief Copies a rotor vector. */
-	constexpr Rotor(const Rotor &other) : d(other.d), q(other.q) {}
-	/** @brief Moves a rotor vector. */
-	constexpr Rotor(Rotor &&other) noexcept : d(other.d), q(other.q) {}
-
-	/**
-	 * @brief Copies the d and q values from another vector.
-	 * @param other Vector to copy.
-	 * @return This vector after assignment.
-	 */
-	constexpr Rotor &
-	operator=(const Rotor &other)
-	{
-		if (this != &other)
-		{
-			d = other.d;
-			q = other.q;
-		}
-		return *this;
-	}
-
-	/**
-	 * @brief Moves the d and q values from another vector.
-	 * @param other Vector to move.
-	 * @return This vector after assignment.
-	 */
-	constexpr Rotor &
-	operator=(Rotor &&other) noexcept
-	{
-		if (this != &other)
-		{
-			d = other.d;
-			q = other.q;
-		}
-		return *this;
-	}
 
 	/**
 	 * @brief Compares two rotor vectors for equality.
@@ -195,7 +158,7 @@ struct Rotor
 	 * @brief Returns the d and q values in that order.
 	 * @return An array containing d and q.
 	 */
-	constexpr auto
+	[[nodiscard]] constexpr auto
 	ToArray() const noexcept -> std::array<T, 2>
 	{
 		return {d, q};
@@ -205,7 +168,7 @@ struct Rotor
 	 * @brief Returns the Euclidean length of the rotor vector.
 	 * @return The vector length in the component unit.
 	 */
-	constexpr T
+	[[nodiscard]] constexpr T
 	Length() const noexcept
 	{
 		return T{std::sqrt((d.Value() * d.Value()) + (q.Value() * q.Value()))};
@@ -220,12 +183,12 @@ struct Rotor
 	 * with a limit squared. The result has squared component units, so it is
 	 * returned as the representation rather than as `T`.
 	 */
-	constexpr Representation
+	[[nodiscard]] constexpr Representation
 	LengthSquared() const noexcept
 	{
-		const Representation d_value = d.Value();
-		const Representation q_value = q.Value();
-		return (d_value * d_value) + (q_value * q_value);
+		const Representation kDValue = d.Value();
+		const Representation kQValue = q.Value();
+		return (kDValue * kDValue) + (kQValue * kQValue);
 	}
 
 	/**
@@ -233,14 +196,14 @@ struct Rotor
 	 * @param angle Electrical rotor angle supplying sine and cosine.
 	 * @return The vector in the stationary alpha/beta reference frame.
 	 */
-	constexpr Stator<T>
+	[[nodiscard]] constexpr Stator<T>
 	ToStator(const RotorAngle &angle) const noexcept
 	{
-		const Representation sin = angle.Sin().Value();
-		const Representation cos = angle.Cos().Value();
+		const Representation kSin = angle.Sin().Value();
+		const Representation kCos = angle.Cos().Value();
 
-		return Stator<T>(T{(d.Value() * cos) - (q.Value() * sin)},
-						 T{(d.Value() * sin) + (q.Value() * cos)});
+		return Stator<T>(T{(d.Value() * kCos) - (q.Value() * kSin)},
+				 T{(d.Value() * kSin) + (q.Value() * kCos)});
 	}
 };
 

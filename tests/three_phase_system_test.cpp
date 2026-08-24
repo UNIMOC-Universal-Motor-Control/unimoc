@@ -1,35 +1,34 @@
 /*
-	   __  ___   ________  _______  ______
-	  / / / / | / /  _/  |/  / __ \/ ____/
-	 / / / /  |/ // // /|_/ / / / / /
-	/ /_/ / /|  // // /  / / /_/ / /___
-	\____/_/ |_/___/_/  /_/\____/\____/
+           __  ___   ________  _______  ______
+          / / / / | / /  _/  |/  / __ \/ ____/
+         / / / /  |/ // // /|_/ / / / / /
+        / /_/ / /|  // // /  / / /_/ / /___
+        \____/_/ |_/___/_/  /_/\____/\____/
 
-	Universal Motor Control  2025 Alexander <tecnologic86@gmail.com> Evers
+        Universal Motor Control  2025 Alexander <tecnologic86@gmail.com> Evers
 
-	This file is part of UNIMOC.
+        This file is part of UNIMOC.
 
-	UNIMOC is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version.
+        UNIMOC is free software: you can redistribute it and/or modify
+        it under the terms of the GNU General Public License as published by
+        the Free Software Foundation, either version 3 of the License, or
+        (at your option) any later version.
 
-	This program is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
+        This program is distributed in the hope that it will be useful,
+        but WITHOUT ANY WARRANTY; without even the implied warranty of
+        MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+        GNU General Public License for more details.
 
-	You should have received a copy of the GNU General Public License
-	along with this program.  If not, see <http://www.gnu.org/licenses/>.
+        You should have received a copy of the GNU General Public License
+        along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "three_phase_system.hpp"
 #include <gtest/gtest.h>
 #include <cmath>
 #include <concepts>
-
 #include "rotor_angle.hpp"
 #include "rotor_system.hpp"
-#include "three_phase_system.hpp"
 
 using ThreePhase = unimoc::system::ThreePhase<unimoc::unit::DimensionlessRatio>;
 using Stator = unimoc::system::Stator<unimoc::unit::DimensionlessRatio>;
@@ -47,561 +46,511 @@ concept CanInstantiateStator = requires { typename unimoc::system::Stator<T>; };
 
 static_assert(!CanInstantiateThreePhase<float>);
 static_assert(!CanInstantiateStator<float>);
-static_assert(std::same_as<decltype(unimoc::system::ThreePhase<unimoc::unit::Current>{}.ToStator()),
-						  unimoc::system::Stator<unimoc::unit::Current>>);
+static_assert(std::same_as<decltype(unimoc::system::ThreePhase<unimoc::unit::Current>{}.ToStator()), unimoc::system::Stator<unimoc::unit::Current>>);
 
 // Test fixture for ThreePhase tests
-class ThreePhaseTest : public ::testing::Test
-{
-protected:
-	void SetUp() override
-	{
-		// Setup code if needed
-	}
+class ThreePhaseTest : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    // Setup code if needed
+  }
 
-	void TearDown() override
-	{
-		// Cleanup code if needed
-	}
+  void TearDown() override {
+    // Cleanup code if needed
+  }
 };
 
 // Test default constructor
-TEST_F(ThreePhaseTest, DefaultConstructor)
-{
-	ThreePhase phase;
-	// Default constructor should initialize values (implementation dependent)
-	// Just verify object is created without throwing
-	EXPECT_NO_THROW(ThreePhase());
+TEST_F(ThreePhaseTest, DefaultConstructor) {
+  ThreePhase phase;
+  // Default constructor should initialize values (implementation dependent)
+  // Just verify object is created without throwing
+  EXPECT_NO_THROW(ThreePhase());
 
-	(void)phase; // Suppress unused variable warning
+  (void)phase;  // Suppress unused variable warning
 }
 
 // Test parameterized constructor
-TEST_F(ThreePhaseTest, ParameterizedConstructor)
-{
-	ThreePhase phase(1.5f, 2.5f, 3.5f);
+TEST_F(ThreePhaseTest, ParameterizedConstructor) {
+  ThreePhase phase(1.5F, 2.5F, 3.5F);
 
-	EXPECT_FLOAT_EQ(phase.a.Value(), 1.5f);
-	EXPECT_FLOAT_EQ(phase.b.Value(), 2.5f);
-	EXPECT_FLOAT_EQ(phase.c.Value(), 3.5f);
+  EXPECT_FLOAT_EQ(phase.a.Value(), 1.5F);
+  EXPECT_FLOAT_EQ(phase.b.Value(), 2.5F);
+  EXPECT_FLOAT_EQ(phase.c.Value(), 3.5F);
 }
 
 // Test parameterized constructor with zero values
-TEST_F(ThreePhaseTest, ConstructorWithZeros)
-{
-	ThreePhase phase(0.0f, 0.0f, 0.0f);
+TEST_F(ThreePhaseTest, ConstructorWithZeros) {
+  ThreePhase phase(0.0F, 0.0F, 0.0F);
 
-	EXPECT_FLOAT_EQ(phase.a.Value(), 0.0f);
-	EXPECT_FLOAT_EQ(phase.b.Value(), 0.0f);
-	EXPECT_FLOAT_EQ(phase.c.Value(), 0.0f);
+  EXPECT_FLOAT_EQ(phase.a.Value(), 0.0F);
+  EXPECT_FLOAT_EQ(phase.b.Value(), 0.0F);
+  EXPECT_FLOAT_EQ(phase.c.Value(), 0.0F);
 }
 
 // Test parameterized constructor with negative values
-TEST_F(ThreePhaseTest, ConstructorWithNegativeValues)
-{
-	ThreePhase phase(-1.0f, -2.0f, -3.0f);
+TEST_F(ThreePhaseTest, ConstructorWithNegativeValues) {
+  ThreePhase phase(-1.0F, -2.0F, -3.0F);
 
-	EXPECT_FLOAT_EQ(phase.a.Value(), -1.0f);
-	EXPECT_FLOAT_EQ(phase.b.Value(), -2.0f);
-	EXPECT_FLOAT_EQ(phase.c.Value(), -3.0f);
+  EXPECT_FLOAT_EQ(phase.a.Value(), -1.0F);
+  EXPECT_FLOAT_EQ(phase.b.Value(), -2.0F);
+  EXPECT_FLOAT_EQ(phase.c.Value(), -3.0F);
 }
 
 // Test copy constructor
-TEST_F(ThreePhaseTest, CopyConstructor)
-{
-	ThreePhase original(1.0f, 2.0f, 3.0f);
-	ThreePhase copy(original);
+TEST_F(ThreePhaseTest, CopyConstructor) {
+  ThreePhase original(1.0F, 2.0F, 3.0F);
+  ThreePhase copy(original);
 
-	EXPECT_FLOAT_EQ(copy.a.Value(), 1.0f);
-	EXPECT_FLOAT_EQ(copy.b.Value(), 2.0f);
-	EXPECT_FLOAT_EQ(copy.c.Value(), 3.0f);
+  EXPECT_FLOAT_EQ(copy.a.Value(), 1.0F);
+  EXPECT_FLOAT_EQ(copy.b.Value(), 2.0F);
+  EXPECT_FLOAT_EQ(copy.c.Value(), 3.0F);
 
-	// Verify independence
-	copy.a = unimoc::unit::DimensionlessRatio{10.0f};
-	EXPECT_FLOAT_EQ(original.a.Value(), 1.0f);
+  // Verify independence
+  copy.a = unimoc::unit::DimensionlessRatio{10.0F};
+  EXPECT_FLOAT_EQ(original.a.Value(), 1.0F);
 }
 
 // Test move constructor
-TEST_F(ThreePhaseTest, MoveConstructor)
-{
-	ThreePhase original(1.0f, 2.0f, 3.0f);
-	ThreePhase moved(std::move(original));
+TEST_F(ThreePhaseTest, MoveConstructor) {
+  ThreePhase original(1.0F, 2.0F, 3.0F);
+  ThreePhase moved(original);
 
-	EXPECT_FLOAT_EQ(moved.a.Value(), 1.0f);
-	EXPECT_FLOAT_EQ(moved.b.Value(), 2.0f);
-	EXPECT_FLOAT_EQ(moved.c.Value(), 3.0f);
+  EXPECT_FLOAT_EQ(moved.a.Value(), 1.0F);
+  EXPECT_FLOAT_EQ(moved.b.Value(), 2.0F);
+  EXPECT_FLOAT_EQ(moved.c.Value(), 3.0F);
 }
 
 // Test copy assignment operator
-TEST_F(ThreePhaseTest, CopyAssignmentOperator)
-{
-	ThreePhase original(1.0f, 2.0f, 3.0f);
-	ThreePhase copy(4.0f, 5.0f, 6.0f);
+TEST_F(ThreePhaseTest, CopyAssignmentOperator) {
+  ThreePhase original(1.0F, 2.0F, 3.0F);
+  ThreePhase copy(4.0F, 5.0F, 6.0F);
 
-	copy = original;
+  copy = original;
 
-	EXPECT_FLOAT_EQ(copy.a.Value(), 1.0f);
-	EXPECT_FLOAT_EQ(copy.b.Value(), 2.0f);
-	EXPECT_FLOAT_EQ(copy.c.Value(), 3.0f);
+  EXPECT_FLOAT_EQ(copy.a.Value(), 1.0F);
+  EXPECT_FLOAT_EQ(copy.b.Value(), 2.0F);
+  EXPECT_FLOAT_EQ(copy.c.Value(), 3.0F);
 }
 
 // Test move assignment operator
-TEST_F(ThreePhaseTest, MoveAssignmentOperator)
-{
-	ThreePhase original(1.0f, 2.0f, 3.0f);
-	ThreePhase moved(4.0f, 5.0f, 6.0f);
+TEST_F(ThreePhaseTest, MoveAssignmentOperator) {
+  ThreePhase original(1.0F, 2.0F, 3.0F);
+  ThreePhase moved(4.0F, 5.0F, 6.0F);
 
-	moved = std::move(original);
+  moved = original;
 
-	EXPECT_FLOAT_EQ(moved.a.Value(), 1.0f);
-	EXPECT_FLOAT_EQ(moved.b.Value(), 2.0f);
-	EXPECT_FLOAT_EQ(moved.c.Value(), 3.0f);
+  EXPECT_FLOAT_EQ(moved.a.Value(), 1.0F);
+  EXPECT_FLOAT_EQ(moved.b.Value(), 2.0F);
+  EXPECT_FLOAT_EQ(moved.c.Value(), 3.0F);
 }
 
 // Test equality operator with equal values
-TEST_F(ThreePhaseTest, EqualityOperatorTrue)
-{
-	ThreePhase phase1(1.0f, 2.0f, 3.0f);
-	ThreePhase phase2(1.0f, 2.0f, 3.0f);
+TEST_F(ThreePhaseTest, EqualityOperatorTrue) {
+  ThreePhase phase1(1.0F, 2.0F, 3.0F);
+  ThreePhase phase2(1.0F, 2.0F, 3.0F);
 
-	EXPECT_TRUE(phase1 == phase2);
-	EXPECT_TRUE(phase2 == phase1);
+  EXPECT_TRUE(phase1 == phase2);
+  EXPECT_TRUE(phase2 == phase1);
 }
 
 // Test equality operator with different values
-TEST_F(ThreePhaseTest, EqualityOperatorFalse)
-{
-	ThreePhase phase1(1.0f, 2.0f, 3.0f);
-	ThreePhase phase2(1.0f, 2.0f, 4.0f);
+TEST_F(ThreePhaseTest, EqualityOperatorFalse) {
+  ThreePhase phase1(1.0F, 2.0F, 3.0F);
+  ThreePhase phase2(1.0F, 2.0F, 4.0F);
 
-	EXPECT_FALSE(phase1 == phase2);
+  EXPECT_FALSE(phase1 == phase2);
 }
 
 // Test equality operator with self
-TEST_F(ThreePhaseTest, EqualityOperatorSelf)
-{
-	ThreePhase phase(1.0f, 2.0f, 3.0f);
+TEST_F(ThreePhaseTest, EqualityOperatorSelf) {
+  ThreePhase phase(1.0F, 2.0F, 3.0F);
 
-	EXPECT_TRUE(phase == phase);
+  EXPECT_TRUE(phase == phase);
 }
 
 // Test inequality operator
-TEST_F(ThreePhaseTest, InequalityOperatorTrue)
-{
-	ThreePhase phase1(1.0f, 2.0f, 3.0f);
-	ThreePhase phase2(4.0f, 5.0f, 6.0f);
+TEST_F(ThreePhaseTest, InequalityOperatorTrue) {
+  ThreePhase phase1(1.0F, 2.0F, 3.0F);
+  ThreePhase phase2(4.0F, 5.0F, 6.0F);
 
-	EXPECT_TRUE(phase1 != phase2);
-	EXPECT_TRUE(phase2 != phase1);
+  EXPECT_TRUE(phase1 != phase2);
+  EXPECT_TRUE(phase2 != phase1);
 }
 
 // Test inequality operator with equal values
-TEST_F(ThreePhaseTest, InequalityOperatorFalse)
-{
-	ThreePhase phase1(1.0f, 2.0f, 3.0f);
-	ThreePhase phase2(1.0f, 2.0f, 3.0f);
+TEST_F(ThreePhaseTest, InequalityOperatorFalse) {
+  ThreePhase phase1(1.0F, 2.0F, 3.0F);
+  ThreePhase phase2(1.0F, 2.0F, 3.0F);
 
-	EXPECT_FALSE(phase1 != phase2);
+  EXPECT_FALSE(phase1 != phase2);
 }
 
 // Test addition operator
-TEST_F(ThreePhaseTest, AdditionOperator)
-{
-	ThreePhase phase1(1.0f, 2.0f, 3.0f);
-	ThreePhase phase2(4.0f, 5.0f, 6.0f);
+TEST_F(ThreePhaseTest, AdditionOperator) {
+  ThreePhase phase1(1.0F, 2.0F, 3.0F);
+  ThreePhase phase2(4.0F, 5.0F, 6.0F);
 
-	ThreePhase result = phase1 + phase2;
+  ThreePhase result = phase1 + phase2;
 
-	EXPECT_FLOAT_EQ(result.a.Value(), 5.0f);
-	EXPECT_FLOAT_EQ(result.b.Value(), 7.0f);
-	EXPECT_FLOAT_EQ(result.c.Value(), 9.0f);
+  EXPECT_FLOAT_EQ(result.a.Value(), 5.0F);
+  EXPECT_FLOAT_EQ(result.b.Value(), 7.0F);
+  EXPECT_FLOAT_EQ(result.c.Value(), 9.0F);
 }
 
 // Test addition with zero
-TEST_F(ThreePhaseTest, AdditionWithZero)
-{
-	ThreePhase phase1(1.0f, 2.0f, 3.0f);
-	ThreePhase zero(0.0f, 0.0f, 0.0f);
+TEST_F(ThreePhaseTest, AdditionWithZero) {
+  ThreePhase phase1(1.0F, 2.0F, 3.0F);
+  ThreePhase zero(0.0F, 0.0F, 0.0F);
 
-	ThreePhase result = phase1 + zero;
+  ThreePhase result = phase1 + zero;
 
-	EXPECT_FLOAT_EQ(result.a.Value(), 1.0f);
-	EXPECT_FLOAT_EQ(result.b.Value(), 2.0f);
-	EXPECT_FLOAT_EQ(result.c.Value(), 3.0f);
+  EXPECT_FLOAT_EQ(result.a.Value(), 1.0F);
+  EXPECT_FLOAT_EQ(result.b.Value(), 2.0F);
+  EXPECT_FLOAT_EQ(result.c.Value(), 3.0F);
 }
 
 // Test addition with negative values
-TEST_F(ThreePhaseTest, AdditionWithNegativeValues)
-{
-	ThreePhase phase1(1.0f, 2.0f, 3.0f);
-	ThreePhase phase2(-1.0f, -2.0f, -3.0f);
+TEST_F(ThreePhaseTest, AdditionWithNegativeValues) {
+  ThreePhase phase1(1.0F, 2.0F, 3.0F);
+  ThreePhase phase2(-1.0F, -2.0F, -3.0F);
 
-	ThreePhase result = phase1 + phase2;
+  ThreePhase result = phase1 + phase2;
 
-	EXPECT_FLOAT_EQ(result.a.Value(), 0.0f);
-	EXPECT_FLOAT_EQ(result.b.Value(), 0.0f);
-	EXPECT_FLOAT_EQ(result.c.Value(), 0.0f);
+  EXPECT_FLOAT_EQ(result.a.Value(), 0.0F);
+  EXPECT_FLOAT_EQ(result.b.Value(), 0.0F);
+  EXPECT_FLOAT_EQ(result.c.Value(), 0.0F);
 }
 
 // Test addition commutativity
-TEST_F(ThreePhaseTest, AdditionCommutativity)
-{
-	ThreePhase phase1(1.0f, 2.0f, 3.0f);
-	ThreePhase phase2(4.0f, 5.0f, 6.0f);
+TEST_F(ThreePhaseTest, AdditionCommutativity) {
+  ThreePhase phase1(1.0F, 2.0F, 3.0F);
+  ThreePhase phase2(4.0F, 5.0F, 6.0F);
 
-	ThreePhase result1 = phase1 + phase2;
-	ThreePhase result2 = phase2 + phase1;
+  ThreePhase result1 = phase1 + phase2;
+  ThreePhase result2 = phase2 + phase1;
 
-	EXPECT_TRUE(result1 == result2);
+  EXPECT_TRUE(result1 == result2);
 }
 
 // Test subtraction operator
-TEST_F(ThreePhaseTest, SubtractionOperator)
-{
-	ThreePhase phase1(5.0f, 7.0f, 9.0f);
-	ThreePhase phase2(1.0f, 2.0f, 3.0f);
+TEST_F(ThreePhaseTest, SubtractionOperator) {
+  ThreePhase phase1(5.0F, 7.0F, 9.0F);
+  ThreePhase phase2(1.0F, 2.0F, 3.0F);
 
-	ThreePhase result = phase1 - phase2;
+  ThreePhase result = phase1 - phase2;
 
-	EXPECT_FLOAT_EQ(result.a.Value(), 4.0f);
-	EXPECT_FLOAT_EQ(result.b.Value(), 5.0f);
-	EXPECT_FLOAT_EQ(result.c.Value(), 6.0f);
+  EXPECT_FLOAT_EQ(result.a.Value(), 4.0F);
+  EXPECT_FLOAT_EQ(result.b.Value(), 5.0F);
+  EXPECT_FLOAT_EQ(result.c.Value(), 6.0F);
 }
 
 // Test subtraction with zero
-TEST_F(ThreePhaseTest, SubtractionWithZero)
-{
-	ThreePhase phase1(1.0f, 2.0f, 3.0f);
-	ThreePhase zero(0.0f, 0.0f, 0.0f);
+TEST_F(ThreePhaseTest, SubtractionWithZero) {
+  ThreePhase phase1(1.0F, 2.0F, 3.0F);
+  ThreePhase zero(0.0F, 0.0F, 0.0F);
 
-	ThreePhase result = phase1 - zero;
+  ThreePhase result = phase1 - zero;
 
-	EXPECT_FLOAT_EQ(result.a.Value(), 1.0f);
-	EXPECT_FLOAT_EQ(result.b.Value(), 2.0f);
-	EXPECT_FLOAT_EQ(result.c.Value(), 3.0f);
+  EXPECT_FLOAT_EQ(result.a.Value(), 1.0F);
+  EXPECT_FLOAT_EQ(result.b.Value(), 2.0F);
+  EXPECT_FLOAT_EQ(result.c.Value(), 3.0F);
 }
 
 // Test subtraction with itself
-TEST_F(ThreePhaseTest, SubtractionWithSelf)
-{
-	ThreePhase phase(1.0f, 2.0f, 3.0f);
+TEST_F(ThreePhaseTest, SubtractionWithSelf) {
+  ThreePhase phase(1.0F, 2.0F, 3.0F);
 
-	ThreePhase result = phase - phase;
+  ThreePhase result = phase - phase;
 
-	EXPECT_FLOAT_EQ(result.a.Value(), 0.0f);
-	EXPECT_FLOAT_EQ(result.b.Value(), 0.0f);
-	EXPECT_FLOAT_EQ(result.c.Value(), 0.0f);
+  EXPECT_FLOAT_EQ(result.a.Value(), 0.0F);
+  EXPECT_FLOAT_EQ(result.b.Value(), 0.0F);
+  EXPECT_FLOAT_EQ(result.c.Value(), 0.0F);
 }
 
 // Test subtraction with negative values
-TEST_F(ThreePhaseTest, SubtractionWithNegativeValues)
-{
-	ThreePhase phase1(1.0f, 2.0f, 3.0f);
-	ThreePhase phase2(-1.0f, -2.0f, -3.0f);
+TEST_F(ThreePhaseTest, SubtractionWithNegativeValues) {
+  ThreePhase phase1(1.0F, 2.0F, 3.0F);
+  ThreePhase phase2(-1.0F, -2.0F, -3.0F);
 
-	ThreePhase result = phase1 - phase2;
+  ThreePhase result = phase1 - phase2;
 
-	EXPECT_FLOAT_EQ(result.a.Value(), 2.0f);
-	EXPECT_FLOAT_EQ(result.b.Value(), 4.0f);
-	EXPECT_FLOAT_EQ(result.c.Value(), 6.0f);
+  EXPECT_FLOAT_EQ(result.a.Value(), 2.0F);
+  EXPECT_FLOAT_EQ(result.b.Value(), 4.0F);
+  EXPECT_FLOAT_EQ(result.c.Value(), 6.0F);
 }
 
 // Test ToArray conversion
-TEST_F(ThreePhaseTest, ToArrayConversion)
-{
-	ThreePhase phase(1.5f, 2.5f, 3.5f);
+TEST_F(ThreePhaseTest, ToArrayConversion) {
+  ThreePhase phase(1.5F, 2.5F, 3.5F);
 
-	auto arr = phase.ToArray();
+  auto arr = phase.ToArray();
 
-	EXPECT_EQ(arr.size(), 3);
-	EXPECT_FLOAT_EQ(arr[0].Value(), 1.5f);
-	EXPECT_FLOAT_EQ(arr[1].Value(), 2.5f);
-	EXPECT_FLOAT_EQ(arr[2].Value(), 3.5f);
+  EXPECT_EQ(arr.size(), 3);
+  EXPECT_FLOAT_EQ(arr.at(0).Value(), 1.5F);
+  EXPECT_FLOAT_EQ(arr.at(1).Value(), 2.5F);
+  EXPECT_FLOAT_EQ(arr.at(2).Value(), 3.5F);
 }
 
 // Test ToArray with zero values
-TEST_F(ThreePhaseTest, ToArrayWithZeros)
-{
-	ThreePhase phase(0.0f, 0.0f, 0.0f);
+TEST_F(ThreePhaseTest, ToArrayWithZeros) {
+  ThreePhase phase(0.0F, 0.0F, 0.0F);
 
-	auto arr = phase.ToArray();
+  auto arr = phase.ToArray();
 
-	EXPECT_FLOAT_EQ(arr[0].Value(), 0.0f);
-	EXPECT_FLOAT_EQ(arr[1].Value(), 0.0f);
-	EXPECT_FLOAT_EQ(arr[2].Value(), 0.0f);
+  EXPECT_FLOAT_EQ(arr.at(0).Value(), 0.0F);
+  EXPECT_FLOAT_EQ(arr.at(1).Value(), 0.0F);
+  EXPECT_FLOAT_EQ(arr.at(2).Value(), 0.0F);
 }
 
 // Test ToArray with negative values
-TEST_F(ThreePhaseTest, ToArrayWithNegativeValues)
-{
-	ThreePhase phase(-1.0f, -2.0f, -3.0f);
+TEST_F(ThreePhaseTest, ToArrayWithNegativeValues) {
+  ThreePhase phase(-1.0F, -2.0F, -3.0F);
 
-	auto arr = phase.ToArray();
+  auto arr = phase.ToArray();
 
-	EXPECT_FLOAT_EQ(arr[0].Value(), -1.0f);
-	EXPECT_FLOAT_EQ(arr[1].Value(), -2.0f);
-	EXPECT_FLOAT_EQ(arr[2].Value(), -3.0f);
+  EXPECT_FLOAT_EQ(arr.at(0).Value(), -1.0F);
+  EXPECT_FLOAT_EQ(arr.at(1).Value(), -2.0F);
+  EXPECT_FLOAT_EQ(arr.at(2).Value(), -3.0F);
 }
 
-TEST_F(ThreePhaseTest, ToStatorUsesUnitRepresentation)
-{
-	const unimoc::system::ThreePhase<unimoc::unit::Current> phase{1.0f, 2.0f, 3.0f};
+TEST_F(ThreePhaseTest, ToStatorUsesUnitRepresentation) {
+  const unimoc::system::ThreePhase<unimoc::unit::Current> kPhase{1.0F, 2.0F, 3.0F};
 
-	const auto stator = phase.ToStator();
+  const auto kStator = kPhase.ToStator();
 
-	EXPECT_FLOAT_EQ(stator.alpha.Value(), -1.0f);
-	EXPECT_NEAR(stator.beta.Value(), -0.577350269f, 1.0e-6f);
+  EXPECT_FLOAT_EQ(kStator.alpha.Value(), -1.0F);
+  EXPECT_NEAR(kStator.beta.Value(), -0.577350269F, 1.0e-6F);
 }
 
-TEST_F(ThreePhaseTest, ToStatorRejectsZeroSequence)
-{
-	const unimoc::system::ThreePhase<unimoc::unit::Current> phase{2.0f, 2.0f, 2.0f};
+TEST_F(ThreePhaseTest, ToStatorRejectsZeroSequence) {
+  const unimoc::system::ThreePhase<unimoc::unit::Current> kPhase{2.0F, 2.0F, 2.0F};
 
-	const auto stator = phase.ToStator();
+  const auto kStator = kPhase.ToStator();
 
-	EXPECT_FLOAT_EQ(stator.alpha.Value(), 0.0f);
-	EXPECT_FLOAT_EQ(stator.beta.Value(), 0.0f);
+  EXPECT_FLOAT_EQ(kStator.alpha.Value(), 0.0F);
+  EXPECT_FLOAT_EQ(kStator.beta.Value(), 0.0F);
 }
 
-TEST_F(ThreePhaseTest, ToStatorTransformsBalancedPhaseVector)
-{
-	const unimoc::system::ThreePhase<unimoc::unit::Current> phase{1.0f, -0.5f, -0.5f};
+TEST_F(ThreePhaseTest, ToStatorTransformsBalancedPhaseVector) {
+  const unimoc::system::ThreePhase<unimoc::unit::Current> kPhase{1.0F, -0.5F, -0.5F};
 
-	const auto stator = phase.ToStator();
+  const auto kStator = kPhase.ToStator();
 
-	EXPECT_FLOAT_EQ(stator.alpha.Value(), 1.0f);
-	EXPECT_NEAR(stator.beta.Value(), 0.0f, 1.0e-6f);
+  EXPECT_FLOAT_EQ(kStator.alpha.Value(), 1.0F);
+  EXPECT_NEAR(kStator.beta.Value(), 0.0F, 1.0e-6F);
 }
 
-TEST_F(ThreePhaseTest, StatorToRotorAtZeroAngle)
-{
-	const Stator stator{1.0f, 2.0f};
-	const RotorAngle angle;
+TEST_F(ThreePhaseTest, StatorToRotorAtZeroAngle) {
+  const Stator kStator{1.0F, 2.0F};
+  const RotorAngle kAngle;
 
-	const auto rotor = stator.ToRotor(angle);
+  const auto kRotor = kStator.ToRotor(kAngle);
 
-	EXPECT_NEAR(rotor.d.Value(), 1.0f, 1.0e-5f);
-	EXPECT_NEAR(rotor.q.Value(), 2.0f, 1.0e-5f);
+  EXPECT_NEAR(kRotor.d.Value(), 1.0F, 1.0e-5F);
+  EXPECT_NEAR(kRotor.q.Value(), 2.0F, 1.0e-5F);
 }
 
-TEST_F(ThreePhaseTest, StatorToRotorAtQuarterTurn)
-{
-	const Stator stator{1.0f, 2.0f};
-	const RotorAngle angle = RotorAngle::FromRaw(0x4000'0000);
+TEST_F(ThreePhaseTest, StatorToRotorAtQuarterTurn) {
+  const Stator kStator{1.0F, 2.0F};
+  const RotorAngle kAngle = RotorAngle::FromRaw(0x4000'0000);
 
-	const auto rotor = stator.ToRotor(angle);
+  const auto kRotor = kStator.ToRotor(kAngle);
 
-	EXPECT_NEAR(rotor.d.Value(), 2.0f, 1.0e-5f);
-	EXPECT_NEAR(rotor.q.Value(), -1.0f, 1.0e-5f);
+  EXPECT_NEAR(kRotor.d.Value(), 2.0F, 1.0e-5F);
+  EXPECT_NEAR(kRotor.q.Value(), -1.0F, 1.0e-5F);
 }
 
-TEST_F(ThreePhaseTest, RotorToStatorAtZeroAngle)
-{
-	const Rotor rotor{1.0f, 2.0f};
-	const RotorAngle angle;
+TEST_F(ThreePhaseTest, RotorToStatorAtZeroAngle) {
+  const Rotor kRotor{1.0F, 2.0F};
+  const RotorAngle kAngle;
 
-	const auto stator = rotor.ToStator(angle);
+  const auto kStator = kRotor.ToStator(kAngle);
 
-	EXPECT_NEAR(stator.alpha.Value(), 1.0f, 1.0e-5f);
-	EXPECT_NEAR(stator.beta.Value(), 2.0f, 1.0e-5f);
+  EXPECT_NEAR(kStator.alpha.Value(), 1.0F, 1.0e-5F);
+  EXPECT_NEAR(kStator.beta.Value(), 2.0F, 1.0e-5F);
 }
 
-TEST_F(ThreePhaseTest, RotorToStatorAtQuarterTurn)
-{
-	const Rotor rotor{1.0f, 2.0f};
-	const RotorAngle angle = RotorAngle::FromRaw(0x4000'0000);
+TEST_F(ThreePhaseTest, RotorToStatorAtQuarterTurn) {
+  const Rotor kRotor{1.0F, 2.0F};
+  const RotorAngle kAngle = RotorAngle::FromRaw(0x4000'0000);
 
-	const auto stator = rotor.ToStator(angle);
+  const auto kStator = kRotor.ToStator(kAngle);
 
-	EXPECT_NEAR(stator.alpha.Value(), -2.0f, 1.0e-5f);
-	EXPECT_NEAR(stator.beta.Value(), 1.0f, 1.0e-5f);
+  EXPECT_NEAR(kStator.alpha.Value(), -2.0F, 1.0e-5F);
+  EXPECT_NEAR(kStator.beta.Value(), 1.0F, 1.0e-5F);
 }
 
-TEST_F(ThreePhaseTest, ParkAndInverseParkRoundTrip)
-{
-	const Stator original{1.25f, -0.75f};
-	const RotorAngle angle = RotorAngle::FromAngle(unimoc::unit::Angle{0.6435011f});
+TEST_F(ThreePhaseTest, ParkAndInverseParkRoundTrip) {
+  const Stator kOriginal{1.25F, -0.75F};
+  const RotorAngle kAngle = RotorAngle::FromAngle(unimoc::unit::Angle{0.6435011F});
 
-	const Rotor rotor = original.ToRotor(angle);
-	const Stator restored = rotor.ToStator(angle);
+  const Rotor kRotor = kOriginal.ToRotor(kAngle);
+  const Stator kRestored = kRotor.ToStator(kAngle);
 
-	EXPECT_NEAR(restored.alpha.Value(), original.alpha.Value(), 1.0e-5f);
-	EXPECT_NEAR(restored.beta.Value(), original.beta.Value(), 1.0e-5f);
+  EXPECT_NEAR(kRestored.alpha.Value(), kOriginal.alpha.Value(), 1.0e-5F);
+  EXPECT_NEAR(kRestored.beta.Value(), kOriginal.beta.Value(), 1.0e-5F);
 }
 
-TEST_F(ThreePhaseTest, LengthSquaredAvoidsSquareRootForStatorAndRotor)
-{
-	constexpr Stator stator{3.0f, 4.0f};
-	constexpr Rotor rotor{3.0f, 4.0f};
+TEST_F(ThreePhaseTest, LengthSquaredAvoidsSquareRootForStatorAndRotor) {
+  constexpr Stator kStator{3.0F, 4.0F};
+  constexpr Rotor kRotor{3.0F, 4.0F};
 
-	static_assert(std::same_as<decltype(stator.LengthSquared()), float>);
-	static_assert(std::same_as<decltype(rotor.LengthSquared()), float>);
-	static_assert(stator.LengthSquared() == 25.0f);
-	static_assert(rotor.LengthSquared() == 25.0f);
+  static_assert(std::same_as<decltype(kStator.LengthSquared()), float>);
+  static_assert(std::same_as<decltype(kRotor.LengthSquared()), float>);
+  static_assert(kStator.LengthSquared() == 25.0F);
+  static_assert(kRotor.LengthSquared() == 25.0F);
 
-	EXPECT_FLOAT_EQ(stator.LengthSquared(), 25.0f);
-	EXPECT_FLOAT_EQ(rotor.LengthSquared(), 25.0f);
+  EXPECT_FLOAT_EQ(kStator.LengthSquared(), 25.0F);
+  EXPECT_FLOAT_EQ(kRotor.LengthSquared(), 25.0F);
 }
 
-TEST_F(ThreePhaseTest, ParkTransformIsConstexpr)
-{
-	constexpr Stator stator{1.0f, 2.0f};
-	constexpr Rotor rotor = stator.ToRotor(RotorAngle{});
+TEST_F(ThreePhaseTest, ParkTransformIsConstexpr) {
+  constexpr Stator kStator{1.0F, 2.0F};
+  constexpr Rotor kRotor = kStator.ToRotor(RotorAngle{});
 
-	static_assert(rotor.d.Value() == 1.0f);
-	static_assert(rotor.q.Value() == 2.0f);
-	EXPECT_FLOAT_EQ(rotor.d.Value(), 1.0f);
+  static_assert(kRotor.d.Value() == 1.0F);
+  static_assert(kRotor.q.Value() == 2.0F);
+  EXPECT_FLOAT_EQ(kRotor.d.Value(), 1.0F);
 }
 
-TEST_F(ThreePhaseTest, ClarkeAndParkPreserveTheUnitType)
-{
-	const unimoc::system::ThreePhase<unimoc::unit::Current> phase{1.0f, -0.5f, -0.5f};
+TEST_F(ThreePhaseTest, ClarkeAndParkPreserveTheUnitType) {
+  const unimoc::system::ThreePhase<unimoc::unit::Current> kPhase{1.0F, -0.5F, -0.5F};
 
-	const unimoc::system::Stator<unimoc::unit::Current> stator = phase.ToStator();
-	const unimoc::system::Rotor<unimoc::unit::Current> rotor =
-		stator.ToRotor(RotorAngle{});
+  const unimoc::system::Stator<unimoc::unit::Current> kStator = kPhase.ToStator();
+  const unimoc::system::Rotor<unimoc::unit::Current> kRotor = kStator.ToRotor(RotorAngle{});
 
-	EXPECT_NEAR(rotor.d.Value(), 1.0f, 1.0e-5f);
+  EXPECT_NEAR(kRotor.d.Value(), 1.0F, 1.0e-5F);
 }
 
 // Test constexpr functionality (compile-time evaluation)
-TEST_F(ThreePhaseTest, ConstexprConstructor)
-{
-	constexpr ThreePhase phase(1.0f, 2.0f, 3.0f);
+TEST_F(ThreePhaseTest, ConstexprConstructor) {
+  constexpr ThreePhase kPhase(1.0F, 2.0F, 3.0F);
 
-	EXPECT_FLOAT_EQ(phase.a.Value(), 1.0f);
-	EXPECT_FLOAT_EQ(phase.b.Value(), 2.0f);
-	EXPECT_FLOAT_EQ(phase.c.Value(), 3.0f);
+  EXPECT_FLOAT_EQ(kPhase.a.Value(), 1.0F);
+  EXPECT_FLOAT_EQ(kPhase.b.Value(), 2.0F);
+  EXPECT_FLOAT_EQ(kPhase.c.Value(), 3.0F);
 }
 
 // Test constexpr addition
-TEST_F(ThreePhaseTest, ConstexprAddition)
-{
-	constexpr ThreePhase phase1(1.0f, 2.0f, 3.0f);
-	constexpr ThreePhase phase2(4.0f, 5.0f, 6.0f);
-	constexpr ThreePhase result = phase1 + phase2;
+TEST_F(ThreePhaseTest, ConstexprAddition) {
+  constexpr ThreePhase kPhase1(1.0F, 2.0F, 3.0F);
+  constexpr ThreePhase kPhase2(4.0F, 5.0F, 6.0F);
+  constexpr ThreePhase kResult = kPhase1 + kPhase2;
 
-	EXPECT_FLOAT_EQ(result.a.Value(), 5.0f);
-	EXPECT_FLOAT_EQ(result.b.Value(), 7.0f);
-	EXPECT_FLOAT_EQ(result.c.Value(), 9.0f);
+  EXPECT_FLOAT_EQ(kResult.a.Value(), 5.0F);
+  EXPECT_FLOAT_EQ(kResult.b.Value(), 7.0F);
+  EXPECT_FLOAT_EQ(kResult.c.Value(), 9.0F);
 }
 
 // Test constexpr subtraction
-TEST_F(ThreePhaseTest, ConstexprSubtraction)
-{
-	constexpr ThreePhase phase1(5.0f, 7.0f, 9.0f);
-	constexpr ThreePhase phase2(1.0f, 2.0f, 3.0f);
-	constexpr ThreePhase result = phase1 - phase2;
+TEST_F(ThreePhaseTest, ConstexprSubtraction) {
+  constexpr ThreePhase kPhase1(5.0F, 7.0F, 9.0F);
+  constexpr ThreePhase kPhase2(1.0F, 2.0F, 3.0F);
+  constexpr ThreePhase kResult = kPhase1 - kPhase2;
 
-	EXPECT_FLOAT_EQ(result.a.Value(), 4.0f);
-	EXPECT_FLOAT_EQ(result.b.Value(), 5.0f);
-	EXPECT_FLOAT_EQ(result.c.Value(), 6.0f);
+  EXPECT_FLOAT_EQ(kResult.a.Value(), 4.0F);
+  EXPECT_FLOAT_EQ(kResult.b.Value(), 5.0F);
+  EXPECT_FLOAT_EQ(kResult.c.Value(), 6.0F);
 }
 
 // Test constexpr equality
-TEST_F(ThreePhaseTest, ConstexprEquality)
-{
-	constexpr ThreePhase phase1(1.0f, 2.0f, 3.0f);
-	constexpr ThreePhase phase2(1.0f, 2.0f, 3.0f);
-	constexpr bool equal = phase1 == phase2;
+TEST_F(ThreePhaseTest, ConstexprEquality) {
+  constexpr ThreePhase kPhase1(1.0F, 2.0F, 3.0F);
+  constexpr ThreePhase kPhase2(1.0F, 2.0F, 3.0F);
+  constexpr bool kEqual = kPhase1 == kPhase2;
 
-	EXPECT_TRUE(equal);
+  EXPECT_TRUE(kEqual);
 }
 
 // Test with large values
-TEST_F(ThreePhaseTest, LargeValues)
-{
-	ThreePhase phase(1000.0f, 2000.0f, 3000.0f);
+TEST_F(ThreePhaseTest, LargeValues) {
+  ThreePhase phase(1000.0F, 2000.0F, 3000.0F);
 
-	EXPECT_FLOAT_EQ(phase.a.Value(), 1000.0f);
-	EXPECT_FLOAT_EQ(phase.b.Value(), 2000.0f);
-	EXPECT_FLOAT_EQ(phase.c.Value(), 3000.0f);
+  EXPECT_FLOAT_EQ(phase.a.Value(), 1000.0F);
+  EXPECT_FLOAT_EQ(phase.b.Value(), 2000.0F);
+  EXPECT_FLOAT_EQ(phase.c.Value(), 3000.0F);
 }
 
 // Test with very small values
-TEST_F(ThreePhaseTest, SmallValues)
-{
-	ThreePhase phase(0.001f, 0.002f, 0.003f);
+TEST_F(ThreePhaseTest, SmallValues) {
+  ThreePhase phase(0.001F, 0.002F, 0.003F);
 
-	EXPECT_FLOAT_EQ(phase.a.Value(), 0.001f);
-	EXPECT_FLOAT_EQ(phase.b.Value(), 0.002f);
-	EXPECT_FLOAT_EQ(phase.c.Value(), 0.003f);
+  EXPECT_FLOAT_EQ(phase.a.Value(), 0.001F);
+  EXPECT_FLOAT_EQ(phase.b.Value(), 0.002F);
+  EXPECT_FLOAT_EQ(phase.c.Value(), 0.003F);
 }
 
 // Test addition and subtraction chaining
-TEST_F(ThreePhaseTest, ArithmeticChaining)
-{
-	ThreePhase phase1(1.0f, 2.0f, 3.0f);
-	ThreePhase phase2(4.0f, 5.0f, 6.0f);
-	ThreePhase phase3(7.0f, 8.0f, 9.0f);
+TEST_F(ThreePhaseTest, ArithmeticChaining) {
+  ThreePhase phase1(1.0F, 2.0F, 3.0F);
+  ThreePhase phase2(4.0F, 5.0F, 6.0F);
+  ThreePhase phase3(7.0F, 8.0F, 9.0F);
 
-	ThreePhase result = phase1 + phase2 - phase3;
+  ThreePhase result = phase1 + phase2 - phase3;
 
-	EXPECT_FLOAT_EQ(result.a.Value(), -2.0f);
-	EXPECT_FLOAT_EQ(result.b.Value(), -1.0f);
-	EXPECT_FLOAT_EQ(result.c.Value(), 0.0f);
+  EXPECT_FLOAT_EQ(result.a.Value(), -2.0F);
+  EXPECT_FLOAT_EQ(result.b.Value(), -1.0F);
+  EXPECT_FLOAT_EQ(result.c.Value(), 0.0F);
 }
 
 // Test multiple operations
-TEST_F(ThreePhaseTest, MultipleOperations)
-{
-	ThreePhase phase1(10.0f, 20.0f, 30.0f);
-	ThreePhase phase2(5.0f, 10.0f, 15.0f);
+TEST_F(ThreePhaseTest, MultipleOperations) {
+  ThreePhase phase1(10.0F, 20.0F, 30.0F);
+  ThreePhase phase2(5.0F, 10.0F, 15.0F);
 
-	// Add
-	ThreePhase sum = phase1 + phase2;
-	EXPECT_FLOAT_EQ(sum.a.Value(), 15.0f);
-	EXPECT_FLOAT_EQ(sum.b.Value(), 30.0f);
-	EXPECT_FLOAT_EQ(sum.c.Value(), 45.0f);
+  // Add
+  ThreePhase sum = phase1 + phase2;
+  EXPECT_FLOAT_EQ(sum.a.Value(), 15.0F);
+  EXPECT_FLOAT_EQ(sum.b.Value(), 30.0F);
+  EXPECT_FLOAT_EQ(sum.c.Value(), 45.0F);
 
-	// Subtract
-	ThreePhase diff = phase1 - phase2;
-	EXPECT_FLOAT_EQ(diff.a.Value(), 5.0f);
-	EXPECT_FLOAT_EQ(diff.b.Value(), 10.0f);
-	EXPECT_FLOAT_EQ(diff.c.Value(), 15.0f);
+  // Subtract
+  ThreePhase diff = phase1 - phase2;
+  EXPECT_FLOAT_EQ(diff.a.Value(), 5.0F);
+  EXPECT_FLOAT_EQ(diff.b.Value(), 10.0F);
+  EXPECT_FLOAT_EQ(diff.c.Value(), 15.0F);
 
-	// Convert to array
-	auto arr = sum.ToArray();
-	EXPECT_FLOAT_EQ(arr[0].Value(), 15.0f);
-	EXPECT_FLOAT_EQ(arr[1].Value(), 30.0f);
-	EXPECT_FLOAT_EQ(arr[2].Value(), 45.0f);
+  // Convert to array
+  auto arr = sum.ToArray();
+  EXPECT_FLOAT_EQ(arr.at(0).Value(), 15.0F);
+  EXPECT_FLOAT_EQ(arr.at(1).Value(), 30.0F);
+  EXPECT_FLOAT_EQ(arr.at(2).Value(), 45.0F);
 }
 
 // Test floating point precision edge cases
-TEST_F(ThreePhaseTest, FloatingPointPrecision)
-{
-	ThreePhase phase1(0.1f + 0.2f, 0.3f, 0.0f);
-	ThreePhase phase2(0.3f, 0.3f, 0.0f);
+TEST_F(ThreePhaseTest, FloatingPointPrecision) {
+  ThreePhase phase1(0.1F + 0.2F, 0.3F, 0.0F);
+  ThreePhase phase2(0.3F, 0.3F, 0.0F);
 
-	// Due to floating point precision, these might not be exactly equal
-	// but should be very close
-	EXPECT_NEAR(phase1.a.Value(), phase2.a.Value(), 1e-6f);
-	EXPECT_FLOAT_EQ(phase1.b.Value(), phase2.b.Value());
+  // Due to floating point precision, these might not be exactly equal
+  // but should be very close
+  EXPECT_NEAR(phase1.a.Value(), phase2.a.Value(), 1e-6F);
+  EXPECT_FLOAT_EQ(phase1.b.Value(), phase2.b.Value());
 }
 
 // Test that operations don't modify original objects
-TEST_F(ThreePhaseTest, OperationsImmutability)
-{
-	ThreePhase phase1(1.0f, 2.0f, 3.0f);
-	ThreePhase phase2(4.0f, 5.0f, 6.0f);
+TEST_F(ThreePhaseTest, OperationsImmutability) {
+  ThreePhase phase1(1.0F, 2.0F, 3.0F);
+  ThreePhase phase2(4.0F, 5.0F, 6.0F);
 
-	ThreePhase sum = phase1 + phase2;
-	ThreePhase diff = phase1 - phase2;
+  ThreePhase sum = phase1 + phase2;
+  ThreePhase diff = phase1 - phase2;
 
-	// Original objects should remain unchanged
-	EXPECT_FLOAT_EQ(phase1.a.Value(), 1.0f);
-	EXPECT_FLOAT_EQ(phase1.b.Value(), 2.0f);
-	EXPECT_FLOAT_EQ(phase1.c.Value(), 3.0f);
+  // Original objects should remain unchanged
+  EXPECT_FLOAT_EQ(phase1.a.Value(), 1.0F);
+  EXPECT_FLOAT_EQ(phase1.b.Value(), 2.0F);
+  EXPECT_FLOAT_EQ(phase1.c.Value(), 3.0F);
 
-	EXPECT_FLOAT_EQ(phase2.a.Value(), 4.0f);
-	EXPECT_FLOAT_EQ(phase2.b.Value(), 5.0f);
-	EXPECT_FLOAT_EQ(phase2.c.Value(), 6.0f);
+  EXPECT_FLOAT_EQ(phase2.a.Value(), 4.0F);
+  EXPECT_FLOAT_EQ(phase2.b.Value(), 5.0F);
+  EXPECT_FLOAT_EQ(phase2.c.Value(), 6.0F);
 
-	EXPECT_FLOAT_EQ(sum.a.Value(), 5.0f);
-	EXPECT_FLOAT_EQ(sum.b.Value(), 7.0f);
-	EXPECT_FLOAT_EQ(sum.c.Value(), 9.0f);
+  EXPECT_FLOAT_EQ(sum.a.Value(), 5.0F);
+  EXPECT_FLOAT_EQ(sum.b.Value(), 7.0F);
+  EXPECT_FLOAT_EQ(sum.c.Value(), 9.0F);
 
-	EXPECT_FLOAT_EQ(diff.a.Value(), -3.0f);
-	EXPECT_FLOAT_EQ(diff.b.Value(), -3.0f);
-	EXPECT_FLOAT_EQ(diff.c.Value(), -3.0f);
+  EXPECT_FLOAT_EQ(diff.a.Value(), -3.0F);
+  EXPECT_FLOAT_EQ(diff.b.Value(), -3.0F);
+  EXPECT_FLOAT_EQ(diff.c.Value(), -3.0F);
 }
