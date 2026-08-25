@@ -13,10 +13,9 @@
  */
 #pragma once
 
-#include <array>
-#include <cstddef>
 #include <cstdint>
 #include <numbers>
+#include "rotor_angle_sin_table.hpp"
 #include "units.hpp"
 
 /**
@@ -32,10 +31,6 @@ namespace unimoc::system {
  */
 namespace detail {
 
-/// Number of entries in the sine lookup table, excluding the wrap-around entry.
-inline constexpr std::size_t kSinTableSize = 512U;
-/// Number of entries in a quarter revolution.
-inline constexpr std::size_t kSinTableQuarterSize = kSinTableSize / 4U;
 /// Number of low bits of the Q1.31 phase used as the interpolation fraction.
 inline constexpr std::uint32_t kSinTableFractionBits = 23U;
 /// Mask selecting the interpolation fraction bits of the Q1.31 phase.
@@ -55,71 +50,6 @@ inline constexpr float kRadiansPerCount = static_cast<float>(2.0 * std::numbers:
 inline constexpr float kRevolutionsPerRadian = static_cast<float>(1.0 / (2.0 * std::numbers::pi_v<double>));
 /// Radians per full revolution.
 inline constexpr float kRadiansPerRevolution = 2.0F * std::numbers::pi_v<float>;
-
-/**
- * @brief Evaluates the sine Taylor series for compile-time table generation.
- * @param angleInRadians Argument in radians, accurate for |angleInRadians| <= pi/4.
- * @return The sine of @p angleInRadians.
- */
-constexpr double TaylorSin(double angleInRadians) noexcept {
-  const double kX2 = angleInRadians * angleInRadians;
-  double term = angleInRadians;
-  double sum = angleInRadians;
-  for (int order = 1; order <= 12; ++order) {
-    term *= -kX2 / static_cast<double>((2 * order) * ((2 * order) + 1));
-    sum += term;
-  }
-  return sum;
-}
-
-/**
- * @brief Evaluates the cosine Taylor series for compile-time table generation.
- * @param angleInRadians Argument in radians, accurate for |angleInRadians| <= pi/4.
- * @return The cosine of @p angleInRadians.
- */
-constexpr double TaylorCos(double angleInRadians) noexcept {
-  const double kX2 = angleInRadians * angleInRadians;
-  double term = 1.0;
-  double sum = 1.0;
-  for (int order = 1; order <= 12; ++order) {
-    term *= -kX2 / static_cast<double>(((2 * order) - 1) * (2 * order));
-    sum += term;
-  }
-  return sum;
-}
-
-/**
- * @brief Computes a sine table entry using octant reduction.
- * @param index Table index; entry @p index represents sin(2*pi*index/kSinTableSize).
- * @return The sine value of the table entry.
- */
-constexpr double SinTableEntry(std::size_t index) noexcept {
-  constexpr double kPi = std::numbers::pi_v<double>;
-
-  std::size_t sin_table_index = index % kSinTableSize;
-  bool negate = false;
-
-  if (sin_table_index >= kSinTableSize / 2U) {
-    sin_table_index -= kSinTableSize / 2U;
-    negate = true;
-  }
-  if (sin_table_index > kSinTableSize / 4U) {
-    sin_table_index = (kSinTableSize / 2U) - sin_table_index;
-  }
-
-  const double kAngleRadians = (2.0 * kPi * static_cast<double>(sin_table_index)) / static_cast<double>(kSinTableSize);
-  const double kComputedAngleValue = (sin_table_index <= kSinTableSize / 8U) ? TaylorSin(kAngleRadians) : TaylorCos((kPi / 2.0) - kAngleRadians);
-  return negate ? -kComputedAngleValue : kComputedAngleValue;
-}
-
-/// Sine over one full revolution plus a quarter-revolution tail for cosine lookup.
-inline constexpr std::array<float, kSinTableSize + kSinTableQuarterSize + 1U> kSinTable = [] {
-  std::array<float, kSinTableSize + kSinTableQuarterSize + 1U> table{};
-  for (std::size_t i = 0U; i <= kSinTableSize + kSinTableQuarterSize; ++i) {
-    table.at(i) = static_cast<float>(SinTableEntry(i));
-  }
-  return table;
-}();
 
 /**
  * @brief Interpolates a table segment linearly.
