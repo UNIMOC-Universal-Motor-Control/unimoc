@@ -66,8 +66,10 @@ Release`; they require the ARM GCC and modm dependencies described in
 - prefer #pragma once over include guards. remove include guards when applicable.
 - Use the Google C++ style configured in `.clang-format`.
 - Run the repository's clang-format configuration when changing C++.
-- Preserve the existing public-header naming convention; new files should match
-	the convention of the directory they belong to.
+- Use `snake_case` for all file names, including C++ headers and sources.
+- Use Google C++ identifier naming in code: `PascalCase` for types and
+	functions, `snake_case` for variables and data members, and `kPascalCase`
+	for constants and enumerators.
 - Use C++23
 - Keep algorithms deterministic, portable, and free of HAL dependencies.
 - Prefer small, focused changes. Preserve public APIs unless the task requires

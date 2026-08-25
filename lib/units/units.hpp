@@ -46,10 +46,14 @@ struct MagneticFluxTag;
 struct ResistanceTag;
 /// Tag identifying inductance, whose base unit is the henry.
 struct InductanceTag;
+/// Tag identifying rotational inertia, whose base unit is kg m^2.
+struct InertiaTag;
 /// Tag identifying time, whose base unit is the second.
 struct TimeTag;
 /// Tag identifying frequency, whose base unit is the hertz.
 struct FrequencyTag;
+/// Tag identifying inverse time, whose base unit is 1/s.
+struct InverseTimeTag;
 /// Tag identifying a dimensionless ratio, such as a sine or cosine result.
 struct DimensionlessRatioTag;
 
@@ -205,12 +209,16 @@ using MagneticFlux = Unit<float, std::ratio<1>, MagneticFluxTag>;
 using Resistance = Unit<float, std::ratio<1>, ResistanceTag>;
 /// Inductance in henrys (H).
 using Inductance = Unit<float, std::ratio<1>, InductanceTag>;
+/// Rotational inertia in kilogram square metres (kg m^2).
+using Inertia = Unit<float, std::ratio<1>, InertiaTag>;
 
 // Helper units
 /// Time in seconds (s).
 using Time = Unit<float, std::ratio<1>, TimeTag>;
 /// Frequency in hertz (Hz).
 using Frequency = Unit<float, std::ratio<1>, FrequencyTag>;
+/// Inverse time in reciprocal seconds (1/s).
+using InverseTime = Unit<float, std::ratio<1>, InverseTimeTag>;
 /// Dimensionless ratio, such as a sine or cosine result.
 using DimensionlessRatio = Unit<float, std::ratio<1>, DimensionlessRatioTag>;
 

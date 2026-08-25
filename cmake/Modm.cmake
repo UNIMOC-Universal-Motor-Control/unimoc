@@ -15,7 +15,7 @@ set(PYTHON_VERSION "3.12")
 set(VENV_PATH "${CMAKE_SOURCE_DIR}/.venv")
 set(REQUIREMENTS_TXT "${CMAKE_SOURCE_DIR}/requirements.txt")
 
-if(WIN32)
+if(CMAKE_HOST_WIN32)
   set(VENV_PYTHON "${VENV_PATH}/Scripts/python.exe")
 else()
   set(VENV_PYTHON "${VENV_PATH}/bin/python")

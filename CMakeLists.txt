@@ -35,8 +35,8 @@ option(HARDWARE_DIRECTORY "Directory for hardware files" "${CMAKE_SOURCE_DIR}/ha
 option(RUNNING_ON_HOST "Set to ON if running on host (not on target)" OFF)
 
 if(HARDWARE_DIRECTORY)
-  # Always expose the hardware/ include path so platform-agnostic headers
-  # (e.g. HardwareLimits.hpp) are available to all targets, including tests.
+  # Always expose the hardware/ include path so platform-agnostic adapter
+  # headers are available to all targets, including tests.
   target_include_directories(project_options INTERFACE ${CMAKE_SOURCE_DIR}/hardware)
   # add hardware files
   add_subdirectory(${HARDWARE_DIRECTORY})
@@ -54,8 +54,8 @@ if(HARDWARE_DIRECTORY)
   endif()
 else()
   # Even without a hardware implementation directory, expose the hardware/
-  # header path so that HardwareLimits.hpp is found during hosted builds and
-  # tests.  No platform-specific source files are compiled.
+  # header path during hosted builds and tests. No platform-specific source
+  # files are compiled.
   target_include_directories(project_options INTERFACE ${CMAKE_SOURCE_DIR}/hardware)
   message(WARNING "HARDWARE_DIRECTORY is not set, skipping hardware files.")
 endif()

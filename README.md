@@ -97,7 +97,11 @@ lib/
 │   ├── CyphalInterface.hpp       # Register names + subject port IDs (full API map)
 │   ├── MotorType.hpp             # MotorType enum: PMSM / ASM / EESM
 │   ├── NodeIdentity.hpp          # Node name + hw/sw version (UID read from hardware)
-│   ├── NvmSettings.hpp           # Aggregate of all NVM-backed parameters
+│   ├── nvm_settings.hpp          # Typed aggregate of NVM-backed parameters
+│   ├── settings_codec.hpp        # Versioned explicit settings image codec
+│   ├── settings_profile.hpp      # Immutable target capabilities and defaults
+│   ├── settings_storage.hpp      # Platform load/save callback contract
+│   ├── settings_store.hpp        # Snapshot and authorized mutation API
 │   ├── rotor_angle.hpp           # Q1.31 electrical angle + revolution counter, sin/cos LUT
 │   ├── rotor_system.hpp          # d/q rotating reference frame
 │   ├── stator_system.hpp         # α/β stationary reference frame
@@ -255,34 +259,50 @@ All input/output subjects can be inspected live in Cymon.
 ## NVM-Backed Settings
 
 All settings are aggregated in `unimoc::system::NvmSettings`
-(`lib/system/NvmSettings.hpp`).  The struct is:
+(`lib/system/nvm_settings.hpp`).  Runtime ownership is provided by
+`unimoc::system::SettingsStore`.  The design is:
 
-- **Validated** by a magic word (`0x554D4F43` = "UMOC") and a layout version
-  number.  If either mismatches on load, factory defaults are restored.
+- **Validated** by a magic word (`0x554D4F43` = "UMOC"), a format version, and
+   target capability/cross-field checks. Invalid images are replaced by the
+   target factory profile.
 - **Complete** — every tunable parameter from every controller and observer
   lives in a single flat struct, making it trivial to back up or flash a full
   drive configuration.
-- **Platform-agnostic** — the NVM driver (flash page, EEPROM, external SPI
-  flash) is provided by the hardware layer; the library only defines the data.
+- **Platform-agnostic** — the hardware layer supplies an immutable profile and
+   load/save callbacks. Hosted builds can use a file; targets can use a
+   dedicated flash section.
+- **Read-only to application code** — control code receives a
+   `SettingsSnapshot`; only an explicitly passed `SettingsOperations` capability
+   can commit changes.
+- **Explicitly serialized** — unit wrappers are encoded through their numeric
+   values in a fixed little-endian image. The C++ object layout is not persisted.
 
 ```cpp
-#include "NvmSettings.hpp"
+#include "hardware_interface.hpp"
+#include "settings_store.hpp"
 
-unimoc::system::NvmSettings cfg;
+unimoc::system::SettingsStore settings_store{
+      unimoc::hardware::settings.GetSettingsProfile(),
+      unimoc::hardware::settings.GetSettingsStorage()};
 
-// Load from NVM (hardware-specific)
-nvm_load(reinterpret_cast<uint8_t*>(&cfg), sizeof(cfg));
+const auto load_status = settings_store.Load();
+const auto settings = settings_store.GetSnapshot();
 
-if (!cfg.is_valid()) {
-    cfg.reset_to_defaults();  // blank or corrupt flash
-    nvm_save(...);
+// Application consumers receive only a const settings record.
+current_control.init(settings.Get(), timer_clock_hz);
+
+// Operation endpoints such as Cyphal receive the mutation capability.
+const auto operations = settings_store.GetOperations();
+operations.SetMotorCurrentLimit(unimoc::unit::Current{20.0F});
+if (load_status == unimoc::system::SettingsStatus::kStorageError) {
+      // Handle a storage failure before enabling the drive.
 }
-
-// Apply to controller instances
-mechanical_observer.R  = cfg.stator_R;
-mechanical_observer.L  = cfg.stator_L;
-// ...
 ```
+
+The target profile is compiled into the hardware adapter as a `const` object,
+so stock parameters and immutable safety capabilities are included in the
+firmware image. The writable settings image is separate and is never allowed
+to raise those capabilities.
 
 ---
 
@@ -560,9 +580,10 @@ The gain correction factors are stored in `NvmSettings::adc_gain_a` and
 
 ### Calibration Results and NVM Commit
 
-When the sequence reaches **DONE** the firmware automatically:
+When the sequence reaches **DONE** the firmware automatically commits the
+calibration through its authorized `SettingsOperations` capability:
 
-1. Writes calibration values to the live `NvmSettings` struct:
+1. Builds one candidate settings record containing:
 
    | NvmSettings field | Source |
    |---|---|
@@ -572,7 +593,11 @@ When the sequence reaches **DONE** the firmware automatically:
    | `adc_gain_a` | `1 / gain_a` computed in CURRENT_SENSE_CALIBRATION |
    | `adc_gain_b` | `1 / gain_b` computed in CURRENT_SENSE_CALIBRATION |
 
-2. Prints a full summary to RTT:
+2. Validates and persists the candidate as one settings transaction. A storage
+   failure leaves the active settings unchanged and puts the startup FSM into
+   `FAULT`.
+
+3. Prints a full summary to RTT:
    ```
    [STARTUP] HARDWARE STARTUP AID — SUMMARY
    [STARTUP]   PWM_DISABLE:               PASS
@@ -585,9 +610,6 @@ When the sequence reaches **DONE** the firmware automatically:
    [STARTUP] adc_trig_opt  = 176 ticks
    [STARTUP] NVM calibration fields updated.
    ```
-
-3. The application must then trigger an NVM flush (hardware-specific) so
-   the calibration survives the next power cycle.
 
 Individual step results can also be read back at any time via:
 

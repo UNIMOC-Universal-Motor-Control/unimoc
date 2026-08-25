@@ -5,8 +5,8 @@
 
 target_sources(${CMAKE_PROJECT_NAME}
   PRIVATE
-  ${CMAKE_CURRENT_LIST_DIR}/CurrentControlIsr.cpp
-  ${CMAKE_CURRENT_LIST_DIR}/SlowUpdate.cpp)
+  ${CMAKE_CURRENT_LIST_DIR}/current_control_isr.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/slow_update.cpp)
 
 target_include_directories(${CMAKE_PROJECT_NAME}
   PRIVATE

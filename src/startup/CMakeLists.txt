@@ -2,7 +2,7 @@
 # Add source files here
 target_sources(${CMAKE_PROJECT_NAME}
   PRIVATE
-  HwStartup.cpp)
+  hw_startup.cpp)
 
 
 # Add include files here

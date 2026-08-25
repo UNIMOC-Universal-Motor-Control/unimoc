@@ -1,102 +1,120 @@
 /*
-	   __  ___   ________  _______  ______
-	  / / / / | / /  _/  |/  / __ \/ ____/
-	 / / / /  |/ // // /|_/ / / / / /
-	/ /_/ / /|  // // /  / / /_/ / /___
-	\____/_/ |_/___/_/  /_/\____/\____/
-
-	Universal Motor Control  2025 Alexander <tecnologic86@gmail.com> Evers
-
-	This file is part of UNIMOC.
-
-	UNIMOC is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version.
-
-	This program is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
-
-	You should have received a copy of the GNU General Public License
-	along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *       __  ___   ________  _______  ______
+ *      / / / / | / /  _/  |/  / __ \/ ____/
+ *     / / / /  |/ // // /|_/ / / / / /
+ *    / /_/ / /|  // // /  / / / /___
+ *    \____/_/ |_/___/_/  /_/\____/\____/
+ *
+ *    @file hardware_interface.hpp
+ *    @brief Hardware callbacks for motor input and output.
+ *
+ *    This file is part of UNIMOC and is licensed under GPL-3.0-or-later.
+ *    See the repository LICENSE file for details.
  */
 #pragma once
 
-#ifndef UNIMOC_HARDWARE_INTERFACE_H_
-#define UNIMOC_HARDWARE_INTERFACE_H_
-
-#include <cstdint>
-#include <array>
 #include <functional>
-
+#include <utility>
 #include "hardware_interface_config.hpp"
+#include "settings_profile.hpp"
+#include "settings_storage.hpp"
 #include "three_phase_system.hpp"
 
-/**
- * @namespace unimoc global namespace
- */
-namespace unimoc
-{
-/**
- * @namespace hardware hardware namespace
- */
-namespace hardware
-{
+namespace unimoc::hardware {
 
 /**
- * @brief Hardware interface class for the UNIMOC project.
- * This class provides a basic structure for hardware interfaces.
+ * @brief Callback-based hardware interface for one motor.
+ *
+ * The hardware target supplies the callbacks. The interface owns the callback
+ * objects so temporary `std::function` instances cannot leave dangling
+ * references in the motor table.
  */
-struct HardwareInterface
-{
-	/**
-	 * @brief Function to initialize the hardware interface.
-	 * @return true if initialization is successful, false otherwise.
-	 */
-	const std::function<bool(void)>& initialize;
+class HardwareInterface {
+ public:
+  using InitializeCallback = std::function<bool()>;
+  using GetPhaseCurrentsCallback = std::function<system::ThreePhase<unit::Current>()>;
+  using GetPhaseVoltagesCallback = std::function<system::ThreePhase<unit::Voltage>()>;
+  using SetPhaseDutiesCallback = std::function<void(const system::ThreePhase<unit::DimensionlessRatio>&)>;
 
-	/**
-	 * @brief Functions to get the phase currents and voltages, and to set the phase duties.
-	 */
-	const std::function<system::ThreePhase<unit::Current>(void)>& getPhaseCurrents;
+  /**
+   * @brief Constructs a motor hardware interface.
+   * @param initialize Initializes the hardware and returns success.
+   * @param get_phase_currents Reads the three phase currents.
+   * @param get_phase_voltages Reads the three phase voltages.
+   * @param set_phase_duties Writes the three phase PWM duties.
+   */
+  HardwareInterface(InitializeCallback initialize,
+                    GetPhaseCurrentsCallback get_phase_currents,
+                    GetPhaseVoltagesCallback get_phase_voltages,
+                    SetPhaseDutiesCallback set_phase_duties)
+      : initialize_(std::move(initialize)),
+        get_phase_currents_(std::move(get_phase_currents)),
+        get_phase_voltages_(std::move(get_phase_voltages)),
+        set_phase_duties_(std::move(set_phase_duties)) {}
 
-	/**
-	 * @brief Function to get the phase voltages.
-	 */
-	const std::function<system::ThreePhase<unit::Voltage>(void)>& getPhaseVoltages;
+  /**
+   * @brief Initializes the hardware interface.
+   * @return True when initialization succeeds.
+   */
+  [[nodiscard]] bool Initialize() const { return initialize_(); }
 
-	/**
-	 * @brief Function to set the phase duties.
-	 * @param duties An array of floats representing the phase duties.
-	 */
-	const std::function<void(system::ThreePhase<unit::DimensionlessRatio>)>& setPhaseDutys;
+  /**
+   * @brief Reads the three phase currents.
+   * @return The measured phase currents.
+   */
+  [[nodiscard]] system::ThreePhase<unit::Current> GetPhaseCurrents() const { return get_phase_currents_(); }
 
-	/**
-	 * @brief Constructor for the HardwareInterface class.
-	 * @param getPhaseCurrents Function to get the phase currents.
-	 * @param getPhaseVoltages Function to get the phase voltages.
-	 * @param setPhaseDutys Function to set the phase duties.
-	 */
-	HardwareInterface(const std::function<bool(void)>& _initialize,
-					  const std::function<system::ThreePhase<unit::Current>(void)>& _getPhaseCurrents,
-					  const std::function<system::ThreePhase<unit::Voltage>(void)>& _getPhaseVoltages,
-					  const std::function<void(system::ThreePhase<unit::DimensionlessRatio>)>& _setPhaseDutys)
-		: initialize(_initialize),
-		  getPhaseCurrents(_getPhaseCurrents),
-		  getPhaseVoltages(_getPhaseVoltages),
-		  setPhaseDutys(_setPhaseDutys) {};
+  /**
+   * @brief Reads the three phase voltages.
+   * @return The measured phase voltages.
+   */
+  [[nodiscard]] system::ThreePhase<unit::Voltage> GetPhaseVoltages() const { return get_phase_voltages_(); }
 
-	/**
-	 * @brief Default destructor.
-	 */
-	~HardwareInterface() = default;
+  /**
+   * @brief Writes the three phase PWM duties.
+   * @param duties Normalized duties for phases A, B, and C.
+   */
+  void SetPhaseDuties(const system::ThreePhase<unit::DimensionlessRatio>& duties) const { set_phase_duties_(duties); }
+
+ private:
+  InitializeCallback initialize_;
+  GetPhaseCurrentsCallback get_phase_currents_;
+  GetPhaseVoltagesCallback get_phase_voltages_;
+  SetPhaseDutiesCallback set_phase_duties_;
 };
 
-extern HardwareInterface motor[MOTORS];  ///< Global array of hardware interfaces for motors
+/**
+ * @brief Hardware-owned settings profile and persistence boundary.
+ *
+ * The profile is immutable and normally resides in target read-only memory.
+ * The storage callbacks address the separate writable settings image.
+ */
+class HardwareSettingsInterface {
+ public:
+  /**
+   * @brief Constructs the settings hardware boundary.
+   * @param profile Immutable factory settings and hardware capabilities.
+   * @param storage Platform callbacks for the writable settings image.
+   */
+  HardwareSettingsInterface(const system::SettingsProfile& profile, system::SettingsStorage storage) noexcept
+      : profile_{profile}, storage_{storage} {}
 
-}  // namespace hardware
-}  // namespace unimoc
+  /**
+   * @brief Returns the immutable target profile.
+   */
+  [[nodiscard]] const system::SettingsProfile& GetSettingsProfile() const noexcept { return profile_; }
 
-#endif /* UNIMOC_HARDWARE_INTERFACE_H_ */
+  /**
+   * @brief Returns the platform settings storage callbacks.
+   */
+  [[nodiscard]] const system::SettingsStorage& GetSettingsStorage() const noexcept { return storage_; }
+
+ private:
+  const system::SettingsProfile& profile_;
+  system::SettingsStorage storage_;
+};
+
+extern HardwareSettingsInterface settings;  ///< Node settings hardware boundary.
+extern HardwareInterface motor[MOTORS];     ///< Global array of hardware interfaces for motors
+
+}  // namespace unimoc::hardware

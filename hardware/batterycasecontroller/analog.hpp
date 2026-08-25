@@ -1,54 +1,36 @@
 /*
-	   __  ___   ________  _______  ______
-	  / / / / | / /  _/  |/  / __ \/ ____/
-	 / / / /  |/ // // /|_/ / / / / /
-	/ /_/ / /|  // // /  / / /_/ / /___
-	\____/_/ |_/___/_/  /_/\____/\____/
-
-	Universal Motor Control  2025 Alexander <tecnologic86@gmail.com> Evers
-
-	This file is part of UNIMOC.
-
-	UNIMOC is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version.
-
-	This program is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
-
-	You should have received a copy of the GNU General Public License
-	along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *       __  ___   ________  _______  ______
+ *      / / / / | / /  _/  |/  / __ \/ ____/
+ *     / / / /  |/ // // /|_/ / / / / /
+ *    / /_/ / /|  // // /  / / / /___
+ *    \____/_/ |_/___/_/  /_/\____/\____/
+ *
+ *    @file analog.hpp
+ *    @brief Analog input and motor measurement API.
+ *
+ *    This file is part of UNIMOC and is licensed under GPL-3.0-or-later.
+ *    See the repository LICENSE file for details.
  */
 #pragma once
 
-#ifndef UNIMOC_HARDWARE_ANALOG_H_
-#define UNIMOC_HARDWARE_ANALOG_H_
-
 #include <cstdint>
 #include <modm/platform.hpp>
-
 #include "three_phase_system.hpp"
 
 /**
  * @namespace unimoc global namespace
  */
-namespace unimoc
-{
+namespace unimoc {
 /**
  * @namespace hardware hardware namespace
  */
-namespace hardware
-{
+namespace hardware {
 
 /**
  * @namespace analog analog namespace
  * @brief Contains definitions and mappings for analog signals in the UNIMOC hardware.
  */
-namespace analog
-{
+namespace analog {
 //
 // ADC Channel Mapping
 // Pin		Channel			Signal
@@ -79,62 +61,58 @@ using A4_CRKT = modm::platform::GpioB14::In4;
 using A5_MOTT = modm::platform::GpioA8::In1;
 using A5_BRDGT = modm::platform::GpioA9::In2;
 
-
 /**
  * @brief Initializes the analog subsystem.
  * This function sets up the necessary configurations for the analog inputs.
  *
  * @return true if initialization is successful, false otherwise.
  */
-bool
-initialize(void) noexcept;
+bool Initialize() noexcept;
 
 /**
  * @brief Reads the current from the specified phase.
  * @param phase The phase to read the current from (0 for A, 1 for B, 2 for C).
  * @return The current value in Amperes.
  */
-system::ThreePhase<unit::Current> getPhaseCurrents(void) noexcept;
+system::ThreePhase<unit::Current> GetPhaseCurrents() noexcept;
 
 /**
  * @brief Reads the voltage from the specified phase.
  * @param phase The phase to read the voltage from (0 for A, 1 for B, 2 for C).
  * @return The voltage value in Volts.
  */
-system::ThreePhase<unit::Voltage> getPhaseVoltages(void) noexcept;
+system::ThreePhase<unit::Voltage> GetPhaseVoltages() noexcept;
 
 /**
  * @brief Reads the DC link voltage.
  * @return The DC link voltage in Volts.
  */
-float getDcLinkVoltage(void) noexcept;
+float GetDcLinkVoltage() noexcept;
 
 /**
  * @brief Reads the crank torque.
  * @return The crank torque in Newton-meters.
  */
-float getCrankTorque(void) noexcept;
+float GetCrankTorque() noexcept;
 
 /**
  * @brief Reads the motor temperature.
  * @return The motor temperature in degrees Celsius.
  */
-float getMotorTemperature(void) noexcept;
+float GetMotorTemperature() noexcept;
 
 /**
  * @brief Reads the bridge temperature.
  * @return The bridge temperature in degrees Celsius.
  */
-float getBridgeTemperature(void) noexcept;
+float GetBridgeTemperature() noexcept;
 
 /**
  * @brief Sets the phase duties for the motor control.
  * @param duties The phase duties to set, represented as a ThreePhase structure.
  */
-void setPhaseDuties(const system::ThreePhase<unit::DimensionlessRatio>& duties) noexcept;
+void SetPhaseDuties(const system::ThreePhase<unit::DimensionlessRatio>& duties) noexcept;
 
 }  // namespace analog
 }  // namespace hardware
 }  // namespace unimoc
-
-#endif /* UNIMOC_HARDWARE_ANALOG_H_ */
