@@ -29,7 +29,7 @@
 
 #include <atomic>
 #include <cstdint>
-#include "SinCos.hpp"
+#include "sin_cos.hpp"
 #include "stator_system.hpp"
 
 /**
@@ -75,7 +75,7 @@ inline constexpr uint8_t NUM_SUB_STEPS = 4u;
 struct SubStepBuffer
 {
     /// Pre-computed sin/cos for each sub-step Park transform.
-    system::SinCos<float> sc[NUM_SUB_STEPS]{};
+    system::SinCos<unit::DimensionlessRatio> sc[NUM_SUB_STEPS]{};
 
     /// Stator-frame (α/β) current samples recorded by the ISR at each sub-step.
     system::Stator<float> i_ab_samples[NUM_SUB_STEPS]{};

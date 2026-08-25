@@ -25,9 +25,10 @@
 #include "SlowUpdate.hpp"
 #include <cmath>
 #include <cstdint>
-#include "SinCos.hpp"
+#include "sin_cos.hpp"
 #include "rotor_system.hpp"
 #include "stator_system.hpp"
+#include "units.hpp"
 
 namespace unimoc
 {
@@ -98,7 +99,7 @@ bool SlowUpdate::run_once() noexcept
 
     // Stack copies from the old half (ISR now writes only to new_active).
     system::Stator<float> i_ab_snap[NUM_SUB_STEPS];
-    system::SinCos<float>          sc_snap[NUM_SUB_STEPS];
+    system::SinCos<unit::DimensionlessRatio> sc_snap[NUM_SUB_STEPS];
 
     for (uint8_t k = 0u; k < NUM_SUB_STEPS; ++k)
     {
@@ -187,7 +188,7 @@ bool SlowUpdate::run_once() noexcept
     for (uint8_t k = 0u; k < NUM_SUB_STEPS; ++k)
     {
         const float phi_k = theta_now + static_cast<float>(k) * omega_now * dt_fast;
-        new_buf.sc[k] = system::SinCos<float>(phi_k);
+        new_buf.sc[k] = system::SinCos<unit::DimensionlessRatio>(unit::Angle{phi_k});
     }
 
     return true;

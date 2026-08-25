@@ -27,13 +27,8 @@
 #include <gtest/gtest.h>
 #include <cmath>
 #include <concepts>
-#include "rotor_angle.hpp"
-#include "rotor_system.hpp"
 
 using ThreePhase = unimoc::system::ThreePhase<unimoc::unit::DimensionlessRatio>;
-using Stator = unimoc::system::Stator<unimoc::unit::DimensionlessRatio>;
-using Rotor = unimoc::system::Rotor<unimoc::unit::DimensionlessRatio>;
-using RotorAngle = unimoc::system::RotorAngle;
 
 static_assert(unimoc::unit::UnitLike<unimoc::unit::Current>);
 static_assert(!unimoc::unit::UnitLike<float>);
@@ -339,88 +334,6 @@ TEST_F(ThreePhaseTest, ToStatorTransformsBalancedPhaseVector) {
 
   EXPECT_FLOAT_EQ(kStator.alpha.Value(), 1.0F);
   EXPECT_NEAR(kStator.beta.Value(), 0.0F, 1.0e-6F);
-}
-
-TEST_F(ThreePhaseTest, StatorToRotorAtZeroAngle) {
-  const Stator kStator{1.0F, 2.0F};
-  const RotorAngle kAngle;
-
-  const auto kRotor = kStator.ToRotor(kAngle);
-
-  EXPECT_NEAR(kRotor.d.Value(), 1.0F, 1.0e-5F);
-  EXPECT_NEAR(kRotor.q.Value(), 2.0F, 1.0e-5F);
-}
-
-TEST_F(ThreePhaseTest, StatorToRotorAtQuarterTurn) {
-  const Stator kStator{1.0F, 2.0F};
-  const RotorAngle kAngle = RotorAngle::FromRaw(0x4000'0000);
-
-  const auto kRotor = kStator.ToRotor(kAngle);
-
-  EXPECT_NEAR(kRotor.d.Value(), 2.0F, 1.0e-5F);
-  EXPECT_NEAR(kRotor.q.Value(), -1.0F, 1.0e-5F);
-}
-
-TEST_F(ThreePhaseTest, RotorToStatorAtZeroAngle) {
-  const Rotor kRotor{1.0F, 2.0F};
-  const RotorAngle kAngle;
-
-  const auto kStator = kRotor.ToStator(kAngle);
-
-  EXPECT_NEAR(kStator.alpha.Value(), 1.0F, 1.0e-5F);
-  EXPECT_NEAR(kStator.beta.Value(), 2.0F, 1.0e-5F);
-}
-
-TEST_F(ThreePhaseTest, RotorToStatorAtQuarterTurn) {
-  const Rotor kRotor{1.0F, 2.0F};
-  const RotorAngle kAngle = RotorAngle::FromRaw(0x4000'0000);
-
-  const auto kStator = kRotor.ToStator(kAngle);
-
-  EXPECT_NEAR(kStator.alpha.Value(), -2.0F, 1.0e-5F);
-  EXPECT_NEAR(kStator.beta.Value(), 1.0F, 1.0e-5F);
-}
-
-TEST_F(ThreePhaseTest, ParkAndInverseParkRoundTrip) {
-  const Stator kOriginal{1.25F, -0.75F};
-  const RotorAngle kAngle = RotorAngle::FromAngle(unimoc::unit::Angle{0.6435011F});
-
-  const Rotor kRotor = kOriginal.ToRotor(kAngle);
-  const Stator kRestored = kRotor.ToStator(kAngle);
-
-  EXPECT_NEAR(kRestored.alpha.Value(), kOriginal.alpha.Value(), 1.0e-5F);
-  EXPECT_NEAR(kRestored.beta.Value(), kOriginal.beta.Value(), 1.0e-5F);
-}
-
-TEST_F(ThreePhaseTest, LengthSquaredAvoidsSquareRootForStatorAndRotor) {
-  constexpr Stator kStator{3.0F, 4.0F};
-  constexpr Rotor kRotor{3.0F, 4.0F};
-
-  static_assert(std::same_as<decltype(kStator.LengthSquared()), float>);
-  static_assert(std::same_as<decltype(kRotor.LengthSquared()), float>);
-  static_assert(kStator.LengthSquared() == 25.0F);
-  static_assert(kRotor.LengthSquared() == 25.0F);
-
-  EXPECT_FLOAT_EQ(kStator.LengthSquared(), 25.0F);
-  EXPECT_FLOAT_EQ(kRotor.LengthSquared(), 25.0F);
-}
-
-TEST_F(ThreePhaseTest, ParkTransformIsConstexpr) {
-  constexpr Stator kStator{1.0F, 2.0F};
-  constexpr Rotor kRotor = kStator.ToRotor(RotorAngle{});
-
-  static_assert(kRotor.d.Value() == 1.0F);
-  static_assert(kRotor.q.Value() == 2.0F);
-  EXPECT_FLOAT_EQ(kRotor.d.Value(), 1.0F);
-}
-
-TEST_F(ThreePhaseTest, ClarkeAndParkPreserveTheUnitType) {
-  const unimoc::system::ThreePhase<unimoc::unit::Current> kPhase{1.0F, -0.5F, -0.5F};
-
-  const unimoc::system::Stator<unimoc::unit::Current> kStator = kPhase.ToStator();
-  const unimoc::system::Rotor<unimoc::unit::Current> kRotor = kStator.ToRotor(RotorAngle{});
-
-  EXPECT_NEAR(kRotor.d.Value(), 1.0F, 1.0e-5F);
 }
 
 // Test constexpr functionality (compile-time evaluation)

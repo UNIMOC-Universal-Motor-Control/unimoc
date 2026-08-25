@@ -11,29 +11,32 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(googletest)
 include(GoogleTest)
 
-# Add test executable
-add_executable(system_test system_test.cpp)
+function(add_unimoc_test test_name test_source)
+    add_executable(${test_name} ${test_source})
 
-# define the same hardware limits for the test executable as for the main project
-target_compile_definitions(system_test PUBLIC
-    HARDWARE_MAX_PHASE_CURRENT_A=100.0
-    HARDWARE_MAX_MOTOR_CURRENT_A=80.0
-    HARDWARE_MAX_BATTERY_DRIVE_CURRENT_A=50.0
-    HARDWARE_MAX_BATTERY_CHARGE_CURRENT_A=20.0
-)
+    # Keep the hosted test values aligned with the firmware configuration.
+    target_compile_definitions(${test_name} PUBLIC
+        HARDWARE_MAX_PHASE_CURRENT_A=100.0
+        HARDWARE_MAX_MOTOR_CURRENT_A=80.0
+        HARDWARE_MAX_BATTERY_DRIVE_CURRENT_A=50.0
+        HARDWARE_MAX_BATTERY_CHARGE_CURRENT_A=20.0
+    )
 
-target_link_libraries(system_test gtest gtest_main)
-target_link_libraries(system_test unimoc_lib)
-gtest_discover_tests(system_test)
+    target_link_libraries(${test_name} PRIVATE gtest gtest_main unimoc_lib)
+    gtest_discover_tests(${test_name})
+endfunction()
 
-# Add three phase system test executable
-add_executable(three_phase_system_test three_phase_system_test.cpp)
-target_link_libraries(three_phase_system_test gtest gtest_main)
-target_link_libraries(three_phase_system_test unimoc_lib)
-gtest_discover_tests(three_phase_system_test)
+add_unimoc_test(three_phase_system_test three_phase_system_test.cpp)
+add_unimoc_test(stator_system_test stator_system_test.cpp)
+add_unimoc_test(rotor_system_test rotor_system_test.cpp)
+add_unimoc_test(rotor_angle_test rotor_angle_test.cpp)
+add_unimoc_test(sin_cos_test sin_cos_test.cpp)
 
-# Add rotor angle test executable
-add_executable(rotor_angle_test rotor_angle_test.cpp)
-target_link_libraries(rotor_angle_test gtest gtest_main)
-target_link_libraries(rotor_angle_test unimoc_lib)
-gtest_discover_tests(rotor_angle_test)
+add_unimoc_test(node_identity_test node_identity_test.cpp)
+add_unimoc_test(nvm_settings_test nvm_settings_test.cpp)
+add_unimoc_test(control_mode_test control_mode_test.cpp)
+add_unimoc_test(cyphal_interface_test cyphal_interface_test.cpp)
+add_unimoc_test(excitation_controller_test excitation_controller_test.cpp)
+add_unimoc_test(position_controller_test position_controller_test.cpp)
+add_unimoc_test(excitation_observer_test excitation_observer_test.cpp)
+add_unimoc_test(position_tracker_test position_tracker_test.cpp)

@@ -26,8 +26,9 @@
 #include <cmath>
 #include <algorithm>
 #include "three_phase_system.hpp"
-#include "SinCos.hpp"
+#include "sin_cos.hpp"
 #include "NvmSettings.hpp"
+#include "units.hpp"
 
 namespace unimoc
 {
@@ -82,7 +83,7 @@ void CurrentControlIsr::init(const system::NvmSettings& settings,
         for (uint8_t k = 0u; k < NUM_SUB_STEPS; ++k)
         {
             // phi_k = 0 + k × omega_init × dt_fast = 0 (omega = 0 at startup)
-            buf.sc[k] = system::SinCos<float>(0.0f);
+            buf.sc[k] = system::SinCos<unit::DimensionlessRatio>(unit::Angle{0.0F});
         }
     }
 
@@ -210,7 +211,7 @@ void CurrentControlIsr::on_jeoc() noexcept
     }
     const uint8_t   ab      = active_buf_snapshot_;
     SubStepBuffer&  sb      = state.double_buf.buf[ab];
-    const system::SinCos<float>& sc = sb.sc[sub_step_];
+    const system::SinCos<unit::DimensionlessRatio>& sc = sb.sc[sub_step_];
 
     // -------------------------------------------------------------------------
     // 3. Boundary guard — skip current PI and write neutral duties when any
@@ -277,7 +278,7 @@ void CurrentControlIsr::on_jeoc() noexcept
     system::Stator<float> v_inj{0.0f, 0.0f};
     if (hfi_active)
     {
-        v_inj = hfi.get_injection_voltage(sc.sin, sc.cos);
+        v_inj = hfi.get_injection_voltage(sc.sin.Value(), sc.cos.Value());
     }
 
     // -------------------------------------------------------------------------

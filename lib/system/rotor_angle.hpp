@@ -14,8 +14,7 @@
 #pragma once
 
 #include <cstdint>
-#include <numbers>
-#include "rotor_angle_sin_table.hpp"
+#include "sin_cos.hpp"
 #include "units.hpp"
 
 /**
@@ -25,51 +24,6 @@
  * @namespace unimoc::system Coordinate-system data types.
  */
 namespace unimoc::system {
-
-/**
- * @namespace unimoc::system::detail Implementation helpers for the rotor angle.
- */
-namespace detail {
-
-/// Number of low bits of the Q1.31 phase used as the interpolation fraction.
-inline constexpr std::uint32_t kSinTableFractionBits = 23U;
-/// Mask selecting the interpolation fraction bits of the Q1.31 phase.
-inline constexpr std::uint32_t kSinTableFractionMask = (1U << kSinTableFractionBits) - 1U;
-/// Scale converting the fraction bits into a normalised fraction in [0, 1).
-inline constexpr float kSinTableFractionScale = 1.0F / static_cast<float>(1U << kSinTableFractionBits);
-
-/// Number of Q1.31 counts per full revolution.
-inline constexpr std::int64_t kCountsPerRevolution = 0x1'0000'0000LL;
-/// Number of Q1.31 counts per half revolution, the positive wrap limit.
-inline constexpr std::int64_t kCountsPerHalfRevolution = 0x8000'0000LL;
-/// Number of Q1.31 counts per full revolution as a float.
-inline constexpr float kCountsPerRevolutionF = static_cast<float>(kCountsPerRevolution);
-/// Radians represented by a single Q1.31 count.
-inline constexpr float kRadiansPerCount = static_cast<float>(2.0 * std::numbers::pi_v<double> / static_cast<double>(kCountsPerRevolution));
-/// Revolutions represented by one radian.
-inline constexpr float kRevolutionsPerRadian = static_cast<float>(1.0 / (2.0 * std::numbers::pi_v<double>));
-/// Radians per full revolution.
-inline constexpr float kRadiansPerRevolution = 2.0F * std::numbers::pi_v<float>;
-
-/**
- * @brief Interpolates a table segment linearly.
- * @param functionValueStart Function value at the start of the segment.
- * @param functionValueEnd Function value at the end of the segment.
- * @param interpolationFactor Normalised position inside the segment, in [0, 1).
- * @return The interpolated function value.
- */
-constexpr float LinearInterpolate(float functionValueStart, float functionValueEnd, float interpolationFactor) noexcept {
-  return functionValueStart + (interpolationFactor * (functionValueEnd - functionValueStart));
-}
-
-/**
- * @brief Rounds a float to the nearest integer, away from zero on ties.
- * @param value Value to round.
- * @return The rounded value.
- */
-constexpr std::int64_t RoundToInt64(float value) noexcept { return static_cast<std::int64_t>(value >= 0.0F ? value + 0.5F : value - 0.5F); }
-
-}  // namespace detail
 
 /**
  * @brief Electrical rotor angle stored as a Q1.31 phase plus a revolution counter.
@@ -272,18 +226,9 @@ class RotorAngle {
 
   /** @brief Recomputes sine and cosine from the lookup table. */
   constexpr void UpdateSinCos() noexcept {
-    const auto kPhase = static_cast<std::uint32_t>(raw_);
-    const auto kTableIndex = kPhase >> detail::kSinTableFractionBits;
-    const float kInterpolationFactor = static_cast<float>(kPhase & detail::kSinTableFractionMask) * detail::kSinTableFractionScale;
-    const float* const kTable = detail::kSinTable.data() + kTableIndex;
-
-    const float kSinValue = detail::LinearInterpolate(kTable[0U], kTable[1U], kInterpolationFactor);
-    const float kCosValue =
-        detail::LinearInterpolate(kTable[detail::kSinTableQuarterSize], kTable[detail::kSinTableQuarterSize + 1U], kInterpolationFactor);
-    const float kNormalization = 1.5F - (0.5F * ((kSinValue * kSinValue) + (kCosValue * kCosValue)));
-
-    sin_ = unit::DimensionlessRatio(kSinValue * kNormalization);
-    cos_ = unit::DimensionlessRatio(kCosValue * kNormalization);
+    const auto kSinCos = GenerateSinCos(PortableSinCosProvider{}, raw_);
+    sin_ = unit::DimensionlessRatio(kSinCos.sin);
+    cos_ = unit::DimensionlessRatio(kSinCos.cos);
   }
 
   /// Q1.31 phase inside the current revolution.

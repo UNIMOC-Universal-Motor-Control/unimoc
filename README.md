@@ -641,14 +641,20 @@ cmake -S . -B build/hosted \
       -G Ninja \
       -DCMAKE_BUILD_TYPE=Debug
 
-# Build
-cmake --build build/hosted --target system_test
+# Build the module tests
+cmake --build build/hosted
 
-# Run
-./build/hosted/tests/system_test
+# Run the module tests
+ctest --test-dir build/hosted --output-on-failure
 ```
 
-Expected output: all tests pass.
+Each system, control, observer, transform, and provider module has its own
+test executable and can be built or run independently, for example:
+
+```bash
+cmake --build build/hosted --target rotor_angle_test
+ctest --test-dir build/hosted -R RotorAngleTest --output-on-failure
+```
 
 ### Generating the API Documentation
 
@@ -688,8 +694,8 @@ Contributions are welcome!  Please:
 1. Fork the repository and create a feature branch.
 2. Follow the existing code style (`.clang-format` is provided).
 3. Add Google Test unit tests for new algorithm headers in `tests/`.
-4. Ensure all tests pass (`./build/hosted/tests/system_test`) before opening a
-   pull request — CI will verify automatically.
+4. Ensure all hosted module tests pass before opening a pull request — CI will
+   verify automatically.
 5. Open a pull request against `main`.
 
 ---
