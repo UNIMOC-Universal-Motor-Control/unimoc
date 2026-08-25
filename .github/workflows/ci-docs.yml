@@ -1,0 +1,29 @@
+name: Documentation
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  doxygen:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: astral-sh/setup-uv@v9
+        with:
+          python-version: '3.12'
+          enable-cache: true
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build doxygen graphviz clang
+          pip install 'cmake>=4,<5'
+      - run: cmake --workflow --preset "Generate Doxygen documentation"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: doxygen-html
+          path: build/doxygen

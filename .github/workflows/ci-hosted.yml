@@ -1,0 +1,29 @@
+name: Hosted Tests
+on:
+  push:
+    branches: [main, develop, "copilot/**"]
+  pull_request:
+    branches: [main, develop, "copilot/**"]
+concurrency:
+  group: hosted-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  hosted:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: astral-sh/setup-uv@v9
+        with:
+          python-version: '3.12'
+          enable-cache: true
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build clang clang-tidy python-is-python3
+          pip install 'cmake>=4,<5'
+      - run: cmake --workflow --preset "Hosted configure, build and test + clang tidy"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hosted-build
+          path: build/hosted

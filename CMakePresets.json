@@ -161,6 +161,36 @@
         ]
       },
       {
+        "name": "BatteryCaseController Debug build",
+        "displayName": "BatteryCaseController Debug build",
+        "description": "Configure and build Debug firmware for STM32G473 using ARM GCC toolchain for Battery Case Controller",
+        "steps": [
+          {
+            "type": "configure",
+            "name": "BatteryCaseController Debug"
+          },
+          {
+            "type": "build",
+            "name": "BatteryCaseController Debug"
+          }
+        ]
+      },
+      {
+        "name": "BatteryCaseController Release build",
+        "displayName": "BatteryCaseController Release build",
+        "description": "Configure and build Release firmware for STM32G473 using ARM GCC toolchain for Battery Case Controller",
+        "steps": [
+          {
+            "type": "configure",
+            "name": "BatteryCaseController Release"
+          },
+          {
+            "type": "build",
+            "name": "BatteryCaseController Release"
+          }
+        ]
+      },
+      {
         "name": "Generate Doxygen documentation",
         "displayName": "Generate Doxygen documentation",
         "description": "Configure and generate documentation for UNIMOC-owned C++ code",
