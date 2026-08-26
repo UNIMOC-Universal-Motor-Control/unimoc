@@ -1,35 +1,22 @@
 /*
-       __  ___   ________  _______  ______
-      / / / / | / /  _/  |/  / __ \/ ____/
-     / / / /  |/ // // /|_/ / / / / /
-    / /_/ / /|  // // /  / / /_/ / /___
-    \____/_/ |_/___/_/  /_/\____/\____/
-
-    Universal Motor Control  2026 Alexander <tecnologic86@gmail.com> Evers
-
-    This file is part of UNIMOC.
-
-    UNIMOC is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *       __  ___   ________  _______  ______
+ *      / / / / | / /  _/  |/  / __ \/ ____/
+ *     / / / /  |/ // // /|_/ / / / / /
+ *    / /_/ / /|  // // /  / / /_/ / /___
+ *    \____/_/ |_/___/_/  /_/\____/\____/
+ *
+ *    @file dead_time_compensation.hpp
+ *    @brief Unit-typed inverter dead-time compensation.
+ *
+ *    This file is part of UNIMOC and is licensed under GPL-3.0-or-later.
+ *    See the repository LICENSE file for details.
  */
 #pragma once
-
-#ifndef UNIMOC_CONTROL_DEAD_TIME_COMPENSATION_H_
-#define UNIMOC_CONTROL_DEAD_TIME_COMPENSATION_H_
 
 #include <algorithm>
 #include <cmath>
 #include <concepts>
+#include "nvm_settings.hpp"
 #include "stator_system.hpp"
 
 /**
@@ -66,10 +53,10 @@ template <std::floating_point T = float>
 struct DeadTimeCompensation
 {
     /// Dead time of the gate driver [s].
-    T dead_time{static_cast<T>(0.0)};
+    unit::Time dead_time{};
 
     /// PWM switching frequency [Hz].
-    T f_pwm{static_cast<T>(10000.0)};
+    unit::Frequency f_pwm{};
 
     /**
      * @brief Threshold current [A] for the soft sign function.
@@ -78,7 +65,20 @@ struct DeadTimeCompensation
      * sign rather than a hard ±1, which avoids large voltage spikes and chattering
      * near zero-crossings.
      */
-    T i_threshold{static_cast<T>(0.1)};
+    unit::Current i_threshold{};
+
+    /**
+     * @brief Load dead-time compensation parameters from NVM settings.
+     *
+     * @param settings Validated NVM settings.
+     */
+    constexpr void
+    init(const system::NvmSettings& settings) noexcept
+    {
+        dead_time   = settings.dtc_dead_time;
+        f_pwm       = settings.dtc_f_pwm;
+        i_threshold = settings.dtc_i_threshold;
+    }
 
     /**
      * @brief Compute the α/β compensation voltage to add to the modulator input.
@@ -92,24 +92,25 @@ struct DeadTimeCompensation
      * @return      Compensation voltage vector (normalised by V_dc) to add to
      *              the α/β voltage reference.
      */
-    [[nodiscard]] constexpr system::Stator<T>
-    calculate(const system::Stator<T>& i_ab) const noexcept
+    [[nodiscard]] constexpr system::Stator<unit::DimensionlessRatio>
+    calculate(const system::Stator<unit::Current>& i_ab) const noexcept
     {
         // --- Reconstruct three-phase currents from α/β ---
         constexpr T k = static_cast<T>(0.8660254037844386);  // √3 / 2
 
-        T ia = i_ab.alpha;
-        T ib = static_cast<T>(-0.5) * i_ab.alpha + k * i_ab.beta;
-        T ic = static_cast<T>(-0.5) * i_ab.alpha - k * i_ab.beta;
+        T ia = i_ab.alpha.Value();
+        T ib = static_cast<T>(-0.5) * i_ab.alpha.Value() + k * i_ab.beta.Value();
+        T ic = static_cast<T>(-0.5) * i_ab.alpha.Value() - k * i_ab.beta.Value();
 
         // --- Soft sign function: clamp(i / threshold, -1, +1) ---
         // This provides linear interpolation through zero, preventing chattering.
-        T sign_a = std::clamp(ia / i_threshold, static_cast<T>(-1), static_cast<T>(1));
-        T sign_b = std::clamp(ib / i_threshold, static_cast<T>(-1), static_cast<T>(1));
-        T sign_c = std::clamp(ic / i_threshold, static_cast<T>(-1), static_cast<T>(1));
+        const T threshold = i_threshold.Value();
+        T sign_a = std::clamp(ia / threshold, static_cast<T>(-1), static_cast<T>(1));
+        T sign_b = std::clamp(ib / threshold, static_cast<T>(-1), static_cast<T>(1));
+        T sign_c = std::clamp(ic / threshold, static_cast<T>(-1), static_cast<T>(1));
 
         // Normalised per-phase voltage error: sign · t_dead · f_pwm
-        T dt_norm = dead_time * f_pwm;
+        T dt_norm = dead_time.Value() * f_pwm.Value();
         T dva     = sign_a * dt_norm;
         T dvb     = sign_b * dt_norm;
         T dvc     = sign_c * dt_norm;
@@ -120,11 +121,10 @@ struct DeadTimeCompensation
         T d_alpha = two_thirds * (dva - static_cast<T>(0.5) * dvb - static_cast<T>(0.5) * dvc);
         T d_beta  = two_thirds * (k * dvb - k * dvc);
 
-        return system::Stator<T>{d_alpha, d_beta};
+        return system::Stator<unit::DimensionlessRatio>{d_alpha, d_beta};
     }
 };
 
 }  // namespace control
 }  // namespace unimoc
 
-#endif /* UNIMOC_CONTROL_DEAD_TIME_COMPENSATION_H_ */

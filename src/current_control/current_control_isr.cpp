@@ -40,6 +40,10 @@ void CurrentControlIsr::init(const system::NvmSettings& settings, hardware::Hard
   state.dt_slow = static_cast<float>(NUM_SUB_STEPS) * state.dt_fast;
   state.adc_trigger_offset = static_cast<uint32_t>(std::roundf(1e-6f * static_cast<float>(timer_clock_hz)));
 
+  hfi.init(settings);
+  dtc.init(settings);
+  svm.init(settings);
+
   // --- Current controller parameters ---
   cc.kp_d = settings.current_kp_d;
   cc.ki_d = settings.current_ki_d;
@@ -55,14 +59,7 @@ void CurrentControlIsr::init(const system::NvmSettings& settings, hardware::Hard
   cc.v_max = settings.current_v_max.Value();
 
   // --- Mechanical observer parameters ---
-  mech_obs.psi = psi;
-  mech_obs.L_d = l_d;
-  mech_obs.L_q = l_q;
-  mech_obs.J = settings.motor_j.Value();
-  mech_obs.omega_max = settings.motor_omega_max.Value();
-  mech_obs.omega_min = settings.motor_omega_min.Value();
-  mech_obs.Q = settings.mech_obs_q;
-  mech_obs.R = settings.mech_obs_r;
+  mech_obs.init(settings);
 
   // --- Pre-fill both double-buffer halves with zero-angle sin/cos ---
   for (auto& buf : state.double_buf.buf) {
@@ -89,7 +86,11 @@ void CurrentControlIsr::init(const system::NvmSettings& settings, hardware::Hard
 // This function is called from the ADC JEOC ISR at the highest configured IRQ
 // priority.  It must complete in well under one PWM half-period.
 //
-static bool duty_in_bounds(const float duty) noexcept { return duty >= 0.05f && duty <= 0.95f; }
+static bool duty_in_bounds(const unit::DimensionlessRatio duty,
+                           const unit::DimensionlessRatio duty_min,
+                           const unit::DimensionlessRatio duty_max) noexcept {
+  return duty >= duty_min && duty <= duty_max;
+}
 
 // -----------------------------------------------------------------------------
 // on_jeoc
@@ -144,7 +145,8 @@ void CurrentControlIsr::on_jeoc() noexcept {
   // -------------------------------------------------------------------------
   {
     const system::ThreePhase<unit::DimensionlessRatio> applied_duties = hardware_->GetPhaseDuties();
-    if (!duty_in_bounds(applied_duties.a.Value()) || !duty_in_bounds(applied_duties.b.Value()) || !duty_in_bounds(applied_duties.c.Value())) {
+    if (!duty_in_bounds(applied_duties.a, svm.duty_min, svm.duty_max) || !duty_in_bounds(applied_duties.b, svm.duty_min, svm.duty_max) ||
+      !duty_in_bounds(applied_duties.c, svm.duty_min, svm.duty_max)) {
       // Write safe neutral duties (50 %) and skip this control update.
       set_phase_duties(system::ThreePhase<unit::DimensionlessRatio>{unit::DimensionlessRatio{0.5f},
                                                                     unit::DimensionlessRatio{0.5f},
@@ -160,7 +162,7 @@ void CurrentControlIsr::on_jeoc() noexcept {
   // -------------------------------------------------------------------------
   // 4. Clarke transform: I_a, I_b, I_c -> I_alpha, I_beta
   // -------------------------------------------------------------------------
-  const system::Stator<float> i_ab = phase_currents.ToStator();
+  const system::Stator<unit::Current> i_ab = phase_currents.ToStator();
 
   // -------------------------------------------------------------------------
   // 5. Store current sample in the active buffer for SlowUpdate
@@ -170,12 +172,12 @@ void CurrentControlIsr::on_jeoc() noexcept {
   // -------------------------------------------------------------------------
   // 6. Park transform: I_α, I_β → I_d, I_q
   // -------------------------------------------------------------------------
-  const system::Rotor<float> i_dq = i_ab.ToRotor(sc);
+  const system::Rotor<unit::Current> i_dq = i_ab.ToRotor(sc);
 
   // -------------------------------------------------------------------------
   // 7. Current PI with decoupling feedforward
   // -------------------------------------------------------------------------
-  const system::Rotor<float> u_dq = cc.update(state.i_ref, i_dq, mech_obs.omega, state.dt_fast, v_dc);
+  const system::Rotor<unit::Voltage> u_dq = cc.update(state.i_ref, i_dq, mech_obs.omega.Value(), state.dt_fast, v_dc);
 
   // Store for SlowUpdate (flux observer needs last voltage)
   state.u_dq_last = u_dq;
@@ -184,15 +186,15 @@ void CurrentControlIsr::on_jeoc() noexcept {
   // 8. HFI voltage injection (α/β frame, added before inverse Park)
   //    The injection voltage is computed from the current step's sin/cos.
   // -------------------------------------------------------------------------
-  system::Stator<float> v_inj{0.0f, 0.0f};
+  system::Stator<unit::Voltage> v_inj{0.0f, 0.0f};
   if (hfi_active) {
-    v_inj = hfi.get_injection_voltage(sc.sin.Value(), sc.cos.Value());
+    v_inj = hfi.get_injection_voltage(sc.sin, sc.cos);
   }
 
   // -------------------------------------------------------------------------
   // 9. Inverse Park: U_d, U_q → U_α, U_β
   // -------------------------------------------------------------------------
-  system::Stator<float> u_ab = u_dq.inverse_park(sc);
+  system::Stator<unit::Voltage> u_ab = u_dq.ToStator(sc);
 
   // Add HFI injection in the α/β frame
   u_ab = u_ab + v_inj;
@@ -200,14 +202,14 @@ void CurrentControlIsr::on_jeoc() noexcept {
   // -------------------------------------------------------------------------
   // 10. Dead-time compensation (adds a correction in the α/β frame)
   // -------------------------------------------------------------------------
-  u_ab = u_ab + dtc.calculate(i_ab);
+  const float v_dc_safe = (v_dc > 1.0f) ? v_dc : 1.0f;  // prevent /0
+  system::Stator<unit::DimensionlessRatio> u_ab_norm{u_ab.alpha.Value() / v_dc_safe, u_ab.beta.Value() / v_dc_safe};
+  u_ab_norm = u_ab_norm + dtc.calculate(i_ab);
 
   // -------------------------------------------------------------------------
   // 11. Space-vector modulation → normalised duties [0, 1]
   //     SVM expects the voltage vector normalised by V_dc.
   // -------------------------------------------------------------------------
-  const float v_dc_safe = (v_dc > 1.0f) ? v_dc : 1.0f;  // prevent /0
-  system::Stator<float> u_ab_norm{u_ab.alpha / v_dc_safe, u_ab.beta / v_dc_safe};
   const system::ThreePhase<unit::DimensionlessRatio> duties = svm.calculate(u_ab_norm);
 
   // -------------------------------------------------------------------------
@@ -229,9 +231,9 @@ void CurrentControlIsr::on_jeoc() noexcept {
 // =============================================================================
 
 void CurrentControlIsr::force_duty(float da, float db, float dc) noexcept {
-  forced_duties.a = unit::DimensionlessRatio{std::clamp(da, svm.duty_min, svm.duty_max)};
-  forced_duties.b = unit::DimensionlessRatio{std::clamp(db, svm.duty_min, svm.duty_max)};
-  forced_duties.c = unit::DimensionlessRatio{std::clamp(dc, svm.duty_min, svm.duty_max)};
+  forced_duties.a = unit::DimensionlessRatio{std::clamp(da, svm.duty_min.Value(), svm.duty_max.Value())};
+  forced_duties.b = unit::DimensionlessRatio{std::clamp(db, svm.duty_min.Value(), svm.duty_max.Value())};
+  forced_duties.c = unit::DimensionlessRatio{std::clamp(dc, svm.duty_min.Value(), svm.duty_max.Value())};
   force_duty_active = true;
 }
 

@@ -208,6 +208,21 @@ struct Stator
 		return Rotor<T>(T{(alpha.Value() * kCos) + (beta.Value() * kSin)},
 					 T{(beta.Value() * kCos) - (alpha.Value() * kSin)});
 	}
+
+	/**
+	 * @brief Applies the Park transform using a precomputed sine/cosine pair.
+	 * @param sin_cos Precomputed sine and cosine of the electrical angle.
+	 * @return The vector in the rotating d/q reference frame.
+	 */
+	[[nodiscard]] constexpr Rotor<T>
+	ToRotor(const SinCos<unit::DimensionlessRatio> &sin_cos) const noexcept
+	{
+		const Representation kSin = sin_cos.sin.Value();
+		const Representation kCos = sin_cos.cos.Value();
+
+		return Rotor<T>(T{(alpha.Value() * kCos) + (beta.Value() * kSin)},
+					 T{(beta.Value() * kCos) - (alpha.Value() * kSin)});
+	}
 };
 
 }  // namespace unimoc::system

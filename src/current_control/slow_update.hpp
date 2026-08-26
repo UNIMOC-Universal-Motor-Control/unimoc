@@ -117,7 +117,7 @@ class SlowUpdate {
    *
    * @param sp  Flux setpoint in the rotor frame [Wb].
    */
-  void set_flux_setpoint(const system::Rotor<float>& sp) noexcept { flux_setpoint_ = sp; }
+  void set_flux_setpoint(const system::Rotor<unit::MagneticFlux>& sp) noexcept { flux_setpoint_ = sp; }
 
   // =========================================================================
   // Main execution
@@ -152,7 +152,7 @@ class SlowUpdate {
   CurrentControlIsr* isr_{nullptr};
 
   /// Flux setpoint used by flux_obs.calculate() — written by outer loop.
-  system::Rotor<float> flux_setpoint_{0.0f, 0.0f};
+  system::Rotor<unit::MagneticFlux> flux_setpoint_{0.0f, 0.0f};
 };
 
 }  // namespace current_control

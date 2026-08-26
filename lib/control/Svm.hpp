@@ -1,35 +1,22 @@
 /*
-       __  ___   ________  _______  ______
-      / / / / | / /  _/  |/  / __ \/ ____/
-     / / / /  |/ // // /|_/ / / / / /
-    / /_/ / /|  // // /  / / /_/ / /___
-    \____/_/ |_/___/_/  /_/\____/\____/
-
-    Universal Motor Control  2026 Alexander <tecnologic86@gmail.com> Evers
-
-    This file is part of UNIMOC.
-
-    UNIMOC is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *       __  ___   ________  _______  ______
+ *      / / / / | / /  _/  |/  / __ \/ ____/
+ *     / / / /  |/ // // /|_/ / / / / /
+ *    / /_/ / /|  // // /  / / /_/ / /___
+ *    \____/_/ |_/___/_/  /_/\____/\____/
+ *
+ *    @file svm.hpp
+ *    @brief Unit-typed space-vector PWM modulator.
+ *
+ *    This file is part of UNIMOC and is licensed under GPL-3.0-or-later.
+ *    See the repository LICENSE file for details.
  */
 #pragma once
-
-#ifndef UNIMOC_CONTROL_SVM_H_
-#define UNIMOC_CONTROL_SVM_H_
 
 #include <algorithm>
 #include <array>
 #include <concepts>
+#include "nvm_settings.hpp"
 #include "three_phase_system.hpp"
 #include "stator_system.hpp"
 
@@ -67,9 +54,21 @@ template <std::floating_point T = float>
 struct Svm
 {
     /// Minimum duty cycle (keeps time for ADC sampling and dead-time headroom).
-    T duty_min{static_cast<T>(0.05)};
+    unit::DimensionlessRatio duty_min{unit::DimensionlessRatio{0.05F}};
     /// Maximum duty cycle (symmetric headroom on the upper side).
-    T duty_max{static_cast<T>(0.95)};
+    unit::DimensionlessRatio duty_max{unit::DimensionlessRatio{0.95F}};
+
+    /**
+     * @brief Load SVM duty limits from NVM settings.
+     *
+     * @param settings Validated NVM settings.
+     */
+    constexpr void
+    init(const system::NvmSettings& settings) noexcept
+    {
+        duty_min = settings.svm_duty_min;
+        duty_max = settings.svm_duty_max;
+    }
 
     /**
      * @brief Compute three-phase duty cycles from a stationary-frame voltage vector.
@@ -78,15 +77,15 @@ struct Svm
      * @return   Three-phase duty cycles [0, 1] clamped to [duty_min, duty_max].
      */
     [[nodiscard]] constexpr system::ThreePhase<unit::DimensionlessRatio>
-    calculate(const system::Stator<T>& v) const noexcept
+    calculate(const system::Stator<unit::DimensionlessRatio>& v) const noexcept
     {
         // --- Inverse Clarke (amplitude-invariant) ---
         // Transforms the α/β reference into three phase-voltage references.
         constexpr T k = static_cast<T>(0.8660254037844386);  // √3 / 2
 
-        T va = v.alpha;
-        T vb = static_cast<T>(-0.5) * v.alpha + k * v.beta;
-        T vc = static_cast<T>(-0.5) * v.alpha - k * v.beta;
+        T va = v.alpha.Value();
+        T vb = static_cast<T>(-0.5) * v.alpha.Value() + k * v.beta.Value();
+        T vc = static_cast<T>(-0.5) * v.alpha.Value() - k * v.beta.Value();
 
         // --- Zero-sequence injection for centred SVM ---
         // The zero-sequence component centres the modulated waveforms so that the
@@ -102,9 +101,9 @@ struct Svm
         T dc = static_cast<T>(0.5) + vc + v0;
 
         // --- Clamp to [duty_min, duty_max] ---
-        da = std::clamp(da, duty_min, duty_max);
-        db = std::clamp(db, duty_min, duty_max);
-        dc = std::clamp(dc, duty_min, duty_max);
+        da = std::clamp(da, duty_min.Value(), duty_max.Value());
+        db = std::clamp(db, duty_min.Value(), duty_max.Value());
+        dc = std::clamp(dc, duty_min.Value(), duty_max.Value());
 
         return system::ThreePhase<unit::DimensionlessRatio>{
             unit::DimensionlessRatio{da},
@@ -116,4 +115,3 @@ struct Svm
 }  // namespace control
 }  // namespace unimoc
 
-#endif /* UNIMOC_CONTROL_SVM_H_ */

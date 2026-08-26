@@ -57,19 +57,19 @@ algorithm headers are fully portable and tested on x86-64 Linux via
 ## Supported Motor Types
 
 ### PMSM — Permanent-Magnet Synchronous Motor
-Surface-mount and interior-PM motors.  
-Control path: MechanicalObserver (back-EMF PLL) → MTPA → FieldWeakening → SVM.  
+Surface-mount and interior-PM motors.
+Control path: MechanicalObserver (back-EMF PLL) → MTPA → FieldWeakening → SVM.
 Low-speed sensorless: HFI observer (requires inductance saliency, IPMSM only).
 
 ### ASM — Asynchronous (Induction) Motor
-Squirrel-cage induction motors.  
+Squirrel-cage induction motors.
 Control path: AsmFluxObserver (Luenberger) → AsmFluxController (PI) → MechanicalObserver (shared PLL) → SVM.
 
 ### EESM — Electrically Excited Synchronous Machine
-Wound-rotor synchronous motors with external excitation (slip-rings or brushless exciter).  
+Wound-rotor synchronous motors with external excitation (slip-rings or brushless exciter).
 Stator control path identical to PMSM.  Additionally:
-- **ExcitationController** — PI loop on rotor current I_f (CurrentMode) or flux ψ_f = L_m · I_f (FluxMode).  
-- **ExcitationObserver** — first-order low-pass filter on measured I_f → adaptive ψ_f estimate fed into MTPA.  
+- **ExcitationController** — PI loop on rotor current I_f (CurrentMode) or flux ψ_f = L_m · I_f (FluxMode).
+- **ExcitationObserver** — first-order low-pass filter on measured I_f → adaptive ψ_f estimate fed into MTPA.
 - Excitation setpoint and mode received via Cyphal subject.
 
 ---
@@ -80,17 +80,17 @@ Stator control path identical to PMSM.  Additionally:
 lib/
 ├── control/
 │   ├── AsmFluxController.hpp     # ASM rotor-flux PI controller
-│   ├── DeadTimeCompensation.hpp  # Inverter dead-time compensation
+│   ├── dead_time_compensation.hpp  # Inverter dead-time compensation
 │   ├── ExcitationController.hpp  # EESM rotor excitation PI (current / flux mode)
 │   ├── FieldWeakening.hpp        # Voltage-headroom field-weakening integrator
 │   ├── Mtpa.hpp                  # Maximum-Torque-Per-Ampere (IPMSM)
 │   ├── PositionController.hpp    # Cascaded P+PI position/speed controller + homing FSM
-│   └── Svm.hpp                   # Space Vector PWM modulator
+│   └── svm.hpp                   # Space Vector PWM modulator
 ├── observer/
 │   ├── AsmFluxObserver.hpp       # ASM full-order Luenberger rotor-flux observer
 │   ├── ExcitationObserver.hpp    # EESM excitation current LPF → flux estimate
-│   ├── Hfi.hpp                   # 4-step High-Frequency Injection (IPMSM standstill)
-│   ├── MechanicalObserver.hpp    # Back-EMF observer + PLL (PMSM / shared with ASM)
+│   ├── hfi.hpp                   # 4-step High-Frequency Injection (IPMSM standstill)
+│   ├── mechanical_observer.hpp   # Back-EMF observer + PLL (PMSM / shared with ASM)
 │   └── PositionTracker.hpp       # Absolute multi-turn position + homing
 ├── system/
 │   ├── ControlMode.hpp           # ControlMode enum: TORQUE / SPEED / POSITION

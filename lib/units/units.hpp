@@ -127,8 +127,8 @@ class Unit {
    * @pre `other` has the same tag and period as this unit.
    */
   constexpr Unit& operator+=(const Unit& other) {
-    static_assert(std::is_same_v<tag, typename decltype(other)::tag>, "Cannot add units of different types.");
-    static_assert(std::is_same_v<period, typename decltype(other)::period>,
+    static_assert(std::is_same_v<tag, typename std::remove_cvref_t<decltype(other)>::tag>, "Cannot add units of different types.");
+    static_assert(std::is_same_v<period, typename std::remove_cvref_t<decltype(other)>::period>,
                   "Implicit period conversion not allowed for "
                   "addition/subtraction. Convert "
                   "explicitly or ensure same period.");
@@ -142,8 +142,8 @@ class Unit {
    * @pre `other` has the same tag and period as this unit.
    */
   constexpr Unit& operator-=(const Unit& other) {
-    static_assert(std::is_same_v<tag, typename decltype(other)::tag>, "Cannot subtract units of different types.");
-    static_assert(std::is_same_v<period, typename decltype(other)::period>,
+    static_assert(std::is_same_v<tag, typename std::remove_cvref_t<decltype(other)>::tag>, "Cannot subtract units of different types.");
+    static_assert(std::is_same_v<period, typename std::remove_cvref_t<decltype(other)>::period>,
                   "Implicit period conversion not allowed for "
                   "addition/subtraction. Convert "
                   "explicitly or ensure same period.");
@@ -445,12 +445,48 @@ constexpr auto operator*(const Unit<Rep, P1, TimeTag>& time, const Unit<Rep, P2,
 }
 
 /**
+ * @brief Multiplies inductance by current to obtain magnetic flux.
+ * @return Magnetic flux with the product period.
+ */
+template <typename Rep, typename P1, typename P2>
+constexpr auto operator*(const Unit<Rep, P1, InductanceTag>& inductance, const Unit<Rep, P2, CurrentTag>& current) {
+  return Unit<Rep, std::ratio_multiply<P1, P2>, MagneticFluxTag>(inductance.Value() * current.Value());
+}
+
+/**
+ * @brief Multiplies current by inductance to obtain magnetic flux.
+ * @return Magnetic flux with the product period.
+ */
+template <typename Rep, typename P1, typename P2>
+constexpr auto operator*(const Unit<Rep, P1, CurrentTag>& current, const Unit<Rep, P2, InductanceTag>& inductance) {
+  return inductance * current;
+}
+
+/**
  * @brief Divides magnetic flux by voltage to obtain time.
  * @return Time with the quotient period.
  */
 template <typename Rep, typename P1, typename P2>
 constexpr auto operator/(const Unit<Rep, P1, MagneticFluxTag>& flux, const Unit<Rep, P2, VoltageTag>& voltage) {
   return Unit<Rep, std::ratio_divide<P1, P2>, TimeTag>(flux.Value() / voltage.Value());
+}
+
+/**
+ * @brief Multiplies inverse time by magnetic flux to obtain voltage.
+ * @return Voltage with the product period.
+ */
+template <typename Rep, typename P1, typename P2>
+constexpr auto operator*(const Unit<Rep, P1, InverseTimeTag>& inverseTime, const Unit<Rep, P2, MagneticFluxTag>& flux) {
+  return Unit<Rep, std::ratio_multiply<P1, P2>, VoltageTag>(inverseTime.Value() * flux.Value());
+}
+
+/**
+ * @brief Multiplies magnetic flux by inverse time to obtain voltage.
+ * @return Voltage with the product period.
+ */
+template <typename Rep, typename P1, typename P2>
+constexpr auto operator*(const Unit<Rep, P1, MagneticFluxTag>& flux, const Unit<Rep, P2, InverseTimeTag>& inverseTime) {
+  return inverseTime * flux;
 }
 
 /**

@@ -29,9 +29,10 @@
 
 #include <cmath>
 #include <concepts>
+#include "nvm_settings.hpp"
 #include "rotor_system.hpp"
 #include "stator_system.hpp"
-#include "MechanicalObserver.hpp"
+#include "mechanical_observer.hpp"
 
 /**
  * @namespace unimoc global namespace
@@ -106,17 +107,17 @@ template <std::floating_point T = float>
 struct PmsmFluxObserver
 {
     // =========================================================================
-    // Motor parameters  (set from NvmSettings before first use)
+    // Motor parameters (loaded from NvmSettings by init())
     // =========================================================================
 
     /// Stator phase resistance R_s [Ω].
-    T rs{static_cast<T>(0.1)};
+    unit::Resistance rs{};
 
     /// d-axis inductance L_d [H].
-    T L_d{static_cast<T>(1e-3)};
+    unit::Inductance L_d{};
 
     /// q-axis inductance L_q [H].
-    T L_q{static_cast<T>(1e-3)};
+    unit::Inductance L_q{};
 
     // =========================================================================
     // Feedback (anti-drift) gains
@@ -124,40 +125,59 @@ struct PmsmFluxObserver
 
     /// d-axis feedback gain C_d [1/s].  Larger values reduce drift faster but
     /// also damp transient response.
-    T C_d{static_cast<T>(50.0)};
+    unit::InverseTime C_d{};
 
     /// q-axis feedback gain C_q [1/s].
-    T C_q{static_cast<T>(1.0)};
+    unit::InverseTime C_q{};
 
     // =========================================================================
     // Observer state
     // =========================================================================
 
     /// Stator-frame integrated flux α-component ψ_α [Wb].
-    T psi_alpha{static_cast<T>(0)};
+    unit::MagneticFlux psi_alpha{};
 
     /// Stator-frame integrated flux β-component ψ_β [Wb].
-    T psi_beta{static_cast<T>(0)};
+    unit::MagneticFlux psi_beta{};
 
     /// Rotor-frame d-axis back-EMF feedback term fb_d [V].
-    T fb_d{static_cast<T>(0)};
+    unit::Voltage fb_d{};
 
     /// Rotor-frame q-axis back-EMF feedback term fb_q [V].
-    T fb_q{static_cast<T>(0)};
+    unit::Voltage fb_q{};
 
     // =========================================================================
     // Outputs (updated by calculate())
     // =========================================================================
 
     /// Estimated PM flux in the rotor d-axis [Wb] (after inductance subtraction).
-    T psi_pm_d{static_cast<T>(0)};
+    unit::MagneticFlux psi_pm_d{};
 
     /// Estimated PM flux in the rotor q-axis [Wb] (after inductance subtraction).
-    T psi_pm_q{static_cast<T>(0)};
+    unit::MagneticFlux psi_pm_q{};
 
     // =========================================================================
     // Public API
     // =========================================================================
+
+    /**
+     * @brief Load motor and observer parameters from non-volatile settings.
+     *
+     * This also clears the integrated observer state so a new settings
+     * snapshot cannot be combined with state produced by older parameters.
+     *
+     * @param settings Validated NVM settings.
+     */
+    constexpr void
+    init(const system::NvmSettings& settings) noexcept
+    {
+        rs  = settings.stator_r;
+        L_d = settings.l_d;
+        L_q = settings.l_q;
+        C_d = settings.pmsm_flux_obs_c_d;
+        C_q = settings.pmsm_flux_obs_c_q;
+        reset();
+    }
 
     /**
      * @brief Run one observer step and feed the angle correction to the
@@ -176,43 +196,43 @@ struct PmsmFluxObserver
      *                 flux-derived angle correction.
      */
     constexpr void
-    calculate(const system::Rotor<T>& u_dq,
-              const system::Rotor<T>& i_dq,
-              const system::Rotor<T>& set_flux,
-              const T                          dt,
+    calculate(const system::Rotor<unit::Voltage>& u_dq,
+              const system::Rotor<unit::Current>& i_dq,
+              const system::Rotor<unit::MagneticFlux>& set_flux,
+              const unit::Time                       dt,
               MechanicalObserver<T>&           mech_obs) noexcept
     {
         // Snapshot sin/cos from the mechanical observer
-        const T sn = mech_obs.sin_theta;
-        const T cs = mech_obs.cos_theta;
+        const T sn = mech_obs.sin_theta.Value();
+        const T cs = mech_obs.cos_theta.Value();
 
         // -----------------------------------------------------------------
         // Rotor-frame back-EMF (voltage model + feedback)
         // -----------------------------------------------------------------
-        const T bemf_d = u_dq.d - rs * i_dq.d + fb_d;
-        const T bemf_q = u_dq.q - rs * i_dq.q + fb_q;
+        const unit::Voltage bemf_d = u_dq.d - rs * i_dq.d + fb_d;
+        const unit::Voltage bemf_q = u_dq.q - rs * i_dq.q + fb_q;
 
         // -----------------------------------------------------------------
         // Inverse Park: rotor → stator frame
         //   e_α = bemf_d · cos θ̂ − bemf_q · sin θ̂
         //   e_β = bemf_d · sin θ̂ + bemf_q · cos θ̂
         // -----------------------------------------------------------------
-        const T bemf_alpha = bemf_d * cs - bemf_q * sn;
-        const T bemf_beta  = bemf_d * sn + bemf_q * cs;
+        const unit::Voltage bemf_alpha{bemf_d.Value() * cs - bemf_q.Value() * sn};
+        const unit::Voltage bemf_beta{bemf_d.Value() * sn + bemf_q.Value() * cs};
 
         // -----------------------------------------------------------------
         // Stator-frame flux integration
         // -----------------------------------------------------------------
         psi_alpha += bemf_alpha * dt;
-        psi_beta  += bemf_beta  * dt;
+        psi_beta  += bemf_beta * dt;
 
         // -----------------------------------------------------------------
         // Park: stator → rotor frame
         //   ψ_d =  ψ_α · cos θ̂ + ψ_β · sin θ̂
         //   ψ_q = −ψ_α · sin θ̂ + ψ_β · cos θ̂
         // -----------------------------------------------------------------
-        const T psi_d =  psi_alpha * cs + psi_beta * sn;
-        const T psi_q = -psi_alpha * sn + psi_beta * cs;
+        const unit::MagneticFlux psi_d{psi_alpha.Value() * cs + psi_beta.Value() * sn};
+        const unit::MagneticFlux psi_q{-psi_alpha.Value() * sn + psi_beta.Value() * cs};
 
         // -----------------------------------------------------------------
         // Subtract inductance-induced flux to get PM flux estimate
@@ -235,7 +255,7 @@ struct PmsmFluxObserver
         //
         // We negate it so the convention matches: positive ε → advance θ̂.
         // -----------------------------------------------------------------
-        const T angle_error = -psi_pm_q;
+        const unit::Angle angle_error{-psi_pm_q.Value()};
         mech_obs.inject_angle_error(angle_error, dt);
     }
 
@@ -247,12 +267,12 @@ struct PmsmFluxObserver
     constexpr void
     reset() noexcept
     {
-        psi_alpha = static_cast<T>(0);
-        psi_beta  = static_cast<T>(0);
-        fb_d      = static_cast<T>(0);
-        fb_q      = static_cast<T>(0);
-        psi_pm_d  = static_cast<T>(0);
-        psi_pm_q  = static_cast<T>(0);
+        psi_alpha = unit::MagneticFlux{};
+        psi_beta  = unit::MagneticFlux{};
+        fb_d      = unit::Voltage{};
+        fb_q      = unit::Voltage{};
+        psi_pm_d  = unit::MagneticFlux{};
+        psi_pm_q  = unit::MagneticFlux{};
     }
 };
 

@@ -15,11 +15,11 @@
 
 #include <atomic>
 #include <cstdint>
-#include "DeadTimeCompensation.hpp"
-#include "Hfi.hpp"
-#include "MechanicalObserver.hpp"
+#include "dead_time_compensation.hpp"
+#include "hfi.hpp"
+#include "mechanical_observer.hpp"
 #include "SubStepBuffer.hpp"
-#include "Svm.hpp"
+#include "svm.hpp"
 #include "current_controller.hpp"
 #include "nvm_settings.hpp"
 #include "rotor_system.hpp"
@@ -86,11 +86,11 @@ struct CurrentControlState {
   DoubleBuffer double_buf{};
 
   /// Current setpoint in the rotor frame [A].  Written by the outer loop.
-  system::Rotor<float> i_ref{0.0f, 0.0f};
+  system::Rotor<unit::Current> i_ref{0.0f, 0.0f};
 
   /// Last voltage demand computed by the ISR, rotor frame [V].
   /// Read by SlowUpdate for the PMSM flux observer.
-  system::Rotor<float> u_dq_last{0.0f, 0.0f};
+  system::Rotor<unit::Voltage> u_dq_last{0.0f, 0.0f};
 
   /// Set to true by the ISR at sub-step 3; cleared by SlowUpdate.
   volatile bool samples_ready{false};
@@ -232,7 +232,7 @@ class CurrentControlIsr {
    *
    * @param ref  New d/q current reference [A].
    */
-  void set_current_ref(const system::Rotor<float>& ref) noexcept { state.i_ref = ref; }
+  void set_current_ref(const system::Rotor<unit::Current>& ref) noexcept { state.i_ref = ref; }
 
   // =========================================================================
   // Startup / bring-up interface

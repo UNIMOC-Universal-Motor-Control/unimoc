@@ -32,7 +32,7 @@
 #include <concepts>
 #include <numbers>
 #include "stator_system.hpp"
-#include "MechanicalObserver.hpp"
+#include "mechanical_observer.hpp"
 
 /**
  * @namespace unimoc global namespace
@@ -184,7 +184,7 @@ struct AsmFluxObserver
         const T k_flux  = L_m / (sigma * L_s * L_r);
 
         // Electrical rotor speed from MechanicalObserver PLL
-        const T omega_r = mech_obs.omega;
+        const T omega_r = mech_obs.omega.Value();
 
         // --- Current prediction error ---
         const T err_alpha = i_ab.alpha - i_alpha_hat;
@@ -231,10 +231,10 @@ struct AsmFluxObserver
         //   sin(θ_flux − θ̂) ≈ sin(θ_flux)·cos(θ̂) − cos(θ_flux)·sin(θ̂)
         //
         // This is the same technique used in the PMSM back-EMF PLL.
-        const T angle_error = sin_flux * mech_obs.cos_theta
-                              - cos_flux * mech_obs.sin_theta;
+        const T angle_error = sin_flux * mech_obs.cos_theta.Value()
+                      - cos_flux * mech_obs.sin_theta.Value();
 
-        mech_obs.inject_angle_error(angle_error, dt);
+        mech_obs.inject_angle_error(unit::Angle{angle_error}, unit::Time{dt});
     }
 
     /**

@@ -30,16 +30,10 @@ void SlowUpdate::init(const system::NvmSettings& settings, CurrentControlIsr& is
   isr_ = &isr;
 
   // --- PMSM flux observer parameters ---
-  flux_obs.rs = settings.stator_r.Value();
-  flux_obs.L_d = settings.l_d.Value();
-  flux_obs.L_q = settings.l_q.Value();
-  flux_obs.C_d = settings.pmsm_flux_obs_c_d.Value();
-  flux_obs.C_q = settings.pmsm_flux_obs_c_q.Value();
+  flux_obs.init(settings);
 
   // Initial flux setpoint: d-axis = nominal ψ_PM, q-axis = 0
-  flux_setpoint_ = {settings.flux_pm.Value(), 0.0F};
-
-  flux_obs.reset();
+  flux_setpoint_ = {settings.flux_pm, unit::MagneticFlux{}};
 }
 
 // =============================================================================
@@ -79,7 +73,7 @@ bool SlowUpdate::run_once() noexcept {
   const SubStepBuffer& old_buf = state.double_buf.buf[old_active];
 
   // Stack copies from the old half (ISR now writes only to new_active).
-  system::Stator<float> i_ab_snap[NUM_SUB_STEPS];
+  system::Stator<unit::Current> i_ab_snap[NUM_SUB_STEPS];
   system::SinCos<unit::DimensionlessRatio> sc_snap[NUM_SUB_STEPS];
 
   for (uint8_t k = 0u; k < NUM_SUB_STEPS; ++k) {
@@ -88,22 +82,22 @@ bool SlowUpdate::run_once() noexcept {
   }
 
   // Snapshot last voltage demand (written by ISR before samples_ready was set)
-  const system::Rotor<float> u_dq_last = state.u_dq_last;
+  const system::Rotor<unit::Voltage> u_dq_last = state.u_dq_last;
 
   // -------------------------------------------------------------------------
   // 4. Angle-advance correction: re-Park each sample with the sin/cos that
   //    was active when it was captured.  This corrects for the changing
   //    electrical angle across the four sub-steps.
   // -------------------------------------------------------------------------
-  system::Rotor<float> i_dq[NUM_SUB_STEPS];
+  system::Rotor<unit::Current> i_dq[NUM_SUB_STEPS];
   for (uint8_t k = 0u; k < NUM_SUB_STEPS; ++k) {
-    i_dq[k] = i_ab_snap[k].park(sc_snap[k]);
+    i_dq[k] = i_ab_snap[k].ToRotor(sc_snap[k]);
   }
 
   // -------------------------------------------------------------------------
   // 5. Mean d/q current over the four sub-steps
   // -------------------------------------------------------------------------
-  system::Rotor<float> i_dq_mean{0.0f, 0.0f};
+  system::Rotor<unit::Current> i_dq_mean{0.0f, 0.0f};
   for (uint8_t k = 0u; k < NUM_SUB_STEPS; ++k) {
     i_dq_mean.d += i_dq[k].d;
     i_dq_mean.q += i_dq[k].q;
@@ -117,12 +111,12 @@ bool SlowUpdate::run_once() noexcept {
   //    calculate() internally reads mech_obs.sin_theta / cos_theta and
   //    calls mech_obs.inject_angle_error() at the end.
   // -------------------------------------------------------------------------
-  flux_obs.calculate(u_dq_last, i_dq_mean, flux_setpoint_, dt_slow, mech_obs);
+  flux_obs.calculate(u_dq_last, i_dq_mean, flux_setpoint_, unit::Time{dt_slow}, mech_obs);
 
   // -------------------------------------------------------------------------
   // 7. Mechanical Kalman predict step (propagates omega and theta forward)
   // -------------------------------------------------------------------------
-  mech_obs.predict(i_dq_mean, dt_slow);
+  mech_obs.predict(i_dq_mean, unit::Time{dt_slow});
 
   // -------------------------------------------------------------------------
   // 8. HFI update (if active) — updates step counter and feeds error into
@@ -133,7 +127,7 @@ bool SlowUpdate::run_once() noexcept {
   // -------------------------------------------------------------------------
   if (isr_->hfi_active) {
     // Compute mean stator-frame current for HFI
-    system::Stator<float> i_ab_mean{0.0f, 0.0f};
+    system::Stator<unit::Current> i_ab_mean{0.0f, 0.0f};
     for (uint8_t k = 0u; k < NUM_SUB_STEPS; ++k) {
       i_ab_mean.alpha += i_ab_snap[k].alpha;
       i_ab_mean.beta += i_ab_snap[k].beta;
@@ -141,7 +135,7 @@ bool SlowUpdate::run_once() noexcept {
     i_ab_mean.alpha *= inv_n;
     i_ab_mean.beta *= inv_n;
 
-    isr_->hfi.update(i_ab_mean, mech_obs.sin_theta, mech_obs.cos_theta, dt_slow, mech_obs);
+    isr_->hfi.update(i_ab_mean, mech_obs.sin_theta, mech_obs.cos_theta, unit::Time{dt_slow}, mech_obs);
   }
 
   // -------------------------------------------------------------------------
@@ -153,8 +147,8 @@ bool SlowUpdate::run_once() noexcept {
   // -------------------------------------------------------------------------
   SubStepBuffer& new_buf = state.double_buf.buf[old_active];
 
-  const float theta_now = mech_obs.theta;
-  const float omega_now = mech_obs.omega;
+  const float theta_now = mech_obs.theta.Value();
+  const float omega_now = mech_obs.omega.Value();
 
   for (uint8_t k = 0u; k < NUM_SUB_STEPS; ++k) {
     const float phi_k = theta_now + static_cast<float>(k) * omega_now * dt_fast;

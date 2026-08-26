@@ -78,7 +78,7 @@ struct SubStepBuffer
     system::SinCos<unit::DimensionlessRatio> sc[NUM_SUB_STEPS]{};
 
     /// Stator-frame (α/β) current samples recorded by the ISR at each sub-step.
-    system::Stator<float> i_ab_samples[NUM_SUB_STEPS]{};
+    system::Stator<unit::Current> i_ab_samples[NUM_SUB_STEPS]{};
 };
 
 /**

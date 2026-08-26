@@ -174,16 +174,20 @@ struct CurrentController {
    * @return        Rotor-frame d/q voltage demand [V], clamped to the
    *                voltage circle of radius v_max * v_dc.
    */
-  constexpr system::Rotor<T> update(const system::Rotor<T>& i_ref, const system::Rotor<T>& i_meas, const T omega, const T dt, const T v_dc) noexcept {
+  constexpr system::Rotor<unit::Voltage> update(const system::Rotor<unit::Current>& i_ref,
+                                                const system::Rotor<unit::Current>& i_meas,
+                                                const T omega,
+                                                const T dt,
+                                                const T v_dc) noexcept {
     // --- Current errors ---
-    const T e_d = i_ref.d - i_meas.d;
-    const T e_q = i_ref.q - i_meas.q;
+    const T e_d = i_ref.d.Value() - i_meas.d.Value();
+    const T e_q = i_ref.q.Value() - i_meas.q.Value();
 
     // --- Cross-coupling feedforward ---
     //   v_ff_d = −ω · L_q · i_q
     //   v_ff_q = +ω · (L_d · i_d + ψ_PM)
-    const T v_ff_d = -omega * L_q * i_meas.q;
-    const T v_ff_q = omega * (L_d * i_meas.d + psi);
+    const T v_ff_d = -omega * L_q * i_meas.q.Value();
+    const T v_ff_q = omega * (L_d * i_meas.d.Value() + psi);
 
     // --- Total output before limiting (PI + feedforward) ---
     const T u_d_raw = kp_d * e_d + integrator_d + v_ff_d;
@@ -215,7 +219,7 @@ struct CurrentController {
     integrator_d += (ki_d * e_d + kb_d * (u_d - u_d_raw)) * dt;
     integrator_q += (ki_q * e_q + kb_q * (u_q - u_q_raw)) * dt;
 
-    return system::Rotor<T>{u_d, u_q};
+    return system::Rotor<unit::Voltage>{u_d, u_q};
   }
 
   /**

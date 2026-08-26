@@ -1,37 +1,24 @@
 /*
-       __  ___   ________  _______  ______
-      / / / / | / /  _/  |/  / __ \/ ____/
-     / / / /  |/ // // /|_/ / / / / /
-    / /_/ / /|  // // /  / / /_/ / /___
-    \____/_/ |_/___/_/  /_/\____/\____/
-
-    Universal Motor Control  2026 Alexander <tecnologic86@gmail.com> Evers
-
-    This file is part of UNIMOC.
-
-    UNIMOC is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *       __  ___   ________  _______  ______
+ *      / / / / | / /  _/  |/  / __ \/ ____/
+ *     / / / /  |/ // // /|_/ / / / / /
+ *    / /_/ / /|  // // /  / / /_/ / /___
+ *    \____/_/ |_/___/_/  /_/\____/\____/
+ *
+ *    @file hfi.hpp
+ *    @brief Unit-typed high-frequency injection observer.
+ *
+ *    This file is part of UNIMOC and is licensed under GPL-3.0-or-later.
+ *    See the repository LICENSE file for details.
  */
 #pragma once
 
-#ifndef UNIMOC_OBSERVER_HFI_H_
-#define UNIMOC_OBSERVER_HFI_H_
-
 #include <cmath>
 #include <concepts>
+#include "nvm_settings.hpp"
 #include "stator_system.hpp"
 #include "rotor_system.hpp"
-#include "MechanicalObserver.hpp"
+#include "mechanical_observer.hpp"
 
 /**
  * @namespace unimoc global namespace
@@ -99,7 +86,7 @@ struct Hfi
     // -------------------------------------------------------------------------
 
     /// HFI injection voltage [V] (referred to V_dc; typically 5–20 % of Vdc).
-    T v_inject{static_cast<T>(0.0)};
+    unit::Voltage v_inject{};
 
     /**
      * @brief Gain that maps the raw angle error signal to the PLL injection [1/V].
@@ -127,6 +114,21 @@ struct Hfi
     T i_q_step3{static_cast<T>(0)};
 
     /**
+     * @brief Load HFI parameters from NVM settings.
+     *
+     * This also clears the four-step sample state.
+     *
+     * @param settings Validated NVM settings.
+     */
+    constexpr void
+    init(const system::NvmSettings& settings) noexcept
+    {
+        v_inject  = settings.hfi_v_inject;
+        error_gain = settings.hfi_error_gain;
+        reset();
+    }
+
+    /**
      * @brief Return the injection voltage to add to the modulator input this step.
      *
      * The returned vector is in the stationary α/β frame.  It must be added to
@@ -134,12 +136,13 @@ struct Hfi
      *
      * Call this *before* the PWM period starts (before the current is sampled).
      *
-     * @param sin_th  sin(θ̂) from MechanicalObserver.
-     * @param cos_th  cos(θ̂) from MechanicalObserver.
+    * @param sin_th  sin(θ̂) from MechanicalObserver.
+    * @param cos_th  cos(θ̂) from MechanicalObserver.
      * @return        Injection voltage in the α/β frame [V].
      */
-    [[nodiscard]] constexpr system::Stator<T>
-    get_injection_voltage(const T sin_th, const T cos_th) const noexcept
+    [[nodiscard]] constexpr system::Stator<unit::Voltage>
+    get_injection_voltage(const unit::DimensionlessRatio sin_th,
+                          const unit::DimensionlessRatio cos_th) const noexcept
     {
         // d-axis unit vector in α/β: [cos θ̂, sin θ̂]
         // q-axis unit vector in α/β: [−sin θ̂, cos θ̂]
@@ -149,19 +152,19 @@ struct Hfi
 
         switch (step)
         {
-            case 0: v_d = +v_inject; break;  // +Vd
-            case 1: v_d = -v_inject; break;  // −Vd
-            case 2: v_q = +v_inject; break;  // +Vq
-            case 3: v_q = -v_inject; break;  // −Vq
+            case 0: v_d = +v_inject.Value(); break;  // +Vd
+            case 1: v_d = -v_inject.Value(); break;  // −Vd
+            case 2: v_q = +v_inject.Value(); break;  // +Vq
+            case 3: v_q = -v_inject.Value(); break;  // −Vq
             default: break;
         }
 
         // Inverse Park: dq → α/β
         // v_α = v_d·cos θ̂ − v_q·sin θ̂
         // v_β = v_d·sin θ̂ + v_q·cos θ̂
-        return system::Stator<T>{
-            v_d * cos_th - v_q * sin_th,
-            v_d * sin_th + v_q * cos_th,
+        return system::Stator<unit::Voltage>{
+            v_d * cos_th.Value() - v_q * sin_th.Value(),
+            v_d * sin_th.Value() + v_q * cos_th.Value(),
         };
     }
 
@@ -181,17 +184,17 @@ struct Hfi
      * @param mech_obs  Reference to the mechanical observer that owns the PLL.
      */
     constexpr void
-    update(const system::Stator<T>& i_ab,
-           const T                           sin_th,
-           const T                           cos_th,
-           const T                           dt,
+    update(const system::Stator<unit::Current>& i_ab,
+           const unit::DimensionlessRatio   sin_th,
+           const unit::DimensionlessRatio   cos_th,
+           const unit::Time                  dt,
            MechanicalObserver<T>&            mech_obs) noexcept
     {
         // Park transform: α/β → estimated d/q
         // i_d =  i_α·cos θ̂ + i_β·sin θ̂
         // i_q = −i_α·sin θ̂ + i_β·cos θ̂
-        const T i_d =  i_ab.alpha * cos_th + i_ab.beta * sin_th;
-        const T i_q = -i_ab.alpha * sin_th + i_ab.beta * cos_th;
+        const T i_d = i_ab.alpha.Value() * cos_th.Value() + i_ab.beta.Value() * sin_th.Value();
+        const T i_q = -i_ab.alpha.Value() * sin_th.Value() + i_ab.beta.Value() * cos_th.Value();
 
         switch (step)
         {
@@ -215,7 +218,7 @@ struct Hfi
                 const T raw_error = delta_iq_d - delta_id_q;
 
                 // Feed scaled error into the shared PLL of the mechanical observer
-                mech_obs.inject_angle_error(raw_error * error_gain, dt);
+                mech_obs.inject_angle_error(unit::Angle{raw_error * error_gain}, dt);
                 break;
             }
             default: break;
@@ -240,4 +243,3 @@ struct Hfi
 }  // namespace observer
 }  // namespace unimoc
 
-#endif /* UNIMOC_OBSERVER_HFI_H_ */
