@@ -15,8 +15,9 @@ features, and read `CONTEXT.md` for the project's domain vocabulary.
 - `hardware/` contains hardware-specific implementations. Keep platform
 	details out of the portable library where possible.
 - `tests/` contains hosted GoogleTest coverage for the portable code.
-- `lib/cymon/` and `lib/gitversion/` are submodules; do not modify them unless
-	the task explicitly concerns those dependencies.
+- `lib/cymon/` is a submodule; `lib/gitversion/` is vendored project code.
+	Do not modify `lib/cymon/` unless the task explicitly concerns that
+	dependency.
 
 ## Build And Test
 
