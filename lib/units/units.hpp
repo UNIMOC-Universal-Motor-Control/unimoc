@@ -38,6 +38,8 @@ struct AngularAccelerationTag;
 struct CurrentTag;
 /// Tag identifying electric potential, whose base unit is the volt.
 struct VoltageTag;
+/// Tag identifying temperature readings in degrees Celsius.
+struct TemperatureTag;
 /// Tag identifying power, whose base unit is the watt.
 struct PowerTag;
 /// Tag identifying magnetic flux, whose base unit is the weber.
@@ -201,6 +203,8 @@ using AngularAcceleration = Unit<float, std::ratio<1>, AngularAccelerationTag>;
 using Current = Unit<float, std::ratio<1>, CurrentTag>;
 /// Electric potential in volts (V).
 using Voltage = Unit<float, std::ratio<1>, VoltageTag>;
+/// Temperature in degrees Celsius.
+using Temperature = Unit<float, std::ratio<1>, TemperatureTag>;
 /// Power in watts (W).
 using Power = Unit<float, std::ratio<1>, PowerTag>;
 /// Magnetic flux in webers (Wb).

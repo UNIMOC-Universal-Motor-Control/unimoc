@@ -14,10 +14,31 @@
 #include "hw_startup.hpp"
 #include <algorithm>
 #include <cmath>
-#include <modm/debug.hpp>
+#include <cstdarg>
+#include <cstdio>
+#include "hardware_interface.hpp"
 
 namespace unimoc {
 namespace startup {
+
+void LogInfo(const char* const message) noexcept { hardware::runtime.Log(hardware::LogLevel::kInfo, message); }
+
+void LogWarning(const char* const message) noexcept { hardware::runtime.Log(hardware::LogLevel::kWarning, message); }
+
+#if defined(__GNUC__) || defined(__clang__)
+void LogFormatted(const hardware::LogLevel level, const char* const format, ...) noexcept __attribute__((format(printf, 2, 3)));
+#else
+void LogFormatted(const hardware::LogLevel level, const char* const format, ...) noexcept;
+#endif
+
+void LogFormatted(const hardware::LogLevel level, const char* const format, ...) noexcept {
+  char message[512]{};
+  std::va_list arguments;
+  va_start(arguments, format);
+  const int result = std::vsnprintf(message, sizeof(message), format, arguments);
+  va_end(arguments);
+  if (result >= 0) hardware::runtime.Log(level, message);
+}
 
 // =============================================================================
 // request_run
@@ -35,12 +56,13 @@ void HwStartup::request_run() noexcept {
   ext_current_A_ = 0.0f;
   ext_vdc_V_ = 0.0f;
 
-  modm::log::info << "[STARTUP] ================================================\n"
-                  << "[STARTUP] Hardware bring-up sequence started.\n"
-                  << "[STARTUP] Phase 1 — NO MOTOR CONNECTED.\n"
-                  << "[STARTUP] Advance each step by writing 1 to\n"
-                  << "[STARTUP]   unimoc.startup.step\n"
-                  << "[STARTUP] ================================================\n";
+  LogInfo(
+      "[STARTUP] ================================================\n"
+      "[STARTUP] Hardware bring-up sequence started.\n"
+      "[STARTUP] Phase 1 - NO MOTOR CONNECTED.\n"
+      "[STARTUP] Advance each step by writing 1 to\n"
+      "[STARTUP]   unimoc.startup.step\n"
+      "[STARTUP] ================================================\n");
 
   transition_to(FsmState::PWM_DISABLE);
 }
@@ -86,9 +108,9 @@ void HwStartup::run_once() noexcept {
       // Force 50 % neutral duty on all phases; wait for user step.
       cc_.force_duty(0.5f, 0.5f, 0.5f);
       if (!step_done_) {
-        modm::log::info << "[STARTUP] Step PWM_DISABLE: 50 % duty applied on all phases.\n"
-                        << "[STARTUP] Verify gate-driver outputs are toggling. "
-                           "Press NEXT when ready.\n";
+        LogInfo(
+            "[STARTUP] Step PWM_DISABLE: 50 % duty applied on all phases.\n"
+            "[STARTUP] Verify gate-driver outputs are toggling. Press NEXT when ready.\n");
         step_done_ = true;
       }
       if (step_done_ && next_step_requested_ && validate_current_state()) {
@@ -166,7 +188,7 @@ void HwStartup::transition_to(FsmState next) noexcept {
 
   results.current_state = next;
 
-  modm::log::info << "[STARTUP] → Entering state: " << state_name(next) << "\n";
+  LogFormatted(hardware::LogLevel::kInfo, "[STARTUP] Entering state: %s\n", state_name(next));
 }
 
 // =============================================================================
@@ -194,17 +216,17 @@ void HwStartup::advance_to_next_state() noexcept {
 bool HwStartup::validate_current_state() noexcept {
   if (state_ == FsmState::CURRENT_SENSE_CALIBRATION) {
     if (ext_current_A_ < 1e-3f) {
-      modm::log::warning << "[STARTUP] CURRENT_SENSE_CALIBRATION: ext_current_A is zero. "
-                            "Please enter the clamp-meter reading via "
-                            "unimoc.startup.ext_current_A before advancing.\n";
+      LogWarning(
+          "[STARTUP] CURRENT_SENSE_CALIBRATION: ext_current_A is zero. "
+          "Please enter the clamp-meter reading via unimoc.startup.ext_current_A before advancing.\n");
       return false;
     }
   }
   if (state_ == FsmState::DC_LINK_VOLTAGE_CHECK) {
     if (ext_vdc_V_ < vdc_min_valid) {
-      modm::log::warning << "[STARTUP] DC_LINK_VOLTAGE_CHECK: ext_vdc_V is not set. "
-                            "Please enter the multimeter reading via "
-                            "unimoc.startup.ext_vdc_V before advancing.\n";
+      LogWarning(
+          "[STARTUP] DC_LINK_VOLTAGE_CHECK: ext_vdc_V is not set. "
+          "Please enter the multimeter reading via unimoc.startup.ext_vdc_V before advancing.\n");
       return false;
     }
   }
@@ -219,7 +241,7 @@ void HwStartup::enter_fault(const char* reason) noexcept {
   state_ = FsmState::FAULT;
   results.current_state = FsmState::FAULT;
   cc_.force_duty(0.5f, 0.5f, 0.5f);  // safe neutral
-  modm::log::error << "[STARTUP] *** FAULT: " << reason << " ***\n";
+  LogFormatted(hardware::LogLevel::kError, "[STARTUP] *** FAULT: %s ***\n", reason);
 }
 
 // =============================================================================
@@ -227,9 +249,11 @@ void HwStartup::enter_fault(const char* reason) noexcept {
 // =============================================================================
 
 bool HwStartup::check_motor_oc() noexcept {
-  const float ia = cc_.state.raw_ia;
-  const float ib = cc_.state.raw_ib;
-  if ((std::abs(ia) > oc_limit_A_) || (std::abs(ib) > oc_limit_A_)) {
+  const auto& phase_currents = cc_.state.raw_phase_currents;
+  const float ia = phase_currents.a.Value();
+  const float ib = phase_currents.b.Value();
+  const float ic = phase_currents.c.Value();
+  if ((std::abs(ia) > oc_limit_A_) || (std::abs(ib) > oc_limit_A_) || (std::abs(ic) > oc_limit_A_)) {
     enter_fault("over-current detected");
     return true;
   }
@@ -241,8 +265,8 @@ bool HwStartup::check_motor_oc() noexcept {
 // =============================================================================
 
 bool HwStartup::collect_sample(uint32_t n_samples) noexcept {
-  const double ia = static_cast<double>(cc_.state.raw_ia);
-  const double ib = static_cast<double>(cc_.state.raw_ib);
+  const double ia = static_cast<double>(cc_.state.raw_phase_currents.a.Value());
+  const double ib = static_cast<double>(cc_.state.raw_phase_currents.b.Value());
   accum_a_ += ia;
   accum_b_ += ib;
   accum_sq_a_ += ia * ia;
@@ -272,15 +296,16 @@ void HwStartup::run_adc_offset_cal() noexcept {
 
       results.passed[static_cast<uint8_t>(FsmState::ADC_OFFSET_CAL)] = pass;
 
-      modm::log::info << "[STARTUP] ADC_OFFSET_CAL: offset_a=" << mean_a << " A, offset_b=" << mean_b << " A  " << (pass ? "PASS" : "FAIL") << "\n";
+      LogFormatted(hardware::LogLevel::kInfo, "[STARTUP] ADC_OFFSET_CAL: offset_a=%f A, offset_b=%f A  %s\n", mean_a, mean_b, pass ? "PASS" : "FAIL");
 
       if (!pass) {
-        modm::log::warning << "[STARTUP] ADC offset exceeds threshold (" << offset_threshold_A
-                           << " A). Check op-amp supply, resistors, and PCB connections.\n";
+        LogFormatted(hardware::LogLevel::kWarning,
+                     "[STARTUP] ADC offset exceeds threshold (%f A). Check op-amp supply, resistors, and PCB connections.\n",
+                     offset_threshold_A);
       }
 
       step_done_ = true;
-      modm::log::info << "[STARTUP] Press NEXT to continue.\n";
+      LogInfo("[STARTUP] Press NEXT to continue.\n");
     }
   }
 
@@ -308,16 +333,20 @@ void HwStartup::run_adc_noise_floor() noexcept {
 
       results.passed[static_cast<uint8_t>(FsmState::ADC_NOISE_FLOOR)] = pass;
 
-      modm::log::info << "[STARTUP] ADC_NOISE_FLOOR: rms_a=" << results.adc_noise_rms_a << " A, rms_b=" << results.adc_noise_rms_b << " A  "
-                      << (pass ? "PASS" : "FAIL") << "\n";
+      LogFormatted(hardware::LogLevel::kInfo,
+                   "[STARTUP] ADC_NOISE_FLOOR: rms_a=%f A, rms_b=%f A  %s\n",
+                   results.adc_noise_rms_a,
+                   results.adc_noise_rms_b,
+                   pass ? "PASS" : "FAIL");
 
       if (!pass) {
-        modm::log::warning << "[STARTUP] ADC noise exceeds threshold (" << noise_threshold_A
-                           << " A). Check decoupling caps, layout, and ground paths.\n";
+        LogFormatted(hardware::LogLevel::kWarning,
+                     "[STARTUP] ADC noise exceeds threshold (%f A). Check decoupling caps, layout, and ground paths.\n",
+                     noise_threshold_A);
       }
 
       step_done_ = true;
-      modm::log::info << "[STARTUP] Press NEXT to continue.\n";
+      LogInfo("[STARTUP] Press NEXT to continue.\n");
     }
   }
 
@@ -340,10 +369,12 @@ void HwStartup::run_duty_force(float duty) noexcept {
     // Manual confirmation only; always PASS-MANUAL
     results.passed[static_cast<uint8_t>(state_)] = true;
 
-    modm::log::info << "[STARTUP] " << state_name(state_) << ": duty=" << duty << " applied for " << HOLD_SAMPLES
-                    << " samples. "
-                       "PASS-MANUAL (verify with scope).\n"
-                       "[STARTUP] Press NEXT to continue.\n";
+    LogFormatted(hardware::LogLevel::kInfo,
+                 "[STARTUP] %s: duty=%f applied for %u samples. PASS-MANUAL (verify with scope).\n"
+                 "[STARTUP] Press NEXT to continue.\n",
+                 state_name(state_),
+                 duty,
+                 HOLD_SAMPLES);
 
     step_done_ = true;
   }
@@ -363,10 +394,10 @@ void HwStartup::run_dc_link_voltage_check() noexcept {
     return;
   }
 
-  // Accumulate raw_vdc directly — do NOT use collect_sample() which
-  // accumulates raw_ia/raw_ib and would give a meaningless mean here.
+  // Accumulate raw_vdc directly - do NOT use collect_sample() which
+  // accumulates phase currents and would give a meaningless mean here.
   if (sample_count_ < N_CAL) {
-    accum_a_ += static_cast<double>(cc_.state.raw_vdc);
+    accum_a_ += static_cast<double>(cc_.state.raw_vdc.Value());
     ++sample_count_;
     if (sample_count_ < N_CAL) return;
     // N_CAL samples just collected — fall through to evaluate.
@@ -381,22 +412,29 @@ void HwStartup::run_dc_link_voltage_check() noexcept {
 
     results.passed[static_cast<uint8_t>(FsmState::DC_LINK_VOLTAGE_CHECK)] = pass;
 
-    modm::log::info << "[STARTUP] DC_LINK_VOLTAGE_CHECK: adc_vdc=" << measured_vdc << " V, ext=" << ext_vdc_V_ << " V, gain=" << results.gain_vdc
-                    << "  " << (pass ? "PASS" : "FAIL") << "\n";
+    LogFormatted(hardware::LogLevel::kInfo,
+                 "[STARTUP] DC_LINK_VOLTAGE_CHECK: adc_vdc=%f V, ext=%f V, gain=%f  %s\n",
+                 measured_vdc,
+                 ext_vdc_V_,
+                 results.gain_vdc,
+                 pass ? "PASS" : "FAIL");
 
     if (!pass) {
-      modm::log::warning << "[STARTUP] V_dc gain error exceeds " << (vdc_gain_tolerance * 100.0f)
-                         << " %. Check voltage-divider resistors on V_dc sense circuit.\n"
-                         << "[STARTUP] Suggested correction factor: " << results.gain_vdc << "\n";
+      LogFormatted(hardware::LogLevel::kWarning,
+                   "[STARTUP] V_dc gain error exceeds %f %%. Check voltage-divider resistors on V_dc sense circuit.\n"
+                   "[STARTUP] Suggested correction factor: %f\n",
+                   vdc_gain_tolerance * 100.0f,
+                   results.gain_vdc);
     }
 
     step_done_ = true;
-    modm::log::info << "[STARTUP] Press NEXT to continue.\n";
+    LogInfo("[STARTUP] Press NEXT to continue.\n");
   } else if (sample_count_ == N_CAL) {
     // Log the "waiting" prompt exactly once (bump sample_count_ as sentinel).
-    modm::log::info << "[STARTUP] DC_LINK_VOLTAGE_CHECK: adc_vdc=" << measured_vdc
-                    << " V. Enter multimeter reading via unimoc.startup.ext_vdc_V, "
-                       "then press NEXT.\n";
+    LogFormatted(hardware::LogLevel::kInfo,
+                 "[STARTUP] DC_LINK_VOLTAGE_CHECK: adc_vdc=%f V. Enter multimeter reading via unimoc.startup.ext_vdc_V, "
+                 "then press NEXT.\n",
+                 measured_vdc);
     ++sample_count_;
     // step_done_ stays false; keep polling until ext_vdc_V_ is provided.
   }
@@ -436,7 +474,7 @@ void HwStartup::run_gate_driver_enable_check() noexcept {
       accum_sq_a_ = 0.0;
       accum_sq_b_ = 0.0;
       gate_phase_disabled_ = false;
-      modm::log::info << "[STARTUP] GATE_DRIVER_ENABLE_CHECK: baseline mean_ia=" << gate_mean_disabled_ << " A\n";
+      LogFormatted(hardware::LogLevel::kInfo, "[STARTUP] GATE_DRIVER_ENABLE_CHECK: baseline mean_ia=%f A\n", gate_mean_disabled_);
     }
     return;  // continue next call
   }
@@ -452,18 +490,20 @@ void HwStartup::run_gate_driver_enable_check() noexcept {
 
     results.passed[static_cast<uint8_t>(FsmState::GATE_DRIVER_ENABLE_CHECK)] = pass;
 
-    modm::log::info << "[STARTUP] GATE_DRIVER_ENABLE_CHECK: delta_ia=" << delta << " A, threshold=" << threshold << " A  " << (pass ? "PASS" : "FAIL")
-                    << "\n";
+    LogFormatted(hardware::LogLevel::kInfo,
+                 "[STARTUP] GATE_DRIVER_ENABLE_CHECK: delta_ia=%f A, threshold=%f A  %s\n",
+                 delta,
+                 threshold,
+                 pass ? "PASS" : "FAIL");
 
     if (!pass) {
-      modm::log::warning << "[STARTUP] Gate-driver response smaller than 2× noise floor. "
-                            "Check gate-enable GPIO and driver power supply.\n";
+      LogWarning("[STARTUP] Gate-driver response smaller than 2x noise floor. Check gate-enable GPIO and driver power supply.\n");
     }
 
     // Reset flag for potential re-run
     gate_phase_disabled_ = true;
     step_done_ = true;
-    modm::log::info << "[STARTUP] Press NEXT to continue.\n";
+    LogInfo("[STARTUP] Press NEXT to continue.\n");
   }
 }
 
@@ -477,23 +517,27 @@ void HwStartup::run_connect_motor_wait() noexcept {
   if (!step_done_) {
     oc_limit_A_ = settings_operations_.GetHardwareCapabilities().max_phase_current.Value() * oc_fraction;
 
-    modm::log::warning << "\n"
-                          "[STARTUP] !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
-                          "[STARTUP] !!  PHASE 1 COMPLETE — PREPARE FOR PHASE 2       !!\n"
-                          "[STARTUP] !!                                                !!\n"
-                          "[STARTUP] !!  ACTION REQUIRED:                              !!\n"
-                          "[STARTUP] !!    1. POWER OFF the drive now.                 !!\n"
-                          "[STARTUP] !!    2. CONNECT the motor (UVW + PE).            !!\n"
-                          "[STARTUP] !!    3. POWER ON again.                          !!\n"
-                          "[STARTUP] !!    4. Write 1 to unimoc.startup.step           !!\n"
-                          "[STARTUP] !!       ONLY after motor is securely connected.  !!\n"
-                          "[STARTUP] !!                                                !!\n"
-                          "[STARTUP] !!  CAUTION: Phase 2 injects LIVE voltages.       !!\n"
-                          "[STARTUP] !!  LOW-Rs WINDINGS: even tiny duty changes cause !!\n"
-                          "[STARTUP] !!  large currents. OC limit is set to            !!\n";
-    modm::log::warning << "[STARTUP] !!  " << oc_limit_A_ << " A (" << (oc_fraction * 100.0f) << "% of max).\n";
-    modm::log::warning << "[STARTUP] !!  Ensure motor shaft is FREE to rotate.        !!\n"
-                          "[STARTUP] !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n\n";
+    LogWarning(
+        "\n"
+        "[STARTUP] !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
+        "[STARTUP] !!  PHASE 1 COMPLETE - PREPARE FOR PHASE 2       !!\n"
+        "[STARTUP] !!                                                !!\n"
+        "[STARTUP] !!  ACTION REQUIRED:                              !!\n"
+        "[STARTUP] !!    1. POWER OFF the drive now.                 !!\n"
+        "[STARTUP] !!    2. CONNECT the motor (UVW + PE).            !!\n"
+        "[STARTUP] !!    3. POWER ON again.                          !!\n"
+        "[STARTUP] !!    4. Write 1 to unimoc.startup.step           !!\n"
+        "[STARTUP] !!       ONLY after motor is securely connected.  !!\n"
+        "[STARTUP] !!                                                !!\n"
+        "[STARTUP] !!  CAUTION: Phase 2 injects LIVE voltages.       !!\n"
+        "[STARTUP] !!  LOW-Rs WINDINGS: even tiny duty changes cause !!\n"
+        "[STARTUP] !!  large currents. OC limit is set to            !!\n");
+    LogFormatted(hardware::LogLevel::kWarning,
+                 "[STARTUP] !!  %f A (%f%% of max).\n"
+                 "[STARTUP] !!  Ensure motor shaft is FREE to rotate.        !!\n"
+                 "[STARTUP] !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n\n",
+                 oc_limit_A_,
+                 oc_fraction * 100.0f);
 
     results.passed[static_cast<uint8_t>(FsmState::CONNECT_MOTOR)] = true;
     step_done_ = true;
@@ -549,17 +593,21 @@ void HwStartup::run_phase_adc_alignment() noexcept {
     const bool pass = (best_noise < 2.0f * noise_floor);
     results.passed[static_cast<uint8_t>(FsmState::PHASE_ADC_ALIGNMENT)] = pass;
 
-    modm::log::info << "[STARTUP] PHASE_ADC_ALIGNMENT: best_pos=" << best_pos << ", optimal_offset=" << optimal_ticks
-                    << " ticks, min_noise=" << best_noise << " A  " << (pass ? "PASS" : "FAIL") << "\n";
+    LogFormatted(hardware::LogLevel::kInfo,
+                 "[STARTUP] PHASE_ADC_ALIGNMENT: best_pos=%u, optimal_offset=%u ticks, min_noise=%f A  %s\n",
+                 best_pos,
+                 optimal_ticks,
+                 best_noise,
+                 pass ? "PASS" : "FAIL");
 
     if (!pass) {
-      modm::log::warning << "[STARTUP] Could not find a clean ADC sampling window. "
-                            "Check PWM frequency, ADC trigger timing, and hardware layout.\n";
+      LogWarning("[STARTUP] Could not find a clean ADC sampling window. Check PWM frequency, ADC trigger timing, and hardware layout.\n");
     }
 
-    modm::log::info << "[STARTUP] Suggest writing adc_trigger_offset=" << optimal_ticks
-                    << " to NvmSettings to persist the optimal offset.\n"
-                       "[STARTUP] Press NEXT to continue.\n";
+    LogFormatted(hardware::LogLevel::kInfo,
+                 "[STARTUP] Suggest writing adc_trigger_offset=%u to NvmSettings to persist the optimal offset.\n"
+                 "[STARTUP] Press NEXT to continue.\n",
+                 optimal_ticks);
 
     cc_.set_adc_trigger_offset(optimal_ticks);
     step_done_ = true;
@@ -608,7 +656,7 @@ void HwStartup::run_current_sense_calibration() noexcept {
     const float mean_ia = static_cast<float>(accum_a_) / n;
     const float mean_ib = static_cast<float>(accum_b_) / n;
 
-    modm::log::info << "[STARTUP] CURRENT_SENSE_CALIBRATION: mean_ia=" << mean_ia << " A, mean_ib=" << mean_ib << " A\n";
+    LogFormatted(hardware::LogLevel::kInfo, "[STARTUP] CURRENT_SENSE_CALIBRATION: mean_ia=%f A, mean_ib=%f A\n", mean_ia, mean_ib);
 
     if (ext_current_A_ >= 1e-3f) {
       // gain = adc_reading / ext_reference; ideal = 1.0
@@ -620,25 +668,30 @@ void HwStartup::run_current_sense_calibration() noexcept {
 
       results.passed[static_cast<uint8_t>(FsmState::CURRENT_SENSE_CALIBRATION)] = pass;
 
-      modm::log::info << "[STARTUP] CURRENT_SENSE_CALIBRATION: ext=" << ext_current_A_ << " A, gain_a=" << results.gain_a
-                      << ", gain_b=" << results.gain_b << "  " << (pass ? "PASS" : "FAIL") << "\n";
+      LogFormatted(hardware::LogLevel::kInfo,
+                   "[STARTUP] CURRENT_SENSE_CALIBRATION: ext=%f A, gain_a=%f, gain_b=%f  %s\n",
+                   ext_current_A_,
+                   results.gain_a,
+                   results.gain_b,
+                   pass ? "PASS" : "FAIL");
 
       if (!pass) {
-        modm::log::warning << "[STARTUP] Gain error exceeds " << (gain_tolerance * 100.0f)
-                           << " %. Check voltage-divider and op-amp gain resistors for "
-                              "current-sense channels.\n"
-                           << "[STARTUP] Correction factors: adc_gain_a=" << (1.0f / results.gain_a) << ", adc_gain_b=" << (1.0f / results.gain_b)
-                           << "\n";
+        LogFormatted(hardware::LogLevel::kWarning,
+                     "[STARTUP] Gain error exceeds %f %%. Check voltage-divider and op-amp gain resistors for current-sense channels.\n"
+                     "[STARTUP] Correction factors: adc_gain_a=%f, adc_gain_b=%f\n",
+                     gain_tolerance * 100.0f,
+                     1.0f / results.gain_a,
+                     1.0f / results.gain_b);
       }
 
     } else {
-      modm::log::info << "[STARTUP] CURRENT_SENSE_CALIBRATION: waiting for ext_current_A. "
-                         "Enter clamp-meter reading via unimoc.startup.ext_current_A, "
-                         "then press NEXT.\n";
+      LogInfo(
+          "[STARTUP] CURRENT_SENSE_CALIBRATION: waiting for ext_current_A. "
+          "Enter clamp-meter reading via unimoc.startup.ext_current_A, then press NEXT.\n");
     }
 
     step_done_ = true;
-    modm::log::info << "[STARTUP] Press NEXT to continue.\n";
+    LogInfo("[STARTUP] Press NEXT to continue.\n");
   }
 
   if (step_done_ && next_step_requested_ && validate_current_state()) advance_to_next_state();
@@ -676,26 +729,36 @@ void HwStartup::run_done() noexcept {
 // =============================================================================
 
 void HwStartup::log_summary() noexcept {
-  modm::log::info << "\n[STARTUP] ====================================================\n"
-                     "[STARTUP] HARDWARE STARTUP AID — SUMMARY\n"
-                     "[STARTUP] ====================================================\n";
+  LogInfo(
+      "\n[STARTUP] ====================================================\n"
+      "[STARTUP] HARDWARE STARTUP AID - SUMMARY\n"
+      "[STARTUP] ====================================================\n");
 
   for (uint8_t i = 0u; i < NUM_STARTUP_STEPS; ++i) {
     const auto s = static_cast<FsmState>(i);
     if (s == FsmState::IDLE || s == FsmState::DONE || s == FsmState::FAULT) continue;
-    modm::log::info << "[STARTUP]   " << state_name(s) << ": " << (results.passed[i] ? "PASS" : "FAIL/PENDING") << "\n";
+    LogFormatted(hardware::LogLevel::kInfo, "[STARTUP]   %s: %s\n", state_name(s), results.passed[i] ? "PASS" : "FAIL/PENDING");
   }
 
-  modm::log::info << "[STARTUP] adc_offset_a  = " << results.adc_offset_a << " A\n"
-                  << "[STARTUP] adc_offset_b  = " << results.adc_offset_b << " A\n"
-                  << "[STARTUP] adc_noise_a   = " << results.adc_noise_rms_a << " A\n"
-                  << "[STARTUP] adc_noise_b   = " << results.adc_noise_rms_b << " A\n"
-                  << "[STARTUP] gain_vdc      = " << results.gain_vdc << "\n"
-                  << "[STARTUP] gain_a        = " << results.gain_a << "\n"
-                  << "[STARTUP] gain_b        = " << results.gain_b << "\n"
-                  << "[STARTUP] adc_trig_opt  = " << results.adc_trigger_offset_optimal << " ticks\n"
-                  << "[STARTUP] NVM calibration fields updated.\n"
-                     "[STARTUP] ====================================================\n\n";
+  LogFormatted(hardware::LogLevel::kInfo,
+               "[STARTUP] adc_offset_a  = %f A\n"
+               "[STARTUP] adc_offset_b  = %f A\n"
+               "[STARTUP] adc_noise_a   = %f A\n"
+               "[STARTUP] adc_noise_b   = %f A\n"
+               "[STARTUP] gain_vdc      = %f\n"
+               "[STARTUP] gain_a        = %f\n"
+               "[STARTUP] gain_b        = %f\n"
+               "[STARTUP] adc_trig_opt  = %u ticks\n"
+               "[STARTUP] NVM calibration fields updated.\n"
+               "[STARTUP] ====================================================\n\n",
+               results.adc_offset_a,
+               results.adc_offset_b,
+               results.adc_noise_rms_a,
+               results.adc_noise_rms_b,
+               results.gain_vdc,
+               results.gain_a,
+               results.gain_b,
+               results.adc_trigger_offset_optimal);
 }
 
 // =============================================================================

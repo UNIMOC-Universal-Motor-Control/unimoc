@@ -16,6 +16,7 @@
 #include <cstdint>
 #include <modm/platform.hpp>
 #include "base.hpp"
+#include "hardware_interface.hpp"
 #include "three_phase_system.hpp"
 
 /**
@@ -39,13 +40,29 @@ namespace pulse_width {
  *
  * @return true if initialization is successful, false otherwise.
  */
-bool Initialize() noexcept;
+bool Initialize(unit::Frequency pwm_frequency, HardwareInterface::SlowUpdateCallback slow_update_callback) noexcept;
 
 /**
  * @brief Sets the phase duties for the motor control.
  * @param duties The phase duties to set, represented as a ThreePhase structure.
  */
 void SetPhaseDuties(const system::ThreePhase<unit::DimensionlessRatio>& duties) noexcept;
+
+/**
+ * @brief Reads the currently applied normalized PWM duties.
+ */
+system::ThreePhase<unit::DimensionlessRatio> GetPhaseDuties() noexcept;
+
+/**
+ * @brief Sets the timer compare value used to trigger ADC conversion.
+ * @param offset Trigger offset in timer ticks.
+ */
+void SetAdcTriggerOffset(uint32_t offset) noexcept;
+
+/**
+ * @brief Returns the timer input clock frequency in Hz.
+ */
+uint32_t GetTimerClockFrequency() noexcept;
 
 }  // namespace pulse_width
 }  // namespace hardware

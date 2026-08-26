@@ -9,7 +9,7 @@ criteria.
 ### P0 - Establish the deterministic runtime
 
  - [ ] Define and test the virtual-time cycle contract around `CurrentControlIsr::on_jeoc()` and `SlowUpdate::run_once()`.
- - [ ] Introduce injectable ADC/PWM I/O for the current-control runtime while preserving the target hardware implementation.
+ - [x] Introduce injectable ADC/PWM I/O for the current-control runtime while preserving the target hardware implementation.
  - [ ] Extract the current-control runtime into a reusable target independent of firmware `main.cpp`.
  - [ ] Add a HAL-free virtual clock and simulation runtime harness with reset, fast-step, slow-update, advance, and snapshot operations.
 

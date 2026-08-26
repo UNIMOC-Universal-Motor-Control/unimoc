@@ -21,15 +21,20 @@ using namespace std::chrono_literals;
 
 namespace unimoc::hardware::analog {
 
+static_assert(kCurrentSensorCount == 2U || kCurrentSensorCount == 3U);
+static_assert(!kCurrentSamplesArePwmWindowed || kCurrentSenseIsLowSide);
+
 constexpr float ADC_RESOLUTION = 4096.0f;  // 12-bit ADC resolution
 constexpr float VOLTAGE_REFERENCE = 3.3f;  // Voltage reference for the ADC
 
 float torqueOffset = 0.0f;  // Torque offset in Nm
+HardwareInterface::CurrentControlCallback current_control_callback = nullptr;
 
-void adcInterruptHandler() {
+float adcToVoltage(uint32_t adcValue) noexcept;
+
+void adcInterruptHandler() noexcept {
   Adc1::acknowledgeInterruptFlags(Adc1::InterruptFlag::EndOfInjectedConversion);
-
-  // do something with the ADC values
+  if (current_control_callback != nullptr) current_control_callback();
 }
 
 /**
@@ -40,7 +45,9 @@ void adcInterruptHandler() {
  *
  * @return true if initialization is successful, false otherwise.
  */
-bool Initialize() {
+bool Initialize(const HardwareInterface::CurrentControlCallback callback) noexcept {
+  current_control_callback = callback;
+
   // Initialize the GPIOs for ADC channels
   GpioA0::setAnalogInput();
   GpioA2::setAnalogInput();
@@ -50,8 +57,10 @@ bool Initialize() {
   GpioB13::setAnalogInput();
   GpioB12::setAnalogInput();
   GpioB14::setAnalogInput();
-  GpioA8::setAnalogInput();
-  GpioA9::setAnalogInput();
+  if constexpr (kBridgeTemperatureAvailable || kMotorTemperatureAvailable) {
+    GpioA8::setAnalogInput();
+    GpioA9::setAnalogInput();
+  }
 
   Adc1::initialize(Adc1::ClockMode::SynchronousPrescaler4,
                    Adc1::ClockSource::SystemClock,
@@ -120,37 +129,41 @@ bool Initialize() {
     return false;
   }
 
-  Adc5::initialize(Adc5::ClockMode::SynchronousPrescaler4,
-                   Adc5::ClockSource::SystemClock,
-                   Adc5::Prescaler::Disabled,
-                   Adc5::CalibrationMode::SingleEndedInputsMode,
-                   true);
+  if constexpr (kBridgeTemperatureAvailable || kMotorTemperatureAvailable) {
+    Adc5::initialize(Adc5::ClockMode::SynchronousPrescaler4,
+                     Adc5::ClockSource::SystemClock,
+                     Adc5::Prescaler::Disabled,
+                     Adc5::CalibrationMode::SingleEndedInputsMode,
+                     true);
 
-  Adc5::connect<A5_MOTT, A5_BRDGT>();
-  if (!Adc5::setInjectedConversionSequenceLength(2)) {
-    return false;
-  }
-  if (!Adc5::setInjectedConversionChannel<A5_MOTT>(0, Adc5::SampleTime::Cycles25)) {
-    return false;
-  }
-  if (!Adc5::setInjectedConversionChannel<A5_BRDGT>(1, Adc5::SampleTime::Cycles25)) {
-    return false;
+    Adc5::connect<A5_MOTT, A5_BRDGT>();
+    if (!Adc5::setInjectedConversionSequenceLength(2)) {
+      return false;
+    }
+    if (!Adc5::setInjectedConversionChannel<A5_MOTT>(0, Adc5::SampleTime::Cycles25)) {
+      return false;
+    }
+    if (!Adc5::setInjectedConversionChannel<A5_BRDGT>(1, Adc5::SampleTime::Cycles25)) {
+      return false;
+    }
   }
 
   // Enable ADC interrupt vector and set priority
   // use only one ADC interrupt vector for all ADCs
-  Adc1::enableInterruptVector(5);  // Set priority for ADC1 interrupt
+  Adc1::enableInterruptVector(kCurrentControlIrqPriority);  // Set priority for ADC1 interrupt
   Adc1::enableInterrupt(Adc1::Interrupt::EndOfInjectedConversion);
   AdcInterrupt1::attachInterruptHandler(adcInterruptHandler);
 
-  // Set the ADCs to use the same trigger source and edge
-  // Rising edge of Timer8 OC4
-  Adc1::enableInjectedConversionExternalTrigger(Adc1::ExternalTriggerPolarity::RisingEdge, Adc1::ExternalTriggerEvent::Event7);
+  // Set the ADCs to use the same trigger source and edge. On STM32G4,
+  // injected Event9 is TIM8_CC4.
+  Adc1::enableInjectedConversionExternalTrigger(Adc1::ExternalTriggerPolarity::RisingEdge, Adc1::ExternalTriggerEvent::Event9);
 
-  Adc2::enableInjectedConversionExternalTrigger(Adc2::ExternalTriggerPolarity::RisingEdge, Adc2::ExternalTriggerEvent::Event7);
-  Adc3::enableInjectedConversionExternalTrigger(Adc3::ExternalTriggerPolarity::RisingEdge, Adc3::ExternalTriggerEvent::Event7);
-  Adc4::enableInjectedConversionExternalTrigger(Adc4::ExternalTriggerPolarity::RisingEdge, Adc4::ExternalTriggerEvent::Event7);
-  Adc5::enableInjectedConversionExternalTrigger(Adc5::ExternalTriggerPolarity::RisingEdge, Adc5::ExternalTriggerEvent::Event7);
+  Adc2::enableInjectedConversionExternalTrigger(Adc2::ExternalTriggerPolarity::RisingEdge, Adc2::ExternalTriggerEvent::Event9);
+  Adc3::enableInjectedConversionExternalTrigger(Adc3::ExternalTriggerPolarity::RisingEdge, Adc3::ExternalTriggerEvent::Event9);
+  Adc4::enableInjectedConversionExternalTrigger(Adc4::ExternalTriggerPolarity::RisingEdge, Adc4::ExternalTriggerEvent::Event9);
+  if constexpr (kBridgeTemperatureAvailable || kMotorTemperatureAvailable) {
+    Adc5::enableInjectedConversionExternalTrigger(Adc5::ExternalTriggerPolarity::RisingEdge, Adc5::ExternalTriggerEvent::Event9);
+  }
   if (!Adc1::enableChannelOffset<A1_IA>(Adc1::OffsetSlot::Slot0, 2048)) {
     return false;
   }
@@ -165,7 +178,7 @@ bool Initialize() {
   Adc2::startInjectedConversionSequence();
   Adc3::startInjectedConversionSequence();
   Adc4::startInjectedConversionSequence();
-  Adc5::startInjectedConversionSequence();
+  if constexpr (kBridgeTemperatureAvailable || kMotorTemperatureAvailable) Adc5::startInjectedConversionSequence();
 
   return true;  // Return true if initialization is successful
 }
@@ -185,21 +198,30 @@ constexpr float adcToCurrent(uint32_t adcValue) noexcept {
   return current;  // Convert ADC value to current in Amperes
 }
 
-/**
- * @brief Reads the current from the specified phase.
- * @param phase The phase to read the current from (0 for A, 1 for B, 2 for C).
- * @return The current value in Amperes.
- */
-system::ThreePhase<unit::Current> GetPhaseCurrents() noexcept {
-  system::ThreePhase<unit::Current> currents;
+system::ThreePhase<unit::Current> ReadPhaseCurrents() noexcept {
+  const unit::Current phase_a{adcToCurrent(Adc1::getInjectedConversionValue(0))};
+  const unit::Current phase_b{adcToCurrent(Adc2::getInjectedConversionValue(0))};
+  unit::Current phase_c{};
 
-  // Read the injected conversion values for each phase
-  currents.a = unit::Current{adcToCurrent(Adc1::getInjectedConversionValue(0))};
-  currents.b = unit::Current{adcToCurrent(Adc2::getInjectedConversionValue(0))};
-  currents.c = unit::Current{adcToCurrent(Adc3::getInjectedConversionValue(0))};
+  if constexpr (kCurrentSensorCount == 3U && kCurrentSenseHasPhaseMeasurements && !kCurrentSenseIsLowSide && !kCurrentSamplesArePwmWindowed) {
+    phase_c = unit::Current{adcToCurrent(Adc3::getInjectedConversionValue(0))};
+  } else {
+    phase_c = unit::Current{-phase_a.Value() - phase_b.Value()};
+  }
 
-  return currents;
+  // Remove sensor common-mode error and reconstruct the final phase so the
+  // public vector has an exact zero-sequence component.
+  const float zero_sequence = (phase_a.Value() + phase_b.Value() + phase_c.Value()) / 3.0F;
+  const unit::Current corrected_a{phase_a.Value() - zero_sequence};
+  const unit::Current corrected_b{phase_b.Value() - zero_sequence};
+  const unit::Current corrected_c{-corrected_a.Value() - corrected_b.Value()};
+  return system::ThreePhase<unit::Current>{corrected_a, corrected_b, corrected_c};
 }
+
+/**
+ * @brief Reads all three phase currents.
+ */
+system::ThreePhase<unit::Current> GetPhaseCurrents() noexcept { return ReadPhaseCurrents(); }
 
 /**
  * @brief Converts an ADC value to a voltage in Volts.
@@ -212,6 +234,10 @@ float adcToVoltage(uint32_t adcValue) noexcept {
   // Convert the ADC value to voltage using the reference voltage and resolution
   float voltage = (static_cast<float>(adcValue) * VOLTAGE_REFERENCE / ADC_RESOLUTION) * VOLTAGE_DIVIDER_RATIO;
   return voltage;  // Return the converted voltage
+}
+
+CurrentControlSamples GetCurrentControlSamples() noexcept {
+  return CurrentControlSamples{ReadPhaseCurrents(), unit::Voltage{adcToVoltage(Adc4::getInjectedConversionValue(0))}};
 }
 
 /**
@@ -320,6 +346,13 @@ float getBridgeTemperature(void) noexcept {
   // Read the injected conversion value for the bridge temperature
   uint32_t adcValue = Adc5::getInjectedConversionValue(1);
   return adcToTemperature(adcValue);  // Convert the ADC value to temperature and return it
+}
+
+TemperatureMeasurements GetTemperatureMeasurements() noexcept {
+  TemperatureMeasurements measurements{};
+  if constexpr (kBridgeTemperatureAvailable) measurements.bridge = unit::Temperature{getBridgeTemperature()};
+  if constexpr (kMotorTemperatureAvailable) measurements.motor = unit::Temperature{getMotorTemperature()};
+  return measurements;
 }
 
 }  // namespace unimoc::hardware::analog

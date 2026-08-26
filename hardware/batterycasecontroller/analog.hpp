@@ -15,6 +15,7 @@
 
 #include <cstdint>
 #include <modm/platform.hpp>
+#include "hardware_interface.hpp"
 #include "three_phase_system.hpp"
 
 /**
@@ -67,7 +68,17 @@ using A5_BRDGT = modm::platform::GpioA9::In2;
  *
  * @return true if initialization is successful, false otherwise.
  */
-bool Initialize() noexcept;
+bool Initialize(HardwareInterface::CurrentControlCallback current_control_callback) noexcept;
+
+/**
+ * @brief Reads the ADC values needed by the fast current-control loop.
+ */
+CurrentControlSamples GetCurrentControlSamples() noexcept;
+
+/**
+ * @brief Reads the optional CPU, bridge, and motor temperatures.
+ */
+TemperatureMeasurements GetTemperatureMeasurements() noexcept;
 
 /**
  * @brief Reads the current from the specified phase.

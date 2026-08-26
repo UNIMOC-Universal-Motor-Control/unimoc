@@ -14,6 +14,7 @@
 #include "current_control_isr.hpp"
 #include <algorithm>
 #include <cmath>
+#include "hardware_interface.hpp"
 #include "nvm_settings.hpp"
 #include "sin_cos.hpp"
 #include "three_phase_system.hpp"
@@ -26,10 +27,12 @@ namespace current_control {
 // init
 // =============================================================================
 
-void CurrentControlIsr::init(const system::NvmSettings& settings, const uint32_t timer_clock_hz) noexcept {
+void CurrentControlIsr::init(const system::NvmSettings& settings, hardware::HardwareInterface& hardware, const uint32_t timer_clock_hz) noexcept {
+  hardware_ = &hardware;
+
   // --- Timing parameters ---
-  const auto f_khz = static_cast<uint32_t>(settings.pwm_frequency);
-  const auto f_hz = f_khz * 1000u;
+  const uint32_t f_hz = static_cast<uint32_t>(settings.pwm_frequency.Value());
+  if (f_hz == 0u) return;
 
   // Centre-aligned PWM: ARR = timer_clock / (2 × f_pwm) − 1
   state.arr = timer_clock_hz / (2u * f_hz) - 1u;
@@ -75,6 +78,8 @@ void CurrentControlIsr::init(const system::NvmSettings& settings, const uint32_t
   sub_step_ = 0u;
   active_buf_snapshot_ = 0u;
   state.samples_ready = false;
+  state.phase_duties =
+      system::ThreePhase<unit::DimensionlessRatio>{unit::DimensionlessRatio{0.5f}, unit::DimensionlessRatio{0.5f}, unit::DimensionlessRatio{0.5f}};
 }
 
 // =============================================================================
@@ -84,75 +89,28 @@ void CurrentControlIsr::init(const system::NvmSettings& settings, const uint32_t
 // This function is called from the ADC JEOC ISR at the highest configured IRQ
 // priority.  It must complete in well under one PWM half-period.
 //
-// Platform-specific ADC/timer register access is handled through thin inline
-// helpers defined below.  On a real target these would read the actual
-// peripheral registers; the portable stubs used here allow the code to compile
-// and be unit-tested on a host.
-//
-// =============================================================================
-
-// -----------------------------------------------------------------------------
-// Platform stubs — replace with real register reads on target hardware.
-// -----------------------------------------------------------------------------
-
-/// @cond INTERNAL
-#ifndef UNIMOC_TARGET_HW
-// Host / test build: provide neutral stubs.
-
-static uint32_t timer_ccr_shadow[3] = {2099u, 2099u, 2099u};
-
-/// Read an ADC injected data register (0-based index 0..2).
-static float adc_read_injected([[maybe_unused]] uint8_t rank) {
-  return 0.0f;  // Ia, Ib, Vdc all return 0 in stub
-}
-
-/// Write a timer compare register (1-based channel index 1..3).
-static void timer_set_ccr([[maybe_unused]] uint8_t channel, [[maybe_unused]] uint32_t value) {
-  if ((channel >= 1u) && (channel <= 3u)) {
-    timer_ccr_shadow[channel - 1u] = value;
-  }
-}
-
-/// Read a timer compare register (1-based channel index 1..3).
-static uint32_t timer_get_ccr([[maybe_unused]] uint8_t channel) {
-  if ((channel >= 1u) && (channel <= 3u)) {
-    return timer_ccr_shadow[channel - 1u];
-  }
-  return 0u;
-}
-
-#endif  // UNIMOC_TARGET_HW
-/// @endcond
-
-// -----------------------------------------------------------------------------
-// Boundary guard threshold (5 % and 95 % of ARR)
-// -----------------------------------------------------------------------------
-
-static inline bool duty_in_bounds(const uint32_t ccr, const uint32_t arr) noexcept {
-  const uint32_t low = arr / 20u;         // 5 %
-  const uint32_t high = arr - arr / 20u;  // 95 %
-  return (ccr >= low) && (ccr <= high);
-}
+static bool duty_in_bounds(const float duty) noexcept { return duty >= 0.05f && duty <= 0.95f; }
 
 // -----------------------------------------------------------------------------
 // on_jeoc
 // -----------------------------------------------------------------------------
 
 void CurrentControlIsr::on_jeoc() noexcept {
+  if (hardware_ == nullptr) return;
+
   // -------------------------------------------------------------------------
-  // 1. Read ADC injected results (platform-specific on real target)
+  // 1. Read ADC samples through the hardware boundary.
   // -------------------------------------------------------------------------
-  const float i_a = adc_read_injected(0u);
-  const float i_b = adc_read_injected(1u);
-  const float v_dc = adc_read_injected(2u);
+  const hardware::CurrentControlSamples samples = hardware_->GetCurrentControlSamples();
+  const system::ThreePhase<unit::Current> phase_currents = samples.phase_currents;
+  const float v_dc = samples.dc_link.Value();
 
   // -------------------------------------------------------------------------
   // 1a. Store raw ADC samples — always, regardless of control mode.
   //     The startup FSM reads these from a lower-priority context.
   // -------------------------------------------------------------------------
-  state.raw_ia = i_a;
-  state.raw_ib = i_b;
-  state.raw_vdc = v_dc;
+  state.raw_phase_currents = phase_currents;
+  state.raw_vdc = unit::Voltage{v_dc};
 
   // -------------------------------------------------------------------------
   // 1b. Force-duty mode: write fixed CCR values and skip the control loop.
@@ -160,13 +118,7 @@ void CurrentControlIsr::on_jeoc() noexcept {
   //     them for over-current protection.
   // -------------------------------------------------------------------------
   if (force_duty_active) {
-    const uint32_t arr_fd = state.arr;
-    const auto to_ccr_fd = [arr_fd](float dv) -> uint32_t {
-      return static_cast<uint32_t>(std::roundf(std::clamp(dv, 0.0f, 1.0f) * static_cast<float>(arr_fd)));
-    };
-    timer_set_ccr(1u, to_ccr_fd(forced_duties.a.Value()));
-    timer_set_ccr(2u, to_ccr_fd(forced_duties.b.Value()));
-    timer_set_ccr(3u, to_ccr_fd(forced_duties.c.Value()));
+    set_phase_duties(forced_duties);
     sub_step_ = (sub_step_ + 1u) & 3u;
     if (sub_step_ == 0u) {
       state.samples_ready = true;
@@ -190,20 +142,13 @@ void CurrentControlIsr::on_jeoc() noexcept {
   //    duty is outside the 5–95 % window (corrupted ADC samples or
   //    insufficient PWM headroom for voltage injection).
   // -------------------------------------------------------------------------
-  const uint32_t arr = state.arr;
   {
-    // Peek at the current CCR values to assess headroom.
-    // On target this should map to TIMx->CCR1/2/3.
-    const uint32_t ccr1 = timer_get_ccr(1u);
-    const uint32_t ccr2 = timer_get_ccr(2u);
-    const uint32_t ccr3 = timer_get_ccr(3u);
-
-    if (!duty_in_bounds(ccr1, arr) || !duty_in_bounds(ccr2, arr) || !duty_in_bounds(ccr3, arr)) {
+    const system::ThreePhase<unit::DimensionlessRatio> applied_duties = hardware_->GetPhaseDuties();
+    if (!duty_in_bounds(applied_duties.a.Value()) || !duty_in_bounds(applied_duties.b.Value()) || !duty_in_bounds(applied_duties.c.Value())) {
       // Write safe neutral duties (50 %) and skip this control update.
-      const uint32_t neutral = arr / 2u;
-      timer_set_ccr(1u, neutral);
-      timer_set_ccr(2u, neutral);
-      timer_set_ccr(3u, neutral);
+      set_phase_duties(system::ThreePhase<unit::DimensionlessRatio>{unit::DimensionlessRatio{0.5f},
+                                                                    unit::DimensionlessRatio{0.5f},
+                                                                    unit::DimensionlessRatio{0.5f}});
       sub_step_ = (sub_step_ + 1u) & 3u;
       if (sub_step_ == 0u) {
         state.samples_ready = true;
@@ -213,11 +158,9 @@ void CurrentControlIsr::on_jeoc() noexcept {
   }
 
   // -------------------------------------------------------------------------
-  // 4. Clarke transform: I_a, I_b → I_α, I_β
-  //    Using the two-sensor variant: I_c = −I_a − I_b
+  // 4. Clarke transform: I_a, I_b, I_c -> I_alpha, I_beta
   // -------------------------------------------------------------------------
-  const system::ThreePhase<unit::Current> i_abc{unit::Current{i_a}, unit::Current{i_b}, unit::Current{-i_a - i_b}};
-  const system::Stator<float> i_ab = i_abc.ToStator();
+  const system::Stator<float> i_ab = phase_currents.ToStator();
 
   // -------------------------------------------------------------------------
   // 5. Store current sample in the active buffer for SlowUpdate
@@ -268,17 +211,9 @@ void CurrentControlIsr::on_jeoc() noexcept {
   const system::ThreePhase<unit::DimensionlessRatio> duties = svm.calculate(u_ab_norm);
 
   // -------------------------------------------------------------------------
-  // 12. Write CCR registers directly (preload disabled, takes effect now)
-  //     Duty is in [0, 1]; CCR = round(duty × ARR)
+  // 12. Write normalized duties through the hardware boundary.
   // -------------------------------------------------------------------------
-  const auto to_ccr = [arr](float duty) -> uint32_t {
-    const float d = std::clamp(duty, 0.0f, 1.0f);
-    return static_cast<uint32_t>(std::roundf(d * static_cast<float>(arr)));
-  };
-
-  timer_set_ccr(1u, to_ccr(duties.a.Value()));
-  timer_set_ccr(2u, to_ccr(duties.b.Value()));
-  timer_set_ccr(3u, to_ccr(duties.c.Value()));
+  set_phase_duties(duties);
 
   // -------------------------------------------------------------------------
   // 13. Advance sub-step; at wrap-around signal the slow-update task
@@ -315,8 +250,12 @@ void CurrentControlIsr::release_force_duty() noexcept {
 
 void CurrentControlIsr::set_adc_trigger_offset(uint32_t offset) noexcept {
   state.adc_trigger_offset = offset;
-  // On real hardware: write offset to the timer CCR register that triggers
-  // the ADC injected sequence (e.g. TIMx->CCR4 on STM32).
+  if (hardware_ != nullptr) hardware_->SetAdcTriggerOffset(offset);
+}
+
+void CurrentControlIsr::set_phase_duties(const system::ThreePhase<unit::DimensionlessRatio>& duties) noexcept {
+  state.phase_duties = duties;
+  if (hardware_ != nullptr) hardware_->SetPhaseDuties(duties);
 }
 
 }  // namespace current_control

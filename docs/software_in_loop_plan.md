@@ -25,10 +25,10 @@ The GUI and network interface come after this vertical slice works.
 The existing code has three relevant layers:
 
 1. `lib/` contains portable control algorithms, observers, coordinate transforms, units, and settings types.
-2. `src/current_control/` contains the actual current-control ISR and slow update implementation. The ISR currently uses local ADC and timer hooks.
-3. `hardware/` contains target-specific hardware implementations. `hardware/host/hardware_interface.cpp` currently provides zero-value host stubs for the public `HardwareInterface` callbacks.
+2. `src/current_control/` contains the actual current-control ISR and slow update implementation. Its ADC, PWM, trigger, and timer operations are supplied by `HardwareInterface` callbacks.
+3. `hardware/` contains target-specific hardware implementations. `hardware/host/hardware_interface.cpp` provides zero-value host stubs for the public `HardwareInterface` callbacks.
 
-This means replacing the public host callbacks alone is insufficient: the ISR does not currently call them. The SIL work must introduce an injectable ADC/PWM I/O seam around the ISR's `adc_read_injected()`, `timer_set_ccr()`, and `timer_get_ccr()` hooks, while preserving the real target implementation.
+The current-control ISR now calls the public hardware boundary for ADC samples, PWM duties, trigger timing, and applied-duty inspection. The target implementation binds those operations to modm peripherals, while the host implementation supplies stubs that can later be connected to the simulator plant.
 
 Hosted tests currently link the portable `unimoc_lib` and do not compile the firmware executable or host hardware source when `ENABLE_TESTS` is enabled. A reusable current-control runtime target is therefore a prerequisite for runtime SIL tests.
 

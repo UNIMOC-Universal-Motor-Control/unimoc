@@ -25,6 +25,10 @@
 #include "rotor_system.hpp"
 #include "stator_system.hpp"
 
+namespace unimoc::hardware {
+class HardwareInterface;
+}
+
 /**
  * @namespace unimoc global namespace
  */
@@ -97,20 +101,22 @@ struct CurrentControlState {
   /// dt for one slow-update cycle [s] — set by init().
   float dt_slow{static_cast<float>(NUM_SUB_STEPS) / (2.0f * 20000.0f)};
 
-  /// Timer auto-reload register value — set by init().
+  /// Timer auto-reload value used for timing calculations — set by init().
   uint32_t arr{4199u};
 
-  /// ADC trigger CC offset in timer ticks (1 µs) — set by init().
+  /// ADC trigger compare offset in timer ticks — set by init().
   uint32_t adc_trigger_offset{168u};
 
+  /// Most recently requested normalized phase duties.
+  system::ThreePhase<unit::DimensionlessRatio> phase_duties{unit::DimensionlessRatio{0.5f},
+                                                            unit::DimensionlessRatio{0.5f},
+                                                            unit::DimensionlessRatio{0.5f}};
+
   /// Most-recent raw ADC samples; updated by every on_jeoc() call regardless
-  /// of control mode.  Safe to read from lower-priority contexts (e.g. the
-  /// startup FSM) — worst case a single torn read on a sample that is
-  /// immediately corrected on the next ISR call.
-  /// Units: [A equivalent] for currents, [V] for the DC-link.
-  float raw_ia{0.0f};
-  float raw_ib{0.0f};
-  float raw_vdc{0.0f};
+  /// of control mode. Safe to read from lower-priority contexts (e.g. the
+  /// startup FSM). The phase-current vector preserves ia + ib + ic = 0.
+  system::ThreePhase<unit::Current> raw_phase_currents{};
+  unit::Voltage raw_vdc{};
 };
 
 /**
@@ -152,7 +158,7 @@ struct CurrentControlState {
  * @code
  *   // One-time setup (before enabling the timer/ADC):
  *   auto& isr = unimoc::current_control::CurrentControlIsr::instance();
- *   isr.init(settings);
+ *   isr.init(settings, hardware, hardware.GetTimerClockFrequency());
  *
  *   // From ADC JEOC IRQ handler (highest priority):
  *   isr.on_jeoc();
@@ -183,21 +189,19 @@ class CurrentControlIsr {
    * Computes timing parameters (ARR, ADC trigger offset, dt_fast, dt_slow)
    * from `settings.pwm_frequency` and loads all algorithm parameters.
    *
-   * The caller is responsible for configuring the hardware timer and ADC
-   * injected sequence using the values stored in `state` after this call:
-   *   - `state.arr`                 → TIMx ARR register
-   *   - `state.adc_trigger_offset`  → TIMx CCR trigger offset
-   *   - `state.dt_fast`             → confirmed ISR period
+   * The hardware interface owns timer and ADC configuration. The calculated
+   * values remain in `state` for diagnostics and runtime timing.
    *
    * @note Pre-fills both double-buffer sin/cos entries with zero-angle
    *       (identity) so the ISR can run immediately even before SlowUpdate
    *       has had a chance to compute proper values.
    *
    * @param settings  NVM settings loaded and validated by the boot sequence.
+   * @param hardware  Hardware callbacks for ADC samples and PWM output.
    * @param timer_clock_hz  Timer peripheral clock frequency in Hz
    *                        (e.g. 168 000 000 for a 168 MHz APB2 timer).
    */
-  void init(const system::NvmSettings& settings, uint32_t timer_clock_hz = 168'000'000u) noexcept;
+  void init(const system::NvmSettings& settings, hardware::HardwareInterface& hardware, uint32_t timer_clock_hz) noexcept;
 
   // =========================================================================
   // ISR entry point
@@ -209,10 +213,9 @@ class CurrentControlIsr {
    * Must be called from the ADC JEOC ISR at the highest configured IRQ
    * priority level.  The function reads the three injected ADC results
    * (I_a, I_b, V_dc), runs one sub-step of the current control loop, and
-   * writes the new duty cycles directly to the timer CCR registers.
+   * writes the new duty cycles through the hardware interface.
    *
-   * Implementation is in current_control_isr.cpp where the platform-specific
-   * ADC/timer register access is defined.
+   * ADC and PWM access is provided by the bound hardware interface.
    */
   void on_jeoc() noexcept;
 
@@ -239,8 +242,8 @@ class CurrentControlIsr {
    * @brief Override PWM output with fixed duty cycles, bypassing the PI loop.
    *
    * When active, on_jeoc() still reads and stores the raw ADC samples in
-   * state.raw_ia / raw_ib / raw_vdc, but skips Clarke / Park / PI / SVM and
-   * writes the requested duties directly to the timer CCR registers.
+   * state.raw_phase_currents / raw_vdc, but skips Clarke / Park / PI / SVM and
+   * writes the requested duties through the hardware interface.
    *
    * Duties are clamped to [svm.duty_min, svm.duty_max].  To ensure the ADC
    * sampling window is never corrupted, consider keeping duties well within
@@ -316,6 +319,10 @@ class CurrentControlIsr {
 
  private:
   CurrentControlIsr() = default;
+
+  void set_phase_duties(const system::ThreePhase<unit::DimensionlessRatio>& duties) noexcept;
+
+  hardware::HardwareInterface* hardware_{nullptr};
 
   /// Current sub-step index (0–3), ISR-private.
   uint8_t sub_step_{0u};

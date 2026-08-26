@@ -13,13 +13,25 @@
  */
 
 #include "pulse_width.hpp"
+#include <algorithm>
+#include <chrono>
+#include <limits>
+#include <modm/architecture/interface/interrupt.hpp>
 #include <modm/debug/logger.hpp>
 #include <modm/platform.hpp>
 
 using namespace modm::platform;
-using namespace std::chrono_literals;
 
 namespace unimoc::hardware::pulse_width {
+
+HardwareInterface::SlowUpdateCallback slow_update_callback = nullptr;
+
+void TimerUpdateInterruptHandler() noexcept {
+  Timer8::acknowledgeInterruptFlags(Timer8::InterruptFlag::Update);
+  if (slow_update_callback != nullptr) slow_update_callback();
+}
+
+MODM_ISR(TIM8_UP) { TimerUpdateInterruptHandler(); }
 
 /**
  * \brief Initializes the PWM output for three-phase motor control.
@@ -29,7 +41,11 @@ namespace unimoc::hardware::pulse_width {
  *
  * \return true if initialization is successful, false otherwise.
  */
-bool Initialize() {
+bool Initialize(const unit::Frequency pwm_frequency, const HardwareInterface::SlowUpdateCallback callback) noexcept {
+  const uint32_t frequency_hz = static_cast<uint32_t>(pwm_frequency.Value());
+  if (frequency_hz == 0u) return false;
+  slow_update_callback = callback;
+
   // Initialize GPIO pins for PWM output
   // Phase A: GPIO B6, A7
   GpioB6::setAlternateFunction(5);                // Set GPIO B6 to alternate function mode (AF5 for TIM8)
@@ -66,33 +82,40 @@ bool Initialize() {
                   false,
                   Timer8::MasterMode2::Update);
 
-  Timer8::setPrescaler(1);                                         // Set prescaler to 1 for maximum frequency
-  auto period_set = Timer8::setPeriod<SystemClock>(62.5us, true);  // Set period to 62.5 microseconds (16 kHz PWM frequency)
+  Timer8::setPrescaler(1);  // Set prescaler to 1 for maximum frequency
+  const auto period = std::chrono::duration<uint64_t, std::nano>{1'000'000'000ULL / frequency_hz};
+  auto period_set = Timer8::setPeriod<SystemClock>(period, true);
   if (period_set == 0) {
     return false;
   }
   MODM_LOG_INFO << "Timer8 period set to: " << period_set << modm::endl;
+
+  Timer8::configureOutputChannel(4u, Timer8::OutputCompareMode::Toggle, 0u, Timer8::PinState::Disable);
 
   Timer8::configureOutputChannel<GpioOutputB6::Ch1>(Timer8::OutputCompareMode::Pwm,
                                                     Timer8::PinState::Enable,
                                                     Timer8::OutputComparePolarity::ActiveHigh,
                                                     Timer8::PinState::Enable,
                                                     Timer8::OutputComparePolarity::ActiveHigh,
-                                                    Timer8::OutputComparePreload::Enable);
+                                                    Timer8::OutputComparePreload::Disable);
 
   Timer8::configureOutputChannel<GpioOutputB8::Ch2>(Timer8::OutputCompareMode::Pwm,
                                                     Timer8::PinState::Enable,
                                                     Timer8::OutputComparePolarity::ActiveHigh,
                                                     Timer8::PinState::Enable,
                                                     Timer8::OutputComparePolarity::ActiveHigh,
-                                                    Timer8::OutputComparePreload::Enable);
+                                                    Timer8::OutputComparePreload::Disable);
 
   Timer8::configureOutputChannel<GpioOutputB9::Ch3>(Timer8::OutputCompareMode::Pwm,
                                                     Timer8::PinState::Enable,
                                                     Timer8::OutputComparePolarity::ActiveHigh,
                                                     Timer8::PinState::Enable,
                                                     Timer8::OutputComparePolarity::ActiveHigh,
-                                                    Timer8::OutputComparePreload::Enable);
+                                                    Timer8::OutputComparePreload::Disable);
+
+  Timer8::enableInterruptVector(Timer8::Interrupt::Update, true, kSlowUpdateIrqPriority);
+  Timer8::enableInterrupt(Timer8::Interrupt::Update);
+  Timer8::start();
 
   return true;  // Return true if initialization is successful
 }
@@ -109,4 +132,24 @@ void SetPhaseDuties(const system::ThreePhase<unit::DimensionlessRatio>& duties) 
   Timer8::setCompareValue<GpioOutputB8::Ch2>(dutyCycleToCompareValue(duties.b.Value(), Timer8::getOverflow()));
   Timer8::setCompareValue<GpioOutputB9::Ch3>(dutyCycleToCompareValue(duties.c.Value(), Timer8::getOverflow()));
 }
+
+system::ThreePhase<unit::DimensionlessRatio> GetPhaseDuties() noexcept {
+  const auto overflow = Timer8::getOverflow();
+  if (overflow == 0u) {
+    return system::ThreePhase<unit::DimensionlessRatio>{unit::DimensionlessRatio{0.5F},
+                                                        unit::DimensionlessRatio{0.5F},
+                                                        unit::DimensionlessRatio{0.5F}};
+  }
+  const float scale = 1.0F / static_cast<float>(overflow);
+  return system::ThreePhase<unit::DimensionlessRatio>{unit::DimensionlessRatio{static_cast<float>(Timer8::getCompareValue(1u)) * scale},
+                                                      unit::DimensionlessRatio{static_cast<float>(Timer8::getCompareValue(2u)) * scale},
+                                                      unit::DimensionlessRatio{static_cast<float>(Timer8::getCompareValue(3u)) * scale}};
+}
+
+void SetAdcTriggerOffset(const uint32_t offset) noexcept {
+  const uint32_t limited_offset = std::min<uint32_t>(offset, std::numeric_limits<uint16_t>::max());
+  Timer8::setCompareValue(4u, static_cast<uint16_t>(limited_offset));
+}
+
+uint32_t GetTimerClockFrequency() noexcept { return Timer8::getClockFrequency<SystemClock>(); }
 }  // namespace unimoc::hardware::pulse_width
