@@ -119,16 +119,14 @@
 		},
 		"cmake.ctest.testExplorerIntegrationEnabled": true,
 		"chat.tools.terminal.autoApprove": {
-			"ctest": true,
-			"clang++": true,
-			"git": true,
-			"cmake": true,
-			"python": true,
-			"ctest.exe": true,
-			"clang++.exe": true,
-			"git.exe": true,
-			"cmake.exe": true,
-			"python.exe": true
-		},
+			"/^cmake\\b/": true,
+			"/^ninja\\b/": true,
+			"/^make\\b/": true,
+			"/^ctest\\b/": true,
+			"/^clang-format\\b/": true,
+			"/^clang-tidy\\b/": true,
+			"/^arm-none-eabi-.*/": true,
+			"/^git\\s+(status|diff|log)/": true
+		}
 	}
 }

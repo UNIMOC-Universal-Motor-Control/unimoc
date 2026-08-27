@@ -14,6 +14,7 @@
 
 #include <modm/debug.hpp>
 #include <modm/platform.hpp>
+#include <modm/platform/rtt/rtt.hpp>
 #include "analog.hpp"
 #include "hardware_interface.hpp"
 #include "pulse_width.hpp"
@@ -141,7 +142,7 @@ bool Initialize(const unit::Frequency pwm_frequency,
 }  // namespace unimoc::hardware
 
 // Include the necessary headers for RTT logging
-using LoggerDevice = modm::IODeviceWrapper<Rtt<0>, modm::IOBuffer::DiscardIfFull>;
+using LoggerDevice = modm::IODeviceWrapper<modm::platform::Rtt<0>, modm::IOBuffer::DiscardIfFull>;
 static LoggerDevice rtt_device;
 // Set all four logger streams to use RTT
 modm::log::Logger modm::log::debug(rtt_device);

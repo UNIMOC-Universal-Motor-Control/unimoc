@@ -296,12 +296,16 @@ void HwStartup::run_adc_offset_cal() noexcept {
 
       results.passed[static_cast<uint8_t>(FsmState::ADC_OFFSET_CAL)] = pass;
 
-      LogFormatted(hardware::LogLevel::kInfo, "[STARTUP] ADC_OFFSET_CAL: offset_a=%f A, offset_b=%f A  %s\n", mean_a, mean_b, pass ? "PASS" : "FAIL");
+      LogFormatted(hardware::LogLevel::kInfo,
+                   "[STARTUP] ADC_OFFSET_CAL: offset_a=%f A, offset_b=%f A  %s\n",
+                   static_cast<double>(mean_a),
+                   static_cast<double>(mean_b),
+                   pass ? "PASS" : "FAIL");
 
       if (!pass) {
         LogFormatted(hardware::LogLevel::kWarning,
                      "[STARTUP] ADC offset exceeds threshold (%f A). Check op-amp supply, resistors, and PCB connections.\n",
-                     offset_threshold_A);
+                     static_cast<double>(offset_threshold_A));
       }
 
       step_done_ = true;
@@ -335,14 +339,14 @@ void HwStartup::run_adc_noise_floor() noexcept {
 
       LogFormatted(hardware::LogLevel::kInfo,
                    "[STARTUP] ADC_NOISE_FLOOR: rms_a=%f A, rms_b=%f A  %s\n",
-                   results.adc_noise_rms_a,
-                   results.adc_noise_rms_b,
+                   static_cast<double>(results.adc_noise_rms_a),
+                   static_cast<double>(results.adc_noise_rms_b),
                    pass ? "PASS" : "FAIL");
 
       if (!pass) {
         LogFormatted(hardware::LogLevel::kWarning,
                      "[STARTUP] ADC noise exceeds threshold (%f A). Check decoupling caps, layout, and ground paths.\n",
-                     noise_threshold_A);
+                     static_cast<double>(noise_threshold_A));
       }
 
       step_done_ = true;
@@ -373,8 +377,8 @@ void HwStartup::run_duty_force(float duty) noexcept {
                  "[STARTUP] %s: duty=%f applied for %u samples. PASS-MANUAL (verify with scope).\n"
                  "[STARTUP] Press NEXT to continue.\n",
                  state_name(state_),
-                 duty,
-                 HOLD_SAMPLES);
+                 static_cast<double>(duty),
+                 static_cast<unsigned int>(HOLD_SAMPLES));
 
     step_done_ = true;
   }
@@ -414,17 +418,17 @@ void HwStartup::run_dc_link_voltage_check() noexcept {
 
     LogFormatted(hardware::LogLevel::kInfo,
                  "[STARTUP] DC_LINK_VOLTAGE_CHECK: adc_vdc=%f V, ext=%f V, gain=%f  %s\n",
-                 measured_vdc,
-                 ext_vdc_V_,
-                 results.gain_vdc,
+                 static_cast<double>(measured_vdc),
+                 static_cast<double>(ext_vdc_V_),
+                 static_cast<double>(results.gain_vdc),
                  pass ? "PASS" : "FAIL");
 
     if (!pass) {
       LogFormatted(hardware::LogLevel::kWarning,
                    "[STARTUP] V_dc gain error exceeds %f %%. Check voltage-divider resistors on V_dc sense circuit.\n"
                    "[STARTUP] Suggested correction factor: %f\n",
-                   vdc_gain_tolerance * 100.0f,
-                   results.gain_vdc);
+                   static_cast<double>(vdc_gain_tolerance * 100.0f),
+                   static_cast<double>(results.gain_vdc));
     }
 
     step_done_ = true;
@@ -434,7 +438,7 @@ void HwStartup::run_dc_link_voltage_check() noexcept {
     LogFormatted(hardware::LogLevel::kInfo,
                  "[STARTUP] DC_LINK_VOLTAGE_CHECK: adc_vdc=%f V. Enter multimeter reading via unimoc.startup.ext_vdc_V, "
                  "then press NEXT.\n",
-                 measured_vdc);
+                 static_cast<double>(measured_vdc));
     ++sample_count_;
     // step_done_ stays false; keep polling until ext_vdc_V_ is provided.
   }
@@ -474,7 +478,9 @@ void HwStartup::run_gate_driver_enable_check() noexcept {
       accum_sq_a_ = 0.0;
       accum_sq_b_ = 0.0;
       gate_phase_disabled_ = false;
-      LogFormatted(hardware::LogLevel::kInfo, "[STARTUP] GATE_DRIVER_ENABLE_CHECK: baseline mean_ia=%f A\n", gate_mean_disabled_);
+      LogFormatted(hardware::LogLevel::kInfo,
+                   "[STARTUP] GATE_DRIVER_ENABLE_CHECK: baseline mean_ia=%f A\n",
+                   static_cast<double>(gate_mean_disabled_));
     }
     return;  // continue next call
   }
@@ -492,8 +498,8 @@ void HwStartup::run_gate_driver_enable_check() noexcept {
 
     LogFormatted(hardware::LogLevel::kInfo,
                  "[STARTUP] GATE_DRIVER_ENABLE_CHECK: delta_ia=%f A, threshold=%f A  %s\n",
-                 delta,
-                 threshold,
+                 static_cast<double>(delta),
+                 static_cast<double>(threshold),
                  pass ? "PASS" : "FAIL");
 
     if (!pass) {
@@ -536,8 +542,8 @@ void HwStartup::run_connect_motor_wait() noexcept {
                  "[STARTUP] !!  %f A (%f%% of max).\n"
                  "[STARTUP] !!  Ensure motor shaft is FREE to rotate.        !!\n"
                  "[STARTUP] !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n\n",
-                 oc_limit_A_,
-                 oc_fraction * 100.0f);
+                 static_cast<double>(oc_limit_A_),
+                 static_cast<double>(oc_fraction * 100.0f));
 
     results.passed[static_cast<uint8_t>(FsmState::CONNECT_MOTOR)] = true;
     step_done_ = true;
@@ -595,9 +601,9 @@ void HwStartup::run_phase_adc_alignment() noexcept {
 
     LogFormatted(hardware::LogLevel::kInfo,
                  "[STARTUP] PHASE_ADC_ALIGNMENT: best_pos=%u, optimal_offset=%u ticks, min_noise=%f A  %s\n",
-                 best_pos,
-                 optimal_ticks,
-                 best_noise,
+                 static_cast<unsigned int>(best_pos),
+                 static_cast<unsigned int>(optimal_ticks),
+                 static_cast<double>(best_noise),
                  pass ? "PASS" : "FAIL");
 
     if (!pass) {
@@ -607,7 +613,7 @@ void HwStartup::run_phase_adc_alignment() noexcept {
     LogFormatted(hardware::LogLevel::kInfo,
                  "[STARTUP] Suggest writing adc_trigger_offset=%u to NvmSettings to persist the optimal offset.\n"
                  "[STARTUP] Press NEXT to continue.\n",
-                 optimal_ticks);
+                 static_cast<unsigned int>(optimal_ticks));
 
     cc_.set_adc_trigger_offset(optimal_ticks);
     step_done_ = true;
@@ -656,7 +662,10 @@ void HwStartup::run_current_sense_calibration() noexcept {
     const float mean_ia = static_cast<float>(accum_a_) / n;
     const float mean_ib = static_cast<float>(accum_b_) / n;
 
-    LogFormatted(hardware::LogLevel::kInfo, "[STARTUP] CURRENT_SENSE_CALIBRATION: mean_ia=%f A, mean_ib=%f A\n", mean_ia, mean_ib);
+    LogFormatted(hardware::LogLevel::kInfo,
+                 "[STARTUP] CURRENT_SENSE_CALIBRATION: mean_ia=%f A, mean_ib=%f A\n",
+                 static_cast<double>(mean_ia),
+                 static_cast<double>(mean_ib));
 
     if (ext_current_A_ >= 1e-3f) {
       // gain = adc_reading / ext_reference; ideal = 1.0
@@ -670,18 +679,18 @@ void HwStartup::run_current_sense_calibration() noexcept {
 
       LogFormatted(hardware::LogLevel::kInfo,
                    "[STARTUP] CURRENT_SENSE_CALIBRATION: ext=%f A, gain_a=%f, gain_b=%f  %s\n",
-                   ext_current_A_,
-                   results.gain_a,
-                   results.gain_b,
+                   static_cast<double>(ext_current_A_),
+                   static_cast<double>(results.gain_a),
+                   static_cast<double>(results.gain_b),
                    pass ? "PASS" : "FAIL");
 
       if (!pass) {
         LogFormatted(hardware::LogLevel::kWarning,
                      "[STARTUP] Gain error exceeds %f %%. Check voltage-divider and op-amp gain resistors for current-sense channels.\n"
                      "[STARTUP] Correction factors: adc_gain_a=%f, adc_gain_b=%f\n",
-                     gain_tolerance * 100.0f,
-                     1.0f / results.gain_a,
-                     1.0f / results.gain_b);
+                     static_cast<double>(gain_tolerance * 100.0f),
+                     static_cast<double>(1.0f / results.gain_a),
+                     static_cast<double>(1.0f / results.gain_b));
       }
 
     } else {
@@ -751,14 +760,14 @@ void HwStartup::log_summary() noexcept {
                "[STARTUP] adc_trig_opt  = %u ticks\n"
                "[STARTUP] NVM calibration fields updated.\n"
                "[STARTUP] ====================================================\n\n",
-               results.adc_offset_a,
-               results.adc_offset_b,
-               results.adc_noise_rms_a,
-               results.adc_noise_rms_b,
-               results.gain_vdc,
-               results.gain_a,
-               results.gain_b,
-               results.adc_trigger_offset_optimal);
+               static_cast<double>(results.adc_offset_a),
+               static_cast<double>(results.adc_offset_b),
+               static_cast<double>(results.adc_noise_rms_a),
+               static_cast<double>(results.adc_noise_rms_b),
+               static_cast<double>(results.gain_vdc),
+               static_cast<double>(results.gain_a),
+               static_cast<double>(results.gain_b),
+               static_cast<unsigned int>(results.adc_trigger_offset_optimal));
 }
 
 // =============================================================================

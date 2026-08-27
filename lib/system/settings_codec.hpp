@@ -90,7 +90,7 @@ class Reader {
   bool ReadUint16(uint16_t& value) noexcept {
     if (offset_ + sizeof(value) > input_.size()) return false;
     value = std::to_integer<uint16_t>(input_[offset_++]);
-    value |= static_cast<uint16_t>(std::to_integer<uint8_t>(input_[offset_++])) << 8U;
+    value = static_cast<uint16_t>(value | static_cast<uint16_t>(std::to_integer<uint8_t>(input_[offset_++]) << 8U));
     return true;
   }
 
