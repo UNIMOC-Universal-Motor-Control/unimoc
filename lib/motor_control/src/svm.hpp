@@ -101,9 +101,9 @@ struct Svm
         T dc = static_cast<T>(0.5) + vc + v0;
 
         // --- Clamp to [duty_min, duty_max] ---
-        da = std::clamp(da, duty_min.Value(), duty_max.Value());
-        db = std::clamp(db, duty_min.Value(), duty_max.Value());
-        dc = std::clamp(dc, duty_min.Value(), duty_max.Value());
+        da = unit::DimensionlessRatio{da}.Clamp(duty_min.Value(), duty_max.Value()).Value();
+        db = unit::DimensionlessRatio{db}.Clamp(duty_min.Value(), duty_max.Value()).Value();
+        dc = unit::DimensionlessRatio{dc}.Clamp(duty_min.Value(), duty_max.Value()).Value();
 
         return system::ThreePhase<unit::DimensionlessRatio>{
             unit::DimensionlessRatio{da},

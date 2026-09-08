@@ -12,7 +12,6 @@
  *    See the repository LICENSE file for details.
  */
 #include "current_control_isr.hpp"
-#include <algorithm>
 #include <cmath>
 #include "hardware_interface.hpp"
 #include "nvm_settings.hpp"
@@ -49,14 +48,10 @@ void CurrentControlIsr::init(const settings::NvmSettings& settings, hardware::Ha
   cc.ki_d = settings.current_ki_d;
   cc.kp_q = settings.current_kp_q;
   cc.ki_q = settings.current_ki_q;
-  const float l_d = settings.l_d.Value();
-  const float l_q = settings.l_q.Value();
-  const float psi = settings.flux_pm.Value();
-
-  cc.L_d = l_d;
-  cc.L_q = l_q;
-  cc.psi = psi;
-  cc.v_max = settings.current_v_max.Value();
+  cc.L_d = settings.l_d;
+  cc.L_q = settings.l_q;
+  cc.psi = settings.flux_pm;
+  cc.v_max = settings.current_v_max;
 
   // --- Mechanical observer parameters ---
   mech_obs.init(settings);
@@ -146,7 +141,7 @@ void CurrentControlIsr::on_jeoc() noexcept {
   {
     const system::ThreePhase<unit::DimensionlessRatio> applied_duties = hardware_->GetPhaseDuties();
     if (!duty_in_bounds(applied_duties.a, svm.duty_min, svm.duty_max) || !duty_in_bounds(applied_duties.b, svm.duty_min, svm.duty_max) ||
-      !duty_in_bounds(applied_duties.c, svm.duty_min, svm.duty_max)) {
+        !duty_in_bounds(applied_duties.c, svm.duty_min, svm.duty_max)) {
       // Write safe neutral duties (50 %) and skip this control update.
       set_phase_duties(system::ThreePhase<unit::DimensionlessRatio>{unit::DimensionlessRatio{0.5f},
                                                                     unit::DimensionlessRatio{0.5f},
@@ -177,7 +172,7 @@ void CurrentControlIsr::on_jeoc() noexcept {
   // -------------------------------------------------------------------------
   // 7. Current PI with decoupling feedforward
   // -------------------------------------------------------------------------
-  const system::Rotor<unit::Voltage> u_dq = cc.update(state.i_ref, i_dq, mech_obs.omega.Value(), state.dt_fast, v_dc);
+  const system::Rotor<unit::Voltage> u_dq = cc.update(state.i_ref, i_dq, mech_obs.omega, unit::Time{state.dt_fast}, unit::Voltage{v_dc});
 
   // Store for SlowUpdate (flux observer needs last voltage)
   state.u_dq_last = u_dq;
@@ -231,9 +226,9 @@ void CurrentControlIsr::on_jeoc() noexcept {
 // =============================================================================
 
 void CurrentControlIsr::force_duty(float da, float db, float dc) noexcept {
-  forced_duties.a = unit::DimensionlessRatio{std::clamp(da, svm.duty_min.Value(), svm.duty_max.Value())};
-  forced_duties.b = unit::DimensionlessRatio{std::clamp(db, svm.duty_min.Value(), svm.duty_max.Value())};
-  forced_duties.c = unit::DimensionlessRatio{std::clamp(dc, svm.duty_min.Value(), svm.duty_max.Value())};
+  forced_duties.a = unit::DimensionlessRatio{da}.Clamp(svm.duty_min.Value(), svm.duty_max.Value());
+  forced_duties.b = unit::DimensionlessRatio{db}.Clamp(svm.duty_min.Value(), svm.duty_max.Value());
+  forced_duties.c = unit::DimensionlessRatio{dc}.Clamp(svm.duty_min.Value(), svm.duty_max.Value());
   force_duty_active = true;
 }
 

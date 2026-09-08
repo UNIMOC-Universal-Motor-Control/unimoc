@@ -197,7 +197,7 @@ Full register name table (`lib/cyphal/cyphal_interface.hpp`):
 | `unimoc.control.dtc.f_pwm` | `uavcan.primitive.scalar.Real32.1.0` | PWM frequency [Hz] |
 | `unimoc.control.dtc.i_threshold` | `uavcan.primitive.scalar.Real32.1.0` | Dead-time zero-crossing threshold [A] |
 | `unimoc.observer.hfi.v_inject` | `uavcan.primitive.scalar.Real32.1.0` | HFI injection voltage [V] |
-| `unimoc.observer.hfi.error_gain` | `uavcan.primitive.scalar.Real32.1.0` | HFI angle-error gain [1/V] |
+| `unimoc.observer.hfi.error_gain` | `uavcan.primitive.scalar.Real32.1.0` | HFI current-error to angle gain [rad/A] |
 | `unimoc.control.excitation.mode` | `uavcan.primitive.scalar.Natural8.1.0` | EESM excitation mode (0=current, 1=flux) |
 | `unimoc.control.excitation.L_m` | `uavcan.primitive.scalar.Real32.1.0` | EESM mutual inductance [H] |
 | `unimoc.control.excitation.kp` | `uavcan.primitive.scalar.Real32.1.0` | Excitation PI proportional gain [V/A] |

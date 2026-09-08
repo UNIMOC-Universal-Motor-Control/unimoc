@@ -15,8 +15,8 @@
 
 #include <cstdint>
 #include "cyphal/control_mode.hpp"
-#include "motor_type.hpp"
 #include "cyphal/node_identity.hpp"
+#include "motor_type.hpp"
 #include "units.hpp"
 
 // ============================================================================
@@ -233,7 +233,7 @@ struct NvmSettings {
 
   /// Rotor-flux correction gain g_flux [Wb/(A·s)].
   /// Register: `unimoc.observer.asm_flux.g_flux`
-  float asm_obs_g_flux{5000.0f};
+  unit::MagneticFluxPerCurrentTime asm_obs_g_flux{unit::MagneticFluxPerCurrentTime{5000.0F}};
 
   // =========================================================================
   // ASM flux controller
@@ -241,11 +241,11 @@ struct NvmSettings {
 
   /// Proportional gain [A/Wb].
   /// Register: `unimoc.control.asm_flux.kp`
-  float asm_flux_kp{10.0f};
+  unit::CurrentPerMagneticFlux asm_flux_kp{unit::CurrentPerMagneticFlux{10.0F}};
 
   /// Integral gain [A/(Wb·s)].
   /// Register: `unimoc.control.asm_flux.ki`
-  float asm_flux_ki{50.0f};
+  unit::CurrentPerMagneticFluxTime asm_flux_ki{unit::CurrentPerMagneticFluxTime{50.0F}};
 
   /// Minimum d-axis current [A].
   /// Register: `unimoc.control.asm_flux.i_d_min`
@@ -261,11 +261,11 @@ struct NvmSettings {
 
   /// Maximum voltage vector magnitude (normalised, range (0,1]).
   /// Register: `unimoc.control.fw.v_max`
-  unit::DimensionlessRatio fw_v_max{unit::DimensionlessRatio{0.9F}};
+  unit::Voltage fw_v_max{unit::Voltage{0.9F}};
 
   /// Integrator gain [A/(V·s)].
   /// Register: `unimoc.control.fw.ki`
-  float fw_ki{10.0f};
+  unit::CurrentPerVoltageTime fw_ki{unit::CurrentPerVoltageTime{10.0F}};
 
   /// Most negative i_d allowed [A].
   /// Register: `unimoc.control.fw.i_d_min`
@@ -290,19 +290,19 @@ struct NvmSettings {
 
   /// d-axis proportional gain [V/A].
   /// Register: `unimoc.control.current.kp_d`
-  float current_kp_d{1.0f};
+  unit::VoltagePerCurrent current_kp_d{unit::VoltagePerCurrent{1.0F}};
 
   /// d-axis integral gain [V/(A·s)].
   /// Register: `unimoc.control.current.ki_d`
-  float current_ki_d{100.0f};
+  unit::VoltagePerCurrentTime current_ki_d{unit::VoltagePerCurrentTime{100.0F}};
 
   /// q-axis proportional gain [V/A].
   /// Register: `unimoc.control.current.kp_q`
-  float current_kp_q{1.0f};
+  unit::VoltagePerCurrent current_kp_q{unit::VoltagePerCurrent{1.0F}};
 
   /// q-axis integral gain [V/(A·s)].
   /// Register: `unimoc.control.current.ki_q`
-  float current_ki_q{100.0f};
+  unit::VoltagePerCurrentTime current_ki_q{unit::VoltagePerCurrentTime{100.0F}};
 
   /// Maximum voltage vector magnitude (normalised by V_dc, range (0, 1]).
   /// Limits the current controller output before it reaches the SVM
@@ -347,9 +347,9 @@ struct NvmSettings {
   /// Register: `unimoc.observer.hfi.v_inject`
   unit::Voltage hfi_v_inject{unit::Voltage{0.0f}};
 
-  /// Angle error to PLL scaling gain [1/V].
+  /// Current error to PLL angle scaling gain [rad/A].
   /// Register: `unimoc.observer.hfi.error_gain`
-  float hfi_error_gain{1.0f};
+  unit::AnglePerCurrent hfi_error_gain{unit::AnglePerCurrent{1.0F}};
 
   // =========================================================================
   // EESM excitation controller
@@ -365,11 +365,11 @@ struct NvmSettings {
 
   /// Proportional gain [V/A].
   /// Register: `unimoc.control.excitation.kp`
-  float excitation_kp{5.0f};
+  unit::DimensionlessRatio excitation_kp{unit::DimensionlessRatio{5.0F}};
 
   /// Integral gain [V/(A·s)].
   /// Register: `unimoc.control.excitation.ki`
-  float excitation_ki{50.0f};
+  unit::InverseTime excitation_ki{unit::InverseTime{50.0F}};
 
   /// Minimum rotor excitation current [A].
   /// Register: `unimoc.control.excitation.i_f_min`
@@ -397,15 +397,15 @@ struct NvmSettings {
 
   /// Position loop proportional gain [rad/s per rad].
   /// Register: `unimoc.control.pos.kp`
-  float pos_kp_pos{10.0f};
+  unit::AngularVelocityPerAngle pos_kp_pos{unit::AngularVelocityPerAngle{10.0F}};
 
   /// Speed loop proportional gain.
   /// Register: `unimoc.control.pos.kp_speed`
-  float pos_kp_speed{5.0f};
+  unit::DimensionlessRatio pos_kp_speed{unit::DimensionlessRatio{5.0F}};
 
   /// Speed loop integral gain.
   /// Register: `unimoc.control.pos.ki_speed`
-  float pos_ki_speed{20.0f};
+  unit::InverseTime pos_ki_speed{unit::InverseTime{20.0F}};
 
   /// Maximum mechanical angular velocity [rad/s].
   /// Register: `unimoc.control.pos.speed_limit`
@@ -488,7 +488,7 @@ struct NvmSettings {
    *
    * Call this after loading from NVM.  If it returns false the block is
    * uninitialised or corrupt — reset to defaults and re-save.
-  * @return `true` when the image header matches the current settings format.
+   * @return `true` when the image header matches the current settings format.
    */
   [[nodiscard]] constexpr bool IsValid() const noexcept { return magic == kNvmMagic && version == kNvmVersion; }
 

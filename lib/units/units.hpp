@@ -58,6 +58,24 @@ struct FrequencyTag;
 struct InverseTimeTag;
 /// Tag identifying a dimensionless ratio, such as a sine or cosine result.
 struct DimensionlessRatioTag;
+/// Tag identifying voltage-per-current controller gains.
+struct VoltagePerCurrentTag;
+/// Tag identifying voltage-per-current-per-time controller gains.
+struct VoltagePerCurrentTimeTag;
+/// Tag identifying current-per-flux controller gains.
+struct CurrentPerMagneticFluxTag;
+/// Tag identifying current-per-flux-per-time controller gains.
+struct CurrentPerMagneticFluxTimeTag;
+/// Tag identifying current rate [A/s].
+struct CurrentPerTimeTag;
+/// Tag identifying current-per-voltage-per-time controller gains.
+struct CurrentPerVoltageTimeTag;
+/// Tag identifying angle-per-current gains.
+struct AnglePerCurrentTag;
+/// Tag identifying angular-velocity-per-angle controller gains.
+struct AngularVelocityPerAngleTag;
+/// Tag identifying magnetic-flux-per-current-per-time observer gains.
+struct MagneticFluxPerCurrentTimeTag;
 
 /**
  * @brief A generic class for representing a unit of measurement.
@@ -107,6 +125,24 @@ class Unit {
     // new_val = val_ * (period::num / period::den) * (OtherPeriod::den /
     // OtherPeriod::num)
     return Unit<Rep, OtherPeriod, Tag>(val_ * static_cast<Rep>(period::num) / period::den * OtherPeriod::den / OtherPeriod::num);
+  }
+
+  /**
+   * @brief Clamps the unit's value between a minimum and maximum value.
+   * @param min_val The minimum allowable value.
+   * @param max_val The maximum allowable value.
+   * @return A new Unit object with the clamped value.
+   */
+  constexpr Unit Clamp(const Rep& min_val, const Rep& max_val) const { return Unit(val_ < min_val ? min_val : (val_ > max_val ? max_val : val_)); }
+
+  /**
+   * @brief Clamps this unit between two values of the same unit.
+   * @param min_val The minimum allowable value.
+   * @param max_val The maximum allowable value.
+   * @return A new Unit object with the clamped value.
+   */
+  constexpr Unit Clamp(const Unit& min_val, const Unit& max_val) const {
+    return Unit(val_ < min_val.val_ ? min_val.val_ : (val_ > max_val.val_ ? max_val.val_ : val_));
   }
 
   /**
@@ -225,6 +261,24 @@ using Frequency = Unit<float, std::ratio<1>, FrequencyTag>;
 using InverseTime = Unit<float, std::ratio<1>, InverseTimeTag>;
 /// Dimensionless ratio, such as a sine or cosine result.
 using DimensionlessRatio = Unit<float, std::ratio<1>, DimensionlessRatioTag>;
+/// Voltage per current gain [V/A].
+using VoltagePerCurrent = Unit<float, std::ratio<1>, VoltagePerCurrentTag>;
+/// Voltage per current per time gain [V/(A s)].
+using VoltagePerCurrentTime = Unit<float, std::ratio<1>, VoltagePerCurrentTimeTag>;
+/// Current per magnetic flux gain [A/Wb].
+using CurrentPerMagneticFlux = Unit<float, std::ratio<1>, CurrentPerMagneticFluxTag>;
+/// Current per magnetic flux per time gain [A/(Wb s)].
+using CurrentPerMagneticFluxTime = Unit<float, std::ratio<1>, CurrentPerMagneticFluxTimeTag>;
+/// Current rate [A/s].
+using CurrentPerTime = Unit<float, std::ratio<1>, CurrentPerTimeTag>;
+/// Current per voltage per time gain [A/(V s)].
+using CurrentPerVoltageTime = Unit<float, std::ratio<1>, CurrentPerVoltageTimeTag>;
+/// Angle per current gain [rad/A].
+using AnglePerCurrent = Unit<float, std::ratio<1>, AnglePerCurrentTag>;
+/// Angular velocity per angle gain [(rad/s)/rad].
+using AngularVelocityPerAngle = Unit<float, std::ratio<1>, AngularVelocityPerAngleTag>;
+/// Magnetic flux per current per time observer gain [Wb/(A s)].
+using MagneticFluxPerCurrentTime = Unit<float, std::ratio<1>, MagneticFluxPerCurrentTimeTag>;
 
 // --- Operators for units ---
 
@@ -274,12 +328,12 @@ constexpr Unit<Rep, Period, Tag> operator/(const Unit<Rep, Period, Tag>& lhs, co
 }
 
 /**
- * @brief Divides two unit values with the same tag and period.
- * @return The dimensionless quotient as the representation type.
+ * @brief Divides two unit values with the same tag.
+ * @return The dimensionless quotient with the quotient period.
  */
-template <typename Rep, typename Period, typename Tag>
-constexpr Rep operator/(const Unit<Rep, Period, Tag>& lhs, const Unit<Rep, Period, Tag>& rhs) {
-  return lhs.Value() / rhs.Value();
+template <typename Rep, typename P1, typename P2, typename Tag>
+constexpr auto operator/(const Unit<Rep, P1, Tag>& lhs, const Unit<Rep, P2, Tag>& rhs) {
+  return Unit<Rep, std::ratio_divide<P1, P2>, DimensionlessRatioTag>(lhs.Value() / rhs.Value());
 }
 
 /**
@@ -316,6 +370,15 @@ constexpr auto operator/(const Unit<Rep, P, Tag>& unit, const DimensionlessRatio
 template <typename Rep, typename P1, typename P2>
 constexpr auto operator/(const Unit<Rep, P1, AngleTag>& angle, const Unit<Rep, P2, TimeTag>& time) {
   return Unit<Rep, std::ratio_divide<P1, P2>, AngularVelocityTag>(angle.Value() / time.Value());
+}
+
+/**
+ * @brief Divides a dimensionless ratio by time to obtain angular velocity.
+ * @return Angular velocity with the quotient period.
+ */
+template <typename Rep, typename P1, typename P2>
+constexpr auto operator/(const Unit<Rep, P1, DimensionlessRatioTag>& ratio, const Unit<Rep, P2, TimeTag>& time) {
+  return Unit<Rep, std::ratio_divide<P1, P2>, AngularVelocityTag>(ratio.Value() / time.Value());
 }
 
 /**
@@ -460,6 +523,69 @@ constexpr auto operator*(const Unit<Rep, P1, InductanceTag>& inductance, const U
 template <typename Rep, typename P1, typename P2>
 constexpr auto operator*(const Unit<Rep, P1, CurrentTag>& current, const Unit<Rep, P2, InductanceTag>& inductance) {
   return inductance * current;
+}
+
+/**
+ * @brief Divides inductance by resistance to obtain time.
+ * @return Time with the quotient period.
+ */
+template <typename Rep, typename P1, typename P2>
+constexpr auto operator/(const Unit<Rep, P1, InductanceTag>& inductance, const Unit<Rep, P2, ResistanceTag>& resistance) {
+  return Unit<Rep, std::ratio_divide<P1, P2>, TimeTag>(inductance.Value() / resistance.Value());
+}
+
+/**
+ * @brief Multiplies a current-per-flux gain by magnetic flux to obtain current.
+ * @return Current with the product period.
+ */
+template <typename Rep, typename P1, typename P2>
+constexpr auto operator*(const Unit<Rep, P1, CurrentPerMagneticFluxTag>& gain, const Unit<Rep, P2, MagneticFluxTag>& flux) {
+  return Unit<Rep, std::ratio_multiply<P1, P2>, CurrentTag>(gain.Value() * flux.Value());
+}
+
+/**
+ * @brief Multiplies magnetic flux by a current-per-flux gain to obtain current.
+ * @return Current with the product period.
+ */
+template <typename Rep, typename P1, typename P2>
+constexpr auto operator*(const Unit<Rep, P1, MagneticFluxTag>& flux, const Unit<Rep, P2, CurrentPerMagneticFluxTag>& gain) {
+  return gain * flux;
+}
+
+/**
+ * @brief Multiplies a current-per-flux-per-time gain by magnetic flux to obtain current rate.
+ * @return Current rate with the product period.
+ */
+template <typename Rep, typename P1, typename P2>
+constexpr auto operator*(const Unit<Rep, P1, CurrentPerMagneticFluxTimeTag>& gain, const Unit<Rep, P2, MagneticFluxTag>& flux) {
+  return Unit<Rep, std::ratio_multiply<P1, P2>, CurrentPerTimeTag>(gain.Value() * flux.Value());
+}
+
+/**
+ * @brief Multiplies magnetic flux by a current-per-flux-per-time gain to obtain current rate.
+ * @return Current rate with the product period.
+ */
+template <typename Rep, typename P1, typename P2>
+constexpr auto operator*(const Unit<Rep, P1, MagneticFluxTag>& flux, const Unit<Rep, P2, CurrentPerMagneticFluxTimeTag>& gain) {
+  return gain * flux;
+}
+
+/**
+ * @brief Multiplies current rate by time to obtain current.
+ * @return Current with the product period.
+ */
+template <typename Rep, typename P1, typename P2>
+constexpr auto operator*(const Unit<Rep, P1, CurrentPerTimeTag>& current_rate, const Unit<Rep, P2, TimeTag>& time) {
+  return Unit<Rep, std::ratio_multiply<P1, P2>, CurrentTag>(current_rate.Value() * time.Value());
+}
+
+/**
+ * @brief Multiplies time by current rate to obtain current.
+ * @return Current with the product period.
+ */
+template <typename Rep, typename P1, typename P2>
+constexpr auto operator*(const Unit<Rep, P1, TimeTag>& time, const Unit<Rep, P2, CurrentPerTimeTag>& current_rate) {
+  return current_rate * time;
 }
 
 /**

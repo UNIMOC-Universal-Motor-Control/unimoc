@@ -8,6 +8,10 @@ add_unimoc_test(rotor_angle_test rotor_angle_test.cpp
     LIBRARIES unimoc_motor_control_system)
 add_unimoc_test(sin_cos_test sin_cos_test.cpp
     LIBRARIES unimoc_motor_control_system)
+add_unimoc_test(svm_test svm_test.cpp
+    LIBRARIES unimoc_motor_control_control)
+add_unimoc_test(core_control_test core_control_test.cpp
+    LIBRARIES unimoc_motor_control_control)
 
 add_unimoc_test(excitation_controller_test excitation_controller_test.cpp
     LIBRARIES unimoc_motor_control_control)
@@ -25,6 +29,8 @@ add_custom_target(motor_control_tests DEPENDS
     rotor_system_test
     rotor_angle_test
     sin_cos_test
+    svm_test
+    core_control_test
     excitation_controller_test
     position_controller_test
     excitation_observer_test

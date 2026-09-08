@@ -31,17 +31,16 @@
 #include <concepts>
 #include <cstdint>
 #include <numbers>
+#include "units.hpp"
 
 /**
  * @namespace unimoc global namespace
  */
-namespace unimoc
-{
+namespace unimoc {
 /**
  * @namespace observer observer algorithms namespace
  */
-namespace observer
-{
+namespace observer {
 
 /**
  * @brief Absolute multi-turn position tracker.
@@ -82,119 +81,108 @@ namespace observer
  * @tparam T  Floating-point type (float by default).
  */
 template <std::floating_point T = float>
-struct PositionTracker
-{
-    // -------------------------------------------------------------------------
-    // State
-    // -------------------------------------------------------------------------
+struct PositionTracker {
+  // -------------------------------------------------------------------------
+  // State
+  // -------------------------------------------------------------------------
 
-    /// Signed turn counter (electrical turns).
-    /// int32_t supports ±2 147 483 648 electrical turns — far beyond any
-    /// mechanical requirement; at 7 pole-pairs ±4096 mechanical revolutions
-    /// requires only ±28 672 electrical turns.
-    int32_t turns{0};
+  /// Signed turn counter (electrical turns).
+  /// int32_t supports ±2 147 483 648 electrical turns — far beyond any
+  /// mechanical requirement; at 7 pole-pairs ±4096 mechanical revolutions
+  /// requires only ±28 672 electrical turns.
+  int32_t turns{0};
 
-    /// Previous electrical angle [rad], used for wrap detection.
-    T theta_prev{static_cast<T>(0)};
+  /// Previous electrical angle [rad], used for wrap detection.
+  unit::Angle theta_prev{};
 
-    // -------------------------------------------------------------------------
-    // Homing
-    // -------------------------------------------------------------------------
+  // -------------------------------------------------------------------------
+  // Homing
+  // -------------------------------------------------------------------------
 
-    /// Absolute raw position captured at the last set_home() call [rad].
-    T home_offset_rad{static_cast<T>(0)};
+  /// Absolute raw position captured at the last set_home() call [rad].
+  unit::Angle home_offset_rad{};
 
-    /// True once set_home() has been called at least once since the last
-    /// reset().  Position values are only meaningful when this is true.
-    bool is_homed{false};
+  /// True once set_home() has been called at least once since the last
+  /// reset().  Position values are only meaningful when this is true.
+  bool is_homed{false};
 
-    // -------------------------------------------------------------------------
-    // Outputs (updated by update())
-    // -------------------------------------------------------------------------
+  // -------------------------------------------------------------------------
+  // Outputs (updated by update())
+  // -------------------------------------------------------------------------
 
-    /// Absolute mechanical shaft position referenced to home [rad].
-    /// Positive direction is the positive electrical rotation direction.
-    T position_rad{static_cast<T>(0)};
+  /// Absolute mechanical shaft position referenced to home [rad].
+  /// Positive direction is the positive electrical rotation direction.
+  unit::Angle position_rad{};
 
-    /// Absolute mechanical shaft position referenced to home [revolutions].
-    T position_rev{static_cast<T>(0)};
+  /// Absolute mechanical shaft position referenced to home [revolutions].
+  unit::DimensionlessRatio position_rev{};
 
-    /**
-     * @brief Update the position tracker.
-     *
-     * Call once per control cycle, passing the latest wrapped electrical angle
-     * from MechanicalObserver::theta.
-     *
-     * @param theta_electrical  Wrapped electrical angle [rad] ∈ (−π, π].
-     * @param pole_pairs        Motor pole-pair count (positive integer).
-     */
-    constexpr void
-    update(const T theta_electrical, const int pole_pairs) noexcept
-    {
-        constexpr T pi     = std::numbers::pi_v<T>;
-        constexpr T two_pi = static_cast<T>(2) * pi;
+  /**
+   * @brief Update the position tracker.
+   *
+   * Call once per control cycle, passing the latest wrapped electrical angle
+   * from MechanicalObserver::theta.
+   *
+   * @param theta_electrical  Wrapped electrical angle [rad] ∈ (−π, π].
+   * @param pole_pairs        Motor pole-pair count (positive integer).
+   */
+  constexpr void update(const unit::Angle theta_electrical, const int pole_pairs) noexcept {
+    constexpr T pi = std::numbers::pi_v<T>;
+    constexpr T two_pi = static_cast<T>(2) * pi;
+    const T theta = theta_electrical.Value();
 
-        // Detect wrap crossings: a jump larger than π means the angle wrapped.
-        const T delta = theta_electrical - theta_prev;
+    // Detect wrap crossings: a jump larger than π means the angle wrapped.
+    const T delta = theta - theta_prev.Value();
 
-        if (delta > pi)
-        {
-            // Wrapped from −π to +π: shaft moved in the negative direction
-            --turns;
-        }
-        else if (delta < -pi)
-        {
-            // Wrapped from +π to −π: shaft moved in the positive direction
-            ++turns;
-        }
-
-        theta_prev = theta_electrical;
-
-        // Compute raw absolute mechanical position
-        const T raw_rad = (static_cast<T>(turns) * two_pi + theta_electrical)
-                          / static_cast<T>(pole_pairs);
-
-        position_rad = raw_rad - home_offset_rad;
-        position_rev = position_rad / two_pi;
+    if (delta > pi) {
+      // Wrapped from −π to +π: shaft moved in the negative direction
+      --turns;
+    } else if (delta < -pi) {
+      // Wrapped from +π to −π: shaft moved in the positive direction
+      ++turns;
     }
 
-    /**
-     * @brief Capture the current position as the application zero (home).
-     *
-     * After this call position_rad == 0 at the current shaft location.
-     * Sets is_homed = true.
-     *
-     * @param pole_pairs  Motor pole-pair count (must match the value used in
-     *                    update()).
-     */
-    constexpr void
-    set_home(const int pole_pairs) noexcept
-    {
-        constexpr T two_pi = static_cast<T>(2) * std::numbers::pi_v<T>;
+    theta_prev = theta_electrical;
 
-        home_offset_rad = (static_cast<T>(turns) * two_pi + theta_prev)
-                          / static_cast<T>(pole_pairs);
-        position_rad = static_cast<T>(0);
-        position_rev = static_cast<T>(0);
-        is_homed     = true;
-    }
+    // Compute raw absolute mechanical position
+    const T raw_rad = (static_cast<T>(turns) * two_pi + theta) / static_cast<T>(pole_pairs);
 
-    /**
-     * @brief Reset all state.
-     *
-     * Clears the turn counter, home offset, and homed flag.  Call on drive
-     * enable or after a fault that may have caused position loss.
-     */
-    constexpr void
-    reset() noexcept
-    {
-        turns           = 0;
-        theta_prev      = static_cast<T>(0);
-        home_offset_rad = static_cast<T>(0);
-        is_homed        = false;
-        position_rad    = static_cast<T>(0);
-        position_rev    = static_cast<T>(0);
-    }
+    position_rad = unit::Angle{raw_rad - home_offset_rad.Value()};
+    position_rev = unit::DimensionlessRatio{position_rad.Value() / two_pi};
+  }
+
+  /**
+   * @brief Capture the current position as the application zero (home).
+   *
+   * After this call position_rad == 0 at the current shaft location.
+   * Sets is_homed = true.
+   *
+   * @param pole_pairs  Motor pole-pair count (must match the value used in
+   *                    update()).
+   */
+  constexpr void set_home(const int pole_pairs) noexcept {
+    constexpr T two_pi = static_cast<T>(2) * std::numbers::pi_v<T>;
+
+    home_offset_rad = unit::Angle{(static_cast<T>(turns) * two_pi + theta_prev.Value()) / static_cast<T>(pole_pairs)};
+    position_rad = unit::Angle{};
+    position_rev = unit::DimensionlessRatio{};
+    is_homed = true;
+  }
+
+  /**
+   * @brief Reset all state.
+   *
+   * Clears the turn counter, home offset, and homed flag.  Call on drive
+   * enable or after a fault that may have caused position loss.
+   */
+  constexpr void reset() noexcept {
+    turns = 0;
+    theta_prev = unit::Angle{};
+    home_offset_rad = unit::Angle{};
+    is_homed = false;
+    position_rad = unit::Angle{};
+    position_rev = unit::DimensionlessRatio{};
+  }
 };
 
 }  // namespace observer

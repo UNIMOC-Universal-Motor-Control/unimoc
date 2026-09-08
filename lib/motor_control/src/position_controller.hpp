@@ -27,20 +27,18 @@
 #ifndef UNIMOC_CONTROL_POSITION_CONTROLLER_H_
 #define UNIMOC_CONTROL_POSITION_CONTROLLER_H_
 
-#include <algorithm>
 #include <cmath>
 #include <concepts>
+#include "units.hpp"
 
 /**
  * @namespace unimoc global namespace
  */
-namespace unimoc
-{
+namespace unimoc {
 /**
  * @namespace control control algorithms namespace
  */
-namespace control
-{
+namespace control {
 
 /**
  * @brief Homing state machine states.
@@ -49,28 +47,27 @@ namespace control
  * stall detection, or external signal) and then calls
  * PositionTracker::set_home() to latch that location as position zero.
  */
-enum class HomingState : unsigned char
-{
-    /// Homing not started.  Position controller operates normally if the
-    /// tracker is already homed from a previous session.
-    IDLE,
+enum class HomingState : unsigned char {
+  /// Homing not started.  Position controller operates normally if the
+  /// tracker is already homed from a previous session.
+  IDLE,
 
-    /// Moving at homing_speed toward the home reference.  The application
-    /// must detect the homing event (limit switch, stall, encoder index) and
-    /// call PositionController::trigger_zeroing() to advance to ZEROING.
-    SEARCHING,
+  /// Moving at homing_speed toward the home reference.  The application
+  /// must detect the homing event (limit switch, stall, encoder index) and
+  /// call PositionController::trigger_zeroing() to advance to ZEROING.
+  SEARCHING,
 
-    /// Home event detected; latch current position as zero via
-    /// PositionTracker::set_home() and transition to DONE.
-    /// This state lasts exactly one cycle.
-    ZEROING,
+  /// Home event detected; latch current position as zero via
+  /// PositionTracker::set_home() and transition to DONE.
+  /// This state lasts exactly one cycle.
+  ZEROING,
 
-    /// Homing completed successfully.  position_rad == 0 at the home position.
-    DONE,
+  /// Homing completed successfully.  position_rad == 0 at the home position.
+  DONE,
 
-    /// A fault occurred during homing (timeout, over-current, etc.).
-    /// Call reset() to return to IDLE.
-    FAULT,
+  /// A fault occurred during homing (timeout, over-current, etc.).
+  /// Call reset() to return to IDLE.
+  FAULT,
 };
 
 /**
@@ -129,286 +126,261 @@ enum class HomingState : unsigned char
  * @tparam T  Floating-point type (float by default).
  */
 template <std::floating_point T = float>
-struct PositionController
-{
-    using HomeCallback = void (*)(void*, int);
+struct PositionController {
+  using HomeCallback = void (*)(void*, int);
 
-    // -------------------------------------------------------------------------
-    // Position loop
-    // -------------------------------------------------------------------------
+  // -------------------------------------------------------------------------
+  // Position loop
+  // -------------------------------------------------------------------------
 
-    /// Position loop proportional gain [rad/s per rad].
-    T kp_pos{static_cast<T>(10.0)};
+  /// Position loop proportional gain [rad/s per rad].
+  unit::AngularVelocityPerAngle kp_pos{unit::AngularVelocityPerAngle{10.0F}};
 
-    // -------------------------------------------------------------------------
-    // Speed loop
-    // -------------------------------------------------------------------------
+  // -------------------------------------------------------------------------
+  // Speed loop
+  // -------------------------------------------------------------------------
 
-    /// Speed loop proportional gain [(rad/s) per (rad/s)].
-    T kp_speed{static_cast<T>(5.0)};
+  /// Speed loop proportional gain [(rad/s) per (rad/s)].
+  unit::DimensionlessRatio kp_speed{unit::DimensionlessRatio{5.0F}};
 
-    /// Speed loop integral gain [(rad/s) per (rad/s²)].
-    T ki_speed{static_cast<T>(20.0)};
+  /// Speed loop integral gain [(rad/s) per (rad/s²)].
+  unit::InverseTime ki_speed{unit::InverseTime{20.0F}};
 
-    // -------------------------------------------------------------------------
-    // Limits
-    // -------------------------------------------------------------------------
+  // -------------------------------------------------------------------------
+  // Limits
+  // -------------------------------------------------------------------------
 
-    /// Maximum allowed mechanical angular velocity [rad/s].
-    /// Clamps both the position-loop output and the speed-loop output.
-    T speed_limit{static_cast<T>(100.0)};
+  /// Maximum allowed mechanical angular velocity [rad/s].
+  /// Clamps both the position-loop output and the speed-loop output.
+  unit::AngularVelocity speed_limit{unit::AngularVelocity{100.0F}};
 
-    /// Maximum rate of change of the speed demand [rad/s²].
-    /// Prevents the position loop from commanding instantaneous speed steps.
-    T accel_limit{static_cast<T>(500.0)};
+  /// Maximum rate of change of the speed demand [rad/s²].
+  /// Prevents the position loop from commanding instantaneous speed steps.
+  unit::AngularAcceleration accel_limit{unit::AngularAcceleration{500.0F}};
 
-    /// Position error threshold for the in_position flag [rad].
-    T position_tolerance{static_cast<T>(0.01)};
+  /// Position error threshold for the in_position flag [rad].
+  unit::Angle position_tolerance{unit::Angle{0.01F}};
 
-    /// Speed threshold for the in_position flag [rad/s].
-    T speed_tolerance{static_cast<T>(1.0)};
+  /// Speed threshold for the in_position flag [rad/s].
+  unit::AngularVelocity speed_tolerance{unit::AngularVelocity{1.0F}};
 
-    /// Position-step threshold [rad] above which trapezoidal planning is used.
-    T trapezoid_jump_threshold{static_cast<T>(0.5)};
+  /// Position-step threshold [rad] above which trapezoidal planning is used.
+  unit::Angle trapezoid_jump_threshold{unit::Angle{0.5F}};
 
-    // -------------------------------------------------------------------------
-    // Homing parameters
-    // -------------------------------------------------------------------------
+  // -------------------------------------------------------------------------
+  // Homing parameters
+  // -------------------------------------------------------------------------
 
-    /// Constant shaft velocity used during the SEARCHING phase [rad/s].
-    /// Positive = positive rotation direction.
-    T homing_speed{static_cast<T>(5.0)};
+  /// Constant shaft velocity used during the SEARCHING phase [rad/s].
+  /// Positive = positive rotation direction.
+  unit::AngularVelocity homing_speed{unit::AngularVelocity{5.0F}};
 
-    /// Current threshold [A] used for blocked-drive homing detection.
-    /// If > 0 and |homing_current_feedback| >= threshold while SEARCHING,
-    /// the state transitions to ZEROING automatically.
-    T homing_block_current_threshold{static_cast<T>(0)};
+  /// Current threshold [A] used for blocked-drive homing detection.
+  /// If > 0 and |homing_current_feedback| >= threshold while SEARCHING,
+  /// the state transitions to ZEROING automatically.
+  unit::Current homing_block_current_threshold{};
 
-    // -------------------------------------------------------------------------
-    // Setpoint (written by Cyphal callback or application code)
-    // -------------------------------------------------------------------------
+  // -------------------------------------------------------------------------
+  // Setpoint (written by Cyphal callback or application code)
+  // -------------------------------------------------------------------------
 
-    /// Desired absolute mechanical shaft position referenced to home [rad].
-    ///
-    /// Write this member from the Cyphal subscription callback each time a new
-    /// position command arrives.  The internal reference is rate-limited so
-    /// large step changes are handled safely.
-    T pos_ref_rad{static_cast<T>(0)};
+  /// Desired absolute mechanical shaft position referenced to home [rad].
+  ///
+  /// Write this member from the Cyphal subscription callback each time a new
+  /// position command arrives.  The internal reference is rate-limited so
+  /// large step changes are handled safely.
+  unit::Angle pos_ref_rad{};
 
-    // -------------------------------------------------------------------------
-    // State
-    // -------------------------------------------------------------------------
+  // -------------------------------------------------------------------------
+  // State
+  // -------------------------------------------------------------------------
 
-    /// Rate-limited internal position reference [rad].
-    T pos_ref_limited{static_cast<T>(0)};
+  /// Rate-limited internal position reference [rad].
+  unit::Angle pos_ref_limited{};
 
-    /// Previous speed demand (used for accel_limit ramp) [rad/s].
-    T omega_demand_prev{static_cast<T>(0)};
+  /// Previous speed demand (used for accel_limit ramp) [rad/s].
+  unit::AngularVelocity omega_demand_prev{};
 
-    /// Speed-loop PI integrator state [rad/s].
-    T speed_integrator{static_cast<T>(0)};
+  /// Speed-loop PI integrator state [rad/s].
+  unit::AngularVelocity speed_integrator{};
 
-    /// Current homing state machine state.
-    HomingState homing_state{HomingState::IDLE};
+  /// Current homing state machine state.
+  HomingState homing_state{HomingState::IDLE};
 
-    /// Optional callback used to perform the home latch in ZEROING.
-    HomeCallback home_callback{nullptr};
+  /// Optional callback used to perform the home latch in ZEROING.
+  HomeCallback home_callback{nullptr};
 
-    /// Opaque callback context (typically PositionTracker*).
-    void* home_callback_context{nullptr};
+  /// Opaque callback context (typically PositionTracker*).
+  void* home_callback_context{nullptr};
 
-    /// Pole pairs forwarded to the home callback.
-    int home_pole_pairs{1};
+  /// Pole pairs forwarded to the home callback.
+  int home_pole_pairs{1};
 
-    // -------------------------------------------------------------------------
-    // Outputs (updated by update())
-    // -------------------------------------------------------------------------
+  // -------------------------------------------------------------------------
+  // Outputs (updated by update())
+  // -------------------------------------------------------------------------
 
-    /// Mechanical angular velocity reference [rad/s] to feed the torque loop.
-    T omega_ref{static_cast<T>(0)};
+  /// Mechanical angular velocity reference [rad/s] to feed the torque loop.
+  unit::AngularVelocity omega_ref{};
 
-    /// True when the shaft is within position_tolerance and speed_tolerance of
-    /// the setpoint.
-    bool in_position{false};
+  /// True when the shaft is within position_tolerance and speed_tolerance of
+  /// the setpoint.
+  bool in_position{false};
 
-    /**
-     * @brief Update the position controller.
-     *
-     * Call once per control cycle.
-     *
-     * @param pos_meas_rad  Measured absolute mechanical position [rad]
-     *                      (from PositionTracker::position_rad).
-     * @param omega_meas    Measured mechanical angular velocity [rad/s]
-     *                      (from MechanicalObserver::omega / pole_pairs).
-     * @param dt            Control period [s].
-     * @param homing_current_feedback
-     *                      Absolute-current feedback used for blocked-drive
-     *                      homing detection (typically q-axis current) [A].
-     * @return              Mechanical angular velocity reference omega_ref [rad/s].
-     */
-    constexpr T
-    update(const T pos_meas_rad,
-           const T omega_meas,
-           const T dt,
-           const T homing_current_feedback = static_cast<T>(0)) noexcept
-    {
-        // --- Homing override ---
-        if (homing_state == HomingState::SEARCHING)
-        {
-            if (homing_block_current_threshold > static_cast<T>(0)
-                && std::abs(homing_current_feedback) >= homing_block_current_threshold)
-            {
-                homing_state = HomingState::ZEROING;
-            }
-            else
-            {
-                omega_ref   = homing_speed;
-                in_position = false;
-                return omega_ref;
-            }
-        }
-
-        if (homing_state == HomingState::ZEROING)
-        {
-            if (home_callback != nullptr && home_callback_context != nullptr)
-            {
-                home_callback(home_callback_context, home_pole_pairs);
-            }
-            homing_state = HomingState::DONE;
-            pos_ref_rad      = static_cast<T>(0);
-            pos_ref_limited  = static_cast<T>(0);
-            omega_demand_prev = static_cast<T>(0);
-            speed_integrator = static_cast<T>(0);
-            omega_ref        = static_cast<T>(0);
-            in_position      = false;
-            return omega_ref;
-        }
-
-        // --- Position reference planning ---
-        const T max_pos_step      = speed_limit * dt;
-        const T setpoint_jump_mag = std::abs(pos_ref_rad - pos_meas_rad);
-        if (setpoint_jump_mag > trapezoid_jump_threshold)
-        {
-            const T pos_err_raw = pos_ref_rad - pos_ref_limited;
-            pos_ref_limited += std::clamp(pos_err_raw, -max_pos_step, max_pos_step);
-        }
-        else
-        {
-            pos_ref_limited = pos_ref_rad;
-        }
-
-        // --- Position loop (P) ---
-        const T pos_error    = pos_ref_limited - pos_meas_rad;
-        T omega_demand       = kp_pos * pos_error;
-        omega_demand         = std::clamp(omega_demand, -speed_limit, speed_limit);
-
-        // --- Acceleration limit on speed demand ---
-        const T max_delta_omega = accel_limit * dt;
-        omega_demand = std::clamp(omega_demand,
-                                  omega_demand_prev - max_delta_omega,
-                                  omega_demand_prev + max_delta_omega);
-        omega_demand_prev = omega_demand;
-
-        // --- Speed loop (PI) ---
-        const T speed_error = omega_demand - omega_meas;
-
-        speed_integrator += ki_speed * speed_error * dt;
-        speed_integrator  = std::clamp(speed_integrator, -speed_limit, speed_limit);
-
-        omega_ref = std::clamp(kp_speed * speed_error + speed_integrator,
-                               -speed_limit, speed_limit);
-
-        // --- In-position flag ---
-        // Compare against the raw setpoint, not the rate-limited intermediate.
-        in_position = (std::abs(pos_ref_rad - pos_meas_rad) <= position_tolerance)
-                   && (std::abs(omega_meas) <= speed_tolerance);
-
+  /**
+   * @brief Update the position controller.
+   *
+   * Call once per control cycle.
+   *
+   * @param pos_meas_rad  Measured absolute mechanical position [rad]
+   *                      (from PositionTracker::position_rad).
+   * @param omega_meas    Measured mechanical angular velocity [rad/s]
+   *                      (from MechanicalObserver::omega / pole_pairs).
+   * @param dt            Control period [s].
+   * @param homing_current_feedback
+   *                      Absolute-current feedback used for blocked-drive
+   *                      homing detection (typically q-axis current) [A].
+   * @return              Mechanical angular velocity reference omega_ref [rad/s].
+   */
+  constexpr unit::AngularVelocity update(const unit::Angle pos_meas_rad,
+                                         const unit::AngularVelocity omega_meas,
+                                         const unit::Time dt,
+                                         const unit::Current homing_current_feedback = unit::Current{}) noexcept {
+    const T pos_meas = pos_meas_rad.Value();
+    const T omega_meas_value = omega_meas.Value();
+    // --- Homing override ---
+    if (homing_state == HomingState::SEARCHING) {
+      if (homing_block_current_threshold.Value() > 0.0F && std::abs(homing_current_feedback.Value()) >= homing_block_current_threshold.Value()) {
+        homing_state = HomingState::ZEROING;
+      } else {
+        omega_ref = homing_speed;
+        in_position = false;
         return omega_ref;
+      }
     }
 
-    /**
-     * @brief Begin the homing sequence.
-     *
-     * Transitions the homing state machine to SEARCHING and commands a slow
-     * constant velocity (homing_speed).  The application must monitor the
-     * homing event (limit switch, stall, encoder index pulse) and call
-     * trigger_zeroing() when the home position is reached.
-     */
-    constexpr void
-    start_homing() noexcept
-    {
-        homing_state     = HomingState::SEARCHING;
-        speed_integrator = static_cast<T>(0);
-        omega_ref        = static_cast<T>(0);
-        in_position      = false;
+    if (homing_state == HomingState::ZEROING) {
+      if (home_callback != nullptr && home_callback_context != nullptr) {
+        home_callback(home_callback_context, home_pole_pairs);
+      }
+      homing_state = HomingState::DONE;
+      pos_ref_rad = unit::Angle{};
+      pos_ref_limited = unit::Angle{};
+      omega_demand_prev = unit::AngularVelocity{};
+      speed_integrator = unit::AngularVelocity{};
+      omega_ref = unit::AngularVelocity{};
+      in_position = false;
+      return omega_ref;
     }
 
-    /**
-     * @brief Signal that the home position has been detected.
-     *
-     * Call this from the application (ISR or task) when the limit switch fires
-     * or stall detection triggers during the SEARCHING phase.
-     *
-     * The homing state machine transitions to ZEROING; on the very next
-     * update() call the configured home callback is invoked and the state
-     * advances to DONE.
-     *
-     * @note If not currently in the SEARCHING state this call is ignored.
-     */
-    constexpr void
-    trigger_zeroing() noexcept
-    {
-        if (homing_state == HomingState::SEARCHING)
-        {
-            homing_state = HomingState::ZEROING;
-        }
+    // --- Position reference planning ---
+    const T max_pos_step = speed_limit.Value() * dt.Value();
+    const T setpoint_jump_mag = std::abs(pos_ref_rad.Value() - pos_meas);
+    if (setpoint_jump_mag > trapezoid_jump_threshold.Value()) {
+      const T pos_err_raw = pos_ref_rad.Value() - pos_ref_limited.Value();
+      pos_ref_limited += unit::Angle{pos_err_raw}.Clamp(-max_pos_step, max_pos_step);
+    } else {
+      pos_ref_limited = pos_ref_rad;
     }
 
-    /**
-     * @brief Configure the callback used to latch home during ZEROING.
-     *
-     * @param callback    Function called once in ZEROING.
-     * @param context     Opaque pointer passed to callback.
-     * @param pole_pairs  Pole-pair count passed to callback.
-     */
-    constexpr void
-    set_home_callback(HomeCallback callback, void* context, const int pole_pairs) noexcept
-    {
-        home_callback         = callback;
-        home_callback_context = context;
-        home_pole_pairs       = pole_pairs;
-    }
+    // --- Position loop (P) ---
+    const T pos_error = pos_ref_limited.Value() - pos_meas;
+    T omega_demand = kp_pos.Value() * pos_error;
+    omega_demand = unit::AngularVelocity{omega_demand}.Clamp(-speed_limit.Value(), speed_limit.Value()).Value();
 
-    /**
-     * @brief Signal a homing fault.
-     *
-     * Transitions the homing state machine to FAULT and stops motion by
-     * zeroing omega_ref.  Call reset() to recover.
-     */
-    constexpr void
-    fault() noexcept
-    {
-        homing_state = HomingState::FAULT;
-        omega_ref    = static_cast<T>(0);
-    }
+    // --- Acceleration limit on speed demand ---
+    const T max_delta_omega = accel_limit.Value() * dt.Value();
+    omega_demand =
+        unit::AngularVelocity{omega_demand}.Clamp(omega_demand_prev.Value() - max_delta_omega, omega_demand_prev.Value() + max_delta_omega).Value();
+    omega_demand_prev = unit::AngularVelocity{omega_demand};
 
-    /**
-     * @brief Reset controller state.
-     *
-     * Clears integrators, resets the homing state machine to IDLE, and
-     * zeroes all outputs.  Does NOT reset PositionTracker — call
-     * PositionTracker::reset() separately if position tracking must restart.
-     */
-    constexpr void
-    reset() noexcept
-    {
-        pos_ref_limited   = pos_ref_rad;
-        omega_demand_prev = static_cast<T>(0);
-        speed_integrator  = static_cast<T>(0);
-        homing_state      = HomingState::IDLE;
-        omega_ref         = static_cast<T>(0);
-        in_position       = false;
+    // --- Speed loop (PI) ---
+    const T speed_error = omega_demand - omega_meas_value;
+
+    speed_integrator = unit::AngularVelocity{speed_integrator.Value() + ki_speed.Value() * speed_error * dt.Value()}.Clamp(-speed_limit.Value(),
+                                                                                                                           speed_limit.Value());
+
+    omega_ref = unit::AngularVelocity{kp_speed.Value() * speed_error + speed_integrator.Value()}.Clamp(-speed_limit.Value(), speed_limit.Value());
+
+    // --- In-position flag ---
+    // Compare against the raw setpoint, not the rate-limited intermediate.
+    in_position = (std::abs(pos_ref_rad.Value() - pos_meas) <= position_tolerance.Value()) && (std::abs(omega_meas_value) <= speed_tolerance.Value());
+
+    return omega_ref;
+  }
+
+  /**
+   * @brief Begin the homing sequence.
+   *
+   * Transitions the homing state machine to SEARCHING and commands a slow
+   * constant velocity (homing_speed).  The application must monitor the
+   * homing event (limit switch, stall, encoder index pulse) and call
+   * trigger_zeroing() when the home position is reached.
+   */
+  constexpr void start_homing() noexcept {
+    homing_state = HomingState::SEARCHING;
+    speed_integrator = unit::AngularVelocity{};
+    omega_ref = unit::AngularVelocity{};
+    in_position = false;
+  }
+
+  /**
+   * @brief Signal that the home position has been detected.
+   *
+   * Call this from the application (ISR or task) when the limit switch fires
+   * or stall detection triggers during the SEARCHING phase.
+   *
+   * The homing state machine transitions to ZEROING; on the very next
+   * update() call the configured home callback is invoked and the state
+   * advances to DONE.
+   *
+   * @note If not currently in the SEARCHING state this call is ignored.
+   */
+  constexpr void trigger_zeroing() noexcept {
+    if (homing_state == HomingState::SEARCHING) {
+      homing_state = HomingState::ZEROING;
     }
+  }
+
+  /**
+   * @brief Configure the callback used to latch home during ZEROING.
+   *
+   * @param callback    Function called once in ZEROING.
+   * @param context     Opaque pointer passed to callback.
+   * @param pole_pairs  Pole-pair count passed to callback.
+   */
+  constexpr void set_home_callback(HomeCallback callback, void* context, const int pole_pairs) noexcept {
+    home_callback = callback;
+    home_callback_context = context;
+    home_pole_pairs = pole_pairs;
+  }
+
+  /**
+   * @brief Signal a homing fault.
+   *
+   * Transitions the homing state machine to FAULT and stops motion by
+   * zeroing omega_ref.  Call reset() to recover.
+   */
+  constexpr void fault() noexcept {
+    homing_state = HomingState::FAULT;
+    omega_ref = unit::AngularVelocity{};
+  }
+
+  /**
+   * @brief Reset controller state.
+   *
+   * Clears integrators, resets the homing state machine to IDLE, and
+   * zeroes all outputs.  Does NOT reset PositionTracker — call
+   * PositionTracker::reset() separately if position tracking must restart.
+   */
+  constexpr void reset() noexcept {
+    pos_ref_limited = pos_ref_rad;
+    omega_demand_prev = unit::AngularVelocity{};
+    speed_integrator = unit::AngularVelocity{};
+    homing_state = HomingState::IDLE;
+    omega_ref = unit::AngularVelocity{};
+    in_position = false;
+  }
 };
 
 }  // namespace control

@@ -27,20 +27,18 @@
 #ifndef UNIMOC_CONTROL_EXCITATION_CONTROLLER_H_
 #define UNIMOC_CONTROL_EXCITATION_CONTROLLER_H_
 
-#include <algorithm>
 #include <cmath>
 #include <concepts>
+#include "units.hpp"
 
 /**
  * @namespace unimoc global namespace
  */
-namespace unimoc
-{
+namespace unimoc {
 /**
  * @namespace control control algorithms namespace
  */
-namespace control
-{
+namespace control {
 
 /**
  * @brief Control mode for the ExcitationController.
@@ -48,17 +46,16 @@ namespace control
  * Selects whether the PI loop regulates the rotor excitation current directly
  * (CurrentMode) or the effective rotor flux linkage (FluxMode).
  */
-enum class ExcitationMode : unsigned char
-{
-    /// Regulate rotor excitation current I_f [A] directly.
-    /// The setpoint is interpreted as a current reference in amperes.
-    CurrentMode,
+enum class ExcitationMode : unsigned char {
+  /// Regulate rotor excitation current I_f [A] directly.
+  /// The setpoint is interpreted as a current reference in amperes.
+  CurrentMode,
 
-    /// Regulate effective rotor flux linkage ψ_f = L_m · I_f [Wb].
-    /// The setpoint is interpreted as a flux reference in weber.
-    /// The controller internally converts the flux setpoint to a current
-    /// setpoint via  I_f* = ψ_f* / L_m  before running the PI loop.
-    FluxMode,
+  /// Regulate effective rotor flux linkage ψ_f = L_m · I_f [Wb].
+  /// The setpoint is interpreted as a flux reference in weber.
+  /// The controller internally converts the flux setpoint to a current
+  /// setpoint via  I_f* = ψ_f* / L_m  before running the PI loop.
+  FluxMode,
 };
 
 /**
@@ -88,115 +85,108 @@ enum class ExcitationMode : unsigned char
  * @tparam T  Floating-point type (float by default).
  */
 template <std::floating_point T = float>
-struct ExcitationController
-{
-    // -------------------------------------------------------------------------
-    // Configuration
-    // -------------------------------------------------------------------------
+struct ExcitationController {
+  // -------------------------------------------------------------------------
+  // Configuration
+  // -------------------------------------------------------------------------
 
-    /// Active control mode (CurrentMode or FluxMode).
-    ExcitationMode mode{ExcitationMode::CurrentMode};
+  /// Active control mode (CurrentMode or FluxMode).
+  ExcitationMode mode{ExcitationMode::CurrentMode};
 
-    /// Mutual (magnetising) inductance L_m [H].
-    /// Used only in FluxMode to convert a flux setpoint to a current setpoint.
-    T L_m{static_cast<T>(47e-3)};
+  /// Mutual (magnetising) inductance L_m [H].
+  /// Used only in FluxMode to convert a flux setpoint to a current setpoint.
+  unit::Inductance L_m{unit::Inductance{47.0e-3F}};
 
-    // -------------------------------------------------------------------------
-    // PI gains
-    // -------------------------------------------------------------------------
+  // -------------------------------------------------------------------------
+  // PI gains
+  // -------------------------------------------------------------------------
 
-    /// Proportional gain K_p [V/A]  (output is a voltage reference; scale to
-    /// match the excitation driver's input convention if needed).
-    T kp{static_cast<T>(5.0)};
+  /// Proportional gain K_p [1] for the current-reference loop.
+  unit::DimensionlessRatio kp{unit::DimensionlessRatio{5.0F}};
 
-    /// Integral gain K_i [V/(A·s)].
-    T ki{static_cast<T>(50.0)};
+  /// Integral gain K_i [1/s].
+  unit::InverseTime ki{unit::InverseTime{50.0F}};
 
-    // -------------------------------------------------------------------------
-    // Output limits
-    // -------------------------------------------------------------------------
+  // -------------------------------------------------------------------------
+  // Output limits
+  // -------------------------------------------------------------------------
 
-    /// Minimum rotor excitation current i_f_ref [A] (≥ 0 for unidirectional
-    /// exciters; may be negative for reversible H-bridge drives).
-    T i_f_min{static_cast<T>(0.0)};
+  /// Minimum rotor excitation current i_f_ref [A] (≥ 0 for unidirectional
+  /// exciters; may be negative for reversible H-bridge drives).
+  unit::Current i_f_min{};
 
-    /// Maximum rotor excitation current i_f_ref [A].
-    T i_f_max{static_cast<T>(10.0)};
+  /// Maximum rotor excitation current i_f_ref [A].
+  unit::Current i_f_max{unit::Current{10.0F}};
 
-    // -------------------------------------------------------------------------
-    // Setpoint (written by Cyphal callback or application code)
-    // -------------------------------------------------------------------------
+  // -------------------------------------------------------------------------
+  // Setpoint (written by Cyphal callback or application code)
+  // -------------------------------------------------------------------------
 
-    /// Rotor field setpoint.
-    ///
-    /// Interpretation depends on @p mode:
-    ///  - CurrentMode: desired rotor excitation current I_f* [A].
-    ///  - FluxMode:    desired effective flux linkage ψ_f* [Wb].
-    ///
-    /// Write this member from the Cyphal subscription callback each time a new
-    /// rotor-field command arrives on the bus.
-    T setpoint{static_cast<T>(0)};
+  /// Current-mode rotor excitation current setpoint [A].
+  ///
+  /// Interpretation depends on @p mode:
+  ///  - CurrentMode: desired rotor excitation current I_f* [A].
+  ///  - FluxMode:    desired effective flux linkage ψ_f* [Wb].
+  ///
+  /// Write this member from the Cyphal subscription callback in CurrentMode.
+  unit::Current current_setpoint{};
 
-    // -------------------------------------------------------------------------
-    // State
-    // -------------------------------------------------------------------------
+  /// Flux-mode rotor field setpoint [Wb].
+  /// Write this member from the Cyphal subscription callback in FluxMode.
+  unit::MagneticFlux flux_setpoint{};
 
-    /// PI integrator state [A].
-    T integrator{static_cast<T>(0)};
+  // -------------------------------------------------------------------------
+  // State
+  // -------------------------------------------------------------------------
 
-    // -------------------------------------------------------------------------
-    // Output (read by hardware excitation driver each cycle)
-    // -------------------------------------------------------------------------
+  /// PI integrator state [A].
+  unit::Current integrator{};
 
-    /// Rotor excitation current reference i_f* [A].
-    ///
-    /// Feed this value into the hardware excitation driver (H-bridge duty
-    /// cycle, DAC voltage, or brushless exciter current command) every cycle.
-    T i_f_ref{static_cast<T>(0)};
+  // -------------------------------------------------------------------------
+  // Output (read by hardware excitation driver each cycle)
+  // -------------------------------------------------------------------------
 
-    /**
-     * @brief Update the excitation controller.
-     *
-     * Call once per control cycle.
-     *
-     * @param i_f_meas  Measured (or estimated) rotor excitation current [A].
-     *                  Use ExcitationObserver::i_f_hat if a direct measurement
-     *                  is unavailable.
-     * @param dt        Control period [s].
-     * @return          Updated rotor excitation current reference i_f* [A].
-     */
-    constexpr T
-    update(const T i_f_meas, const T dt) noexcept
-    {
-        // Convert setpoint to a current reference depending on the active mode.
-        T i_f_setpoint;
-        if (mode == ExcitationMode::FluxMode && L_m > static_cast<T>(1e-9))
-        {
-            i_f_setpoint = setpoint / L_m;
-        }
-        else
-        {
-            i_f_setpoint = setpoint;
-        }
+  /// Rotor excitation current reference i_f* [A].
+  ///
+  /// Feed this value into the hardware excitation driver (H-bridge duty
+  /// cycle, DAC voltage, or brushless exciter current command) every cycle.
+  unit::Current i_f_ref{};
 
-        // PI loop
-        const T error = i_f_setpoint - i_f_meas;
-
-        integrator += ki * error * dt;
-        integrator  = std::clamp(integrator, i_f_min, i_f_max);
-
-        i_f_ref = std::clamp(kp * error + integrator, i_f_min, i_f_max);
-
-        return i_f_ref;
+  /**
+   * @brief Update the excitation controller.
+   *
+   * Call once per control cycle.
+   *
+   * @param i_f_meas  Measured (or estimated) rotor excitation current [A].
+   *                  Use ExcitationObserver::i_f_hat if a direct measurement
+   *                  is unavailable.
+   * @param dt        Control period [s].
+   * @return          Updated rotor excitation current reference i_f* [A].
+   */
+  constexpr unit::Current update(const unit::Current i_f_meas, const unit::Time dt) noexcept {
+    // Convert setpoint to a current reference depending on the active mode.
+    T i_f_setpoint;
+    if (mode == ExcitationMode::FluxMode && L_m.Value() > 1.0e-9F) {
+      i_f_setpoint = flux_setpoint.Value() / L_m.Value();
+    } else {
+      i_f_setpoint = current_setpoint.Value();
     }
 
-    /// Reset controller state (call on enable or fault recovery).
-    constexpr void
-    reset() noexcept
-    {
-        integrator = static_cast<T>(0);
-        i_f_ref    = static_cast<T>(0);
-    }
+    // PI loop
+    const T error = i_f_setpoint - i_f_meas.Value();
+
+    integrator = unit::Current{integrator.Value() + ki.Value() * error * dt.Value()}.Clamp(i_f_min.Value(), i_f_max.Value());
+
+    i_f_ref = unit::Current{kp.Value() * error + integrator.Value()}.Clamp(i_f_min.Value(), i_f_max.Value());
+
+    return i_f_ref;
+  }
+
+  /// Reset controller state (call on enable or fault recovery).
+  constexpr void reset() noexcept {
+    integrator = unit::Current{};
+    i_f_ref = unit::Current{};
+  }
 };
 
 }  // namespace control

@@ -13,7 +13,6 @@
  */
 #pragma once
 
-#include <algorithm>
 #include <cmath>
 #include <concepts>
 #include "nvm_settings.hpp"
@@ -105,9 +104,9 @@ struct DeadTimeCompensation
         // --- Soft sign function: clamp(i / threshold, -1, +1) ---
         // This provides linear interpolation through zero, preventing chattering.
         const T threshold = i_threshold.Value();
-        T sign_a = std::clamp(ia / threshold, static_cast<T>(-1), static_cast<T>(1));
-        T sign_b = std::clamp(ib / threshold, static_cast<T>(-1), static_cast<T>(1));
-        T sign_c = std::clamp(ic / threshold, static_cast<T>(-1), static_cast<T>(1));
+        T sign_a = unit::DimensionlessRatio{ia / threshold}.Clamp(static_cast<T>(-1), static_cast<T>(1)).Value();
+        T sign_b = unit::DimensionlessRatio{ib / threshold}.Clamp(static_cast<T>(-1), static_cast<T>(1)).Value();
+        T sign_c = unit::DimensionlessRatio{ic / threshold}.Clamp(static_cast<T>(-1), static_cast<T>(1)).Value();
 
         // Normalised per-phase voltage error: sign · t_dead · f_pwm
         T dt_norm = dead_time.Value() * f_pwm.Value();

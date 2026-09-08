@@ -52,10 +52,10 @@
           "ENABLE_TESTS": "ON",
           "CYMON_BUILD_TESTS": "ON",
           "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-          "CMAKE_C_COMPILER": "clang",
           "CMAKE_CXX_COMPILER": "clang++",
           "CMAKE_C_COMPILER_WORKS": "ON",
           "CMAKE_CXX_COMPILER_WORKS": "ON",
+          "ENABLE_CLANG_TIDY": "OFF",
           "HARDWARE_DIRECTORY": "${sourceDir}/hardware/host",
           "RUNNING_ON_HOST": "ON"
         }
@@ -64,8 +64,7 @@
         "name": "Hosted build with tests + clang-tidy",
         "inherits": "Hosted build with tests",
         "cacheVariables": {
-          "ENABLE_CLANG_TIDY": "ON",
-          "CMAKE_CXX_COMPILER": "clang++"
+          "ENABLE_CLANG_TIDY": "ON"
         }
       },
       {

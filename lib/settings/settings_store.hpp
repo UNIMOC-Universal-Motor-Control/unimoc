@@ -54,18 +54,20 @@ namespace settings_store_internal {
          std::isfinite(settings.asm_r_r.Value()) && std::isfinite(settings.asm_r_s.Value()) && std::isfinite(settings.asm_l_s.Value()) &&
          std::isfinite(settings.asm_l_r.Value()) && std::isfinite(settings.asm_l_m.Value()) && std::isfinite(settings.motor_j.Value()) &&
          std::isfinite(settings.mech_obs_q) && std::isfinite(settings.mech_obs_r) && std::isfinite(settings.pmsm_flux_obs_c_d.Value()) &&
-         std::isfinite(settings.pmsm_flux_obs_c_q.Value()) && std::isfinite(settings.asm_obs_g_i.Value()) && std::isfinite(settings.asm_obs_g_flux) &&
-         std::isfinite(settings.asm_flux_kp) && std::isfinite(settings.asm_flux_ki) && std::isfinite(settings.asm_flux_i_d_min.Value()) &&
-         std::isfinite(settings.asm_flux_i_d_max.Value()) && std::isfinite(settings.fw_v_max.Value()) && std::isfinite(settings.fw_ki) &&
-         std::isfinite(settings.fw_i_d_min.Value()) && std::isfinite(settings.current_kp_d) && std::isfinite(settings.current_ki_d) &&
-         std::isfinite(settings.current_kp_q) && std::isfinite(settings.current_ki_q) && std::isfinite(settings.current_v_max.Value()) &&
-         std::isfinite(settings.svm_duty_min.Value()) && std::isfinite(settings.svm_duty_max.Value()) &&
-         std::isfinite(settings.dtc_dead_time.Value()) && std::isfinite(settings.dtc_f_pwm.Value()) &&
-         std::isfinite(settings.dtc_i_threshold.Value()) && std::isfinite(settings.hfi_v_inject.Value()) && std::isfinite(settings.hfi_error_gain) &&
-         std::isfinite(settings.excitation_l_m.Value()) && std::isfinite(settings.excitation_kp) && std::isfinite(settings.excitation_ki) &&
+         std::isfinite(settings.pmsm_flux_obs_c_q.Value()) && std::isfinite(settings.asm_obs_g_i.Value()) &&
+         std::isfinite(settings.asm_obs_g_flux.Value()) && std::isfinite(settings.asm_flux_kp.Value()) &&
+         std::isfinite(settings.asm_flux_ki.Value()) && std::isfinite(settings.asm_flux_i_d_min.Value()) &&
+         std::isfinite(settings.asm_flux_i_d_max.Value()) && std::isfinite(settings.fw_v_max.Value()) && std::isfinite(settings.fw_ki.Value()) &&
+         std::isfinite(settings.fw_i_d_min.Value()) && std::isfinite(settings.current_kp_d.Value()) && std::isfinite(settings.current_ki_d.Value()) &&
+         std::isfinite(settings.current_kp_q.Value()) && std::isfinite(settings.current_ki_q.Value()) &&
+         std::isfinite(settings.current_v_max.Value()) && std::isfinite(settings.svm_duty_min.Value()) &&
+         std::isfinite(settings.svm_duty_max.Value()) && std::isfinite(settings.dtc_dead_time.Value()) && std::isfinite(settings.dtc_f_pwm.Value()) &&
+         std::isfinite(settings.dtc_i_threshold.Value()) && std::isfinite(settings.hfi_v_inject.Value()) &&
+         std::isfinite(settings.hfi_error_gain.Value()) && std::isfinite(settings.excitation_l_m.Value()) &&
+         std::isfinite(settings.excitation_kp.Value()) && std::isfinite(settings.excitation_ki.Value()) &&
          std::isfinite(settings.excitation_i_f_min.Value()) && std::isfinite(settings.excitation_i_f_max.Value()) &&
          std::isfinite(settings.excitation_obs_tau.Value()) && std::isfinite(settings.excitation_obs_l_m.Value()) &&
-         std::isfinite(settings.pos_kp_pos) && std::isfinite(settings.pos_kp_speed) && std::isfinite(settings.pos_ki_speed) &&
+         std::isfinite(settings.pos_kp_pos.Value()) && std::isfinite(settings.pos_kp_speed.Value()) && std::isfinite(settings.pos_ki_speed.Value()) &&
          std::isfinite(settings.pos_speed_limit.Value()) && std::isfinite(settings.pos_accel_limit.Value()) &&
          std::isfinite(settings.pos_position_tolerance.Value()) && std::isfinite(settings.pos_speed_tolerance.Value()) &&
          std::isfinite(settings.pos_homing_speed.Value()) && std::isfinite(settings.adc_offset_a.Value()) &&
@@ -75,11 +77,10 @@ namespace settings_store_internal {
 }
 
 [[nodiscard]] inline bool IsValidEnumValues(const NvmSettings& settings) noexcept {
-  const bool valid_motor_type =
-      settings.motor_type == system::MotorType::PMSM || settings.motor_type == system::MotorType::ASM || settings.motor_type == system::MotorType::EESM;
-  const bool valid_control_mode =
-      settings.control_mode == cyphal::ControlMode::TORQUE || settings.control_mode == cyphal::ControlMode::SPEED ||
-      settings.control_mode == cyphal::ControlMode::POSITION;
+  const bool valid_motor_type = settings.motor_type == system::MotorType::PMSM || settings.motor_type == system::MotorType::ASM ||
+                                settings.motor_type == system::MotorType::EESM;
+  const bool valid_control_mode = settings.control_mode == cyphal::ControlMode::TORQUE || settings.control_mode == cyphal::ControlMode::SPEED ||
+                                  settings.control_mode == cyphal::ControlMode::POSITION;
   const float pwm_frequency_hz = settings.pwm_frequency.Value();
   const bool valid_pwm_frequency = pwm_frequency_hz == 16000.0F || pwm_frequency_hz == 20000.0F || pwm_frequency_hz == 24000.0F ||
                                    pwm_frequency_hz == 28000.0F || pwm_frequency_hz == 32000.0F;
@@ -115,7 +116,7 @@ namespace settings_store_internal {
     return SettingsStatus::kOutOfRange;
 
   const auto IsRatio = [](const unit::DimensionlessRatio value) { return value.Value() >= 0.0F && value.Value() <= 1.0F; };
-  if (!IsRatio(settings.fw_v_max) || !IsRatio(settings.current_v_max) || !IsRatio(settings.svm_duty_min) || !IsRatio(settings.svm_duty_max) ||
+  if (settings.fw_v_max.Value() < 0.0F || !IsRatio(settings.current_v_max) || !IsRatio(settings.svm_duty_min) || !IsRatio(settings.svm_duty_max) ||
       settings.svm_duty_min > settings.svm_duty_max || settings.adc_gain_a.Value() <= 0.0F || settings.adc_gain_b.Value() <= 0.0F ||
       settings.adc_gain_vdc.Value() <= 0.0F || settings.phase_balance_a.Value() <= 0.0F || settings.phase_balance_b.Value() <= 0.0F ||
       settings.phase_balance_c.Value() <= 0.0F)
@@ -136,7 +137,7 @@ class SettingsSnapshot {
  public:
   /**
    * @brief Returns the active settings as a read-only record.
-    * @return Const reference to the snapshot's immutable settings record.
+   * @return Const reference to the snapshot's immutable settings record.
    */
   [[nodiscard]] const NvmSettings& Get() const noexcept { return settings_; }
 
@@ -169,34 +170,34 @@ class SettingsOperations {
 
   /**
    * @brief Changes the Cyphal node ID.
-    * @param node_id Node-ID in the range [0, 127], where 0 requests PnP
-    *                allocation.
-    * @return The validation and persistence result.
+   * @param node_id Node-ID in the range [0, 127], where 0 requests PnP
+   *                allocation.
+   * @return The validation and persistence result.
    */
   SettingsStatus SetNodeId(uint8_t node_id) const;
 
   /**
    * @brief Changes the configured motor current limit.
-    * @param current New maximum resultant motor current.
-    * @return The validation and persistence result.
+   * @param current New maximum resultant motor current.
+   * @return The validation and persistence result.
    */
   SettingsStatus SetMotorCurrentLimit(unit::Current current) const;
 
   /**
    * @brief Changes the persisted node name.
-    * @param name New UTF-8 node name; it is truncated to the protocol limit.
-    * @return The validation and persistence result.
+   * @param name New UTF-8 node name; it is truncated to the protocol limit.
+   * @return The validation and persistence result.
    */
   SettingsStatus SetNodeName(std::string_view name) const;
 
   /**
    * @brief Commits ADC calibration results as one transaction.
-    * @param offset_a Phase-A current offset.
-    * @param offset_b Phase-B current offset.
-    * @param gain_a Phase-A current-sense gain.
-    * @param gain_b Phase-B current-sense gain.
-    * @param gain_vdc DC-link voltage-sense gain.
-    * @return The validation and persistence result.
+   * @param offset_a Phase-A current offset.
+   * @param offset_b Phase-B current offset.
+   * @param gain_a Phase-A current-sense gain.
+   * @param gain_b Phase-B current-sense gain.
+   * @param gain_vdc DC-link voltage-sense gain.
+   * @return The validation and persistence result.
    */
   SettingsStatus ApplyAdcCalibration(unit::Current offset_a,
                                      unit::Current offset_b,
@@ -206,13 +207,13 @@ class SettingsOperations {
 
   /**
    * @brief Returns the immutable hardware capabilities used for validation.
-    * @return Const reference to the target hardware capability limits.
+   * @return Const reference to the target hardware capability limits.
    */
   [[nodiscard]] const HardwareCapabilities& GetHardwareCapabilities() const noexcept;
 
   /**
    * @brief Replaces settings with the immutable target factory profile.
-    * @return The validation and persistence result.
+   * @return The validation and persistence result.
    */
   SettingsStatus ResetToFactoryDefaults() const;
 
@@ -263,19 +264,19 @@ class SettingsStore {
 
   /**
    * @brief Returns a read-only copy of the active settings.
-    * @return Snapshot containing the current settings.
+   * @return Snapshot containing the current settings.
    */
   [[nodiscard]] SettingsSnapshot GetSnapshot() const { return SettingsSnapshot{settings_}; }
 
   /**
    * @brief Creates the authorized operation capability.
-    * @return Operations object that can commit validated changes.
+   * @return Operations object that can commit validated changes.
    */
   [[nodiscard]] SettingsOperations GetOperations() noexcept { return SettingsOperations{*this}; }
 
   /**
    * @brief Returns the immutable target profile.
-    * @return Const reference to the profile used by this store.
+   * @return Const reference to the profile used by this store.
    */
   [[nodiscard]] const SettingsProfile& GetProfile() const noexcept { return profile_; }
 

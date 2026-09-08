@@ -31,19 +31,18 @@
 #include <cmath>
 #include <concepts>
 #include <numbers>
-#include "stator_system.hpp"
 #include "mechanical_observer.hpp"
+#include "stator_system.hpp"
+#include "units.hpp"
 
 /**
  * @namespace unimoc global namespace
  */
-namespace unimoc
-{
+namespace unimoc {
 /**
  * @namespace observer observer algorithms namespace
  */
-namespace observer
-{
+namespace observer {
 
 /**
  * @brief Full-order Luenberger rotor-flux observer for induction motors (ASM).
@@ -87,181 +86,162 @@ namespace observer
  * @tparam T  Floating-point type (float by default).
  */
 template <std::floating_point T = float>
-struct AsmFluxObserver
-{
-    // -------------------------------------------------------------------------
-    // Motor parameters
-    // -------------------------------------------------------------------------
+struct AsmFluxObserver {
+  // -------------------------------------------------------------------------
+  // Motor parameters
+  // -------------------------------------------------------------------------
 
-    /// Stator resistance R_s [Ω].
-    T R_s{static_cast<T>(0.5)};
+  /// Stator resistance R_s [Ω].
+  unit::Resistance R_s{unit::Resistance{0.5F}};
 
-    /// Rotor resistance R_r [Ω].
-    T R_r{static_cast<T>(0.3)};
+  /// Rotor resistance R_r [Ω].
+  unit::Resistance R_r{unit::Resistance{0.3F}};
 
-    /// Stator self-inductance L_s [H].
-    T L_s{static_cast<T>(50e-3)};
+  /// Stator self-inductance L_s [H].
+  unit::Inductance L_s{unit::Inductance{50.0e-3F}};
 
-    /// Rotor self-inductance L_r [H] (≈ L_s for squirrel-cage motors).
-    T L_r{static_cast<T>(50e-3)};
+  /// Rotor self-inductance L_r [H] (≈ L_s for squirrel-cage motors).
+  unit::Inductance L_r{unit::Inductance{50.0e-3F}};
 
-    /// Mutual (magnetising) inductance L_m [H].
-    T L_m{static_cast<T>(47e-3)};
+  /// Mutual (magnetising) inductance L_m [H].
+  unit::Inductance L_m{unit::Inductance{47.0e-3F}};
 
-    // -------------------------------------------------------------------------
-    // Observer gains
-    // -------------------------------------------------------------------------
+  // -------------------------------------------------------------------------
+  // Observer gains
+  // -------------------------------------------------------------------------
 
-    /// Stator-current correction gain g_i [1/s].
-    ///
-    /// Governs how aggressively the current prediction error corrects the
-    /// estimated stator current.  A value in the range [2·R_s/σL_s … 10·R_s/σL_s]
-    /// is a reasonable starting point.
-    T g_i{static_cast<T>(500.0)};
+  /// Stator-current correction gain g_i [1/s].
+  ///
+  /// Governs how aggressively the current prediction error corrects the
+  /// estimated stator current.  A value in the range [2·R_s/σL_s … 10·R_s/σL_s]
+  /// is a reasonable starting point.
+  unit::InverseTime g_i{unit::InverseTime{500.0F}};
 
-    /// Rotor-flux correction gain g_flux [Wb/(A·s)].
-    ///
-    /// Determines how fast the flux estimate responds to the current error.
-    /// Set larger than g_i to prevent flux lag during transients.
-    T g_flux{static_cast<T>(5000.0)};
+  /// Rotor-flux correction gain g_flux [Wb/(A·s)].
+  ///
+  /// Determines how fast the flux estimate responds to the current error.
+  /// Set larger than g_i to prevent flux lag during transients.
+  unit::MagneticFluxPerCurrentTime g_flux{unit::MagneticFluxPerCurrentTime{5000.0F}};
 
-    // -------------------------------------------------------------------------
-    // Observer state
-    // -------------------------------------------------------------------------
+  // -------------------------------------------------------------------------
+  // Observer state
+  // -------------------------------------------------------------------------
 
-    /// Estimated α-axis stator current [A].
-    T i_alpha_hat{static_cast<T>(0)};
-    /// Estimated β-axis stator current [A].
-    T i_beta_hat{static_cast<T>(0)};
+  /// Estimated α-axis stator current [A].
+  unit::Current i_alpha_hat{};
+  /// Estimated β-axis stator current [A].
+  unit::Current i_beta_hat{};
 
-    /// Estimated α-axis rotor flux linkage [Wb].
-    T psi_r_alpha{static_cast<T>(0)};
-    /// Estimated β-axis rotor flux linkage [Wb].
-    T psi_r_beta{static_cast<T>(0)};
+  /// Estimated α-axis rotor flux linkage [Wb].
+  unit::MagneticFlux psi_r_alpha{};
+  /// Estimated β-axis rotor flux linkage [Wb].
+  unit::MagneticFlux psi_r_beta{};
 
-    // -------------------------------------------------------------------------
-    // Outputs (updated by update())
-    // -------------------------------------------------------------------------
+  // -------------------------------------------------------------------------
+  // Outputs (updated by update())
+  // -------------------------------------------------------------------------
 
-    /// Estimated rotor flux magnitude |ψ̂_r| [Wb].
-    T flux_magnitude{static_cast<T>(0)};
+  /// Estimated rotor flux magnitude |ψ̂_r| [Wb].
+  unit::MagneticFlux flux_magnitude{};
 
-    /// Estimated rotor flux angle θ_flux = atan2(ψ̂_rβ, ψ̂_rα) [rad].
-    T flux_angle{static_cast<T>(0)};
+  /// Estimated rotor flux angle θ_flux = atan2(ψ̂_rβ, ψ̂_rα) [rad].
+  unit::Angle flux_angle{};
 
-    /// sin(θ_flux) — ready for field-oriented transforms.
-    T sin_flux{static_cast<T>(0)};
-    /// cos(θ_flux) — ready for field-oriented transforms.
-    T cos_flux{static_cast<T>(1)};
+  /// sin(θ_flux) — ready for field-oriented transforms.
+  unit::DimensionlessRatio sin_flux{};
+  /// cos(θ_flux) — ready for field-oriented transforms.
+  unit::DimensionlessRatio cos_flux{unit::DimensionlessRatio{1.0F}};
 
-    /**
-     * @brief Run one observer step and update the MechanicalObserver PLL.
-     *
-     * Call this once per PWM/control interrupt.
-     *
-     * @param v_ab     Applied stator voltage vector α/β [V].
-     * @param i_ab     Measured stator current vector α/β [A].
-     * @param dt       Control period [s].
-     * @param mech_obs MechanicalObserver whose PLL receives the flux-angle correction.
-     */
-    constexpr void
-    update(const system::Stator<T>& v_ab,
-           const system::Stator<T>& i_ab,
-           const T                           dt,
-           MechanicalObserver<T>&            mech_obs) noexcept
-    {
-        // --- Derived parameters (computed every cycle for generality; in
-        //     practice the compiler will CSE these if parameters are const.) ---
-        const T sigma   = calc_sigma();
-        const T T_r     = L_r / R_r;           // rotor time constant [s]
-        const T inv_T_r = R_r / L_r;           // 1/T_r
-        const T inv_sLs = static_cast<T>(1) / (sigma * L_s);
+  /**
+   * @brief Run one observer step and update the MechanicalObserver PLL.
+   *
+   * Call this once per PWM/control interrupt.
+   *
+   * @param v_ab     Applied stator voltage vector α/β [V].
+   * @param i_ab     Measured stator current vector α/β [A].
+   * @param dt       Control period [s].
+   * @param mech_obs MechanicalObserver whose PLL receives the flux-angle correction.
+   */
+  constexpr void update(const system::Stator<unit::Voltage>& v_ab,
+                        const system::Stator<unit::Current>& i_ab,
+                        const unit::Time dt,
+                        MechanicalObserver<T>& mech_obs) noexcept {
+    // --- Derived parameters (computed every cycle for generality; in
+    //     practice the compiler will CSE these if parameters are const.) ---
+    const T sigma = calc_sigma();
+    const T inv_T_r = R_r.Value() / L_r.Value();  // 1/T_r
+    const T inv_sLs = static_cast<T>(1) / (sigma * L_s.Value());
 
-        // Stator-current time-constant coefficient
-        const T alpha_i = R_s * inv_sLs + (static_cast<T>(1) - sigma) * inv_T_r / sigma;
+    // Stator-current time-constant coefficient
+    const T alpha_i = R_s.Value() * inv_sLs + (static_cast<T>(1) - sigma) * inv_T_r / sigma;
 
-        // Flux-to-current coupling coefficient L_m/(σ·L_s·L_r)
-        const T k_flux  = L_m / (sigma * L_s * L_r);
+    // Flux-to-current coupling coefficient L_m/(σ·L_s·L_r)
+    const T k_flux = L_m.Value() / (sigma * L_s.Value() * L_r.Value());
 
-        // Electrical rotor speed from MechanicalObserver PLL
-        const T omega_r = mech_obs.omega.Value();
+    // Electrical rotor speed from MechanicalObserver PLL
+    const T omega_r = mech_obs.omega.Value();
 
-        // --- Current prediction error ---
-        const T err_alpha = i_ab.alpha - i_alpha_hat;
-        const T err_beta  = i_ab.beta  - i_beta_hat;
+    // --- Current prediction error ---
+    const T err_alpha = i_ab.alpha.Value() - i_alpha_hat.Value();
+    const T err_beta = i_ab.beta.Value() - i_beta_hat.Value();
 
-        // --- Stator-current observer ---
-        const T di_alpha = -alpha_i * i_alpha_hat
-                           + k_flux * (inv_T_r * psi_r_alpha + omega_r * psi_r_beta)
-                           + inv_sLs * v_ab.alpha
-                           + g_i * err_alpha;
+    // --- Stator-current observer ---
+    const T di_alpha = -alpha_i * i_alpha_hat.Value() + k_flux * (inv_T_r * psi_r_alpha.Value() + omega_r * psi_r_beta.Value()) +
+                       inv_sLs * v_ab.alpha.Value() + g_i.Value() * err_alpha;
 
-        const T di_beta  = -alpha_i * i_beta_hat
-                           + k_flux * (inv_T_r * psi_r_beta - omega_r * psi_r_alpha)
-                           + inv_sLs * v_ab.beta
-                           + g_i * err_beta;
+    const T di_beta = -alpha_i * i_beta_hat.Value() + k_flux * (inv_T_r * psi_r_beta.Value() - omega_r * psi_r_alpha.Value()) +
+                      inv_sLs * v_ab.beta.Value() + g_i.Value() * err_beta;
 
-        // --- Rotor-flux observer ---
-        const T dpsi_r_alpha = (L_m * inv_T_r) * i_alpha_hat
-                                - inv_T_r * psi_r_alpha
-                                - omega_r * psi_r_beta
-                                + g_flux * err_alpha;
+    // --- Rotor-flux observer ---
+    const T dpsi_r_alpha =
+        (L_m.Value() * inv_T_r) * i_alpha_hat.Value() - inv_T_r * psi_r_alpha.Value() - omega_r * psi_r_beta.Value() + g_flux.Value() * err_alpha;
 
-        const T dpsi_r_beta  = (L_m * inv_T_r) * i_beta_hat
-                                - inv_T_r * psi_r_beta
-                                + omega_r * psi_r_alpha
-                                + g_flux * err_beta;
+    const T dpsi_r_beta =
+        (L_m.Value() * inv_T_r) * i_beta_hat.Value() - inv_T_r * psi_r_beta.Value() + omega_r * psi_r_alpha.Value() + g_flux.Value() * err_beta;
 
-        // --- Euler integration ---
-        i_alpha_hat += dt * di_alpha;
-        i_beta_hat  += dt * di_beta;
-        psi_r_alpha += dt * dpsi_r_alpha;
-        psi_r_beta  += dt * dpsi_r_beta;
+    // --- Euler integration ---
+    i_alpha_hat = unit::Current{i_alpha_hat.Value() + dt.Value() * di_alpha};
+    i_beta_hat = unit::Current{i_beta_hat.Value() + dt.Value() * di_beta};
+    psi_r_alpha = unit::MagneticFlux{psi_r_alpha.Value() + dt.Value() * dpsi_r_alpha};
+    psi_r_beta = unit::MagneticFlux{psi_r_beta.Value() + dt.Value() * dpsi_r_beta};
 
-        // --- Compute flux magnitude and angle ---
-        flux_magnitude = std::sqrt(psi_r_alpha * psi_r_alpha + psi_r_beta * psi_r_beta);
-        flux_angle     = std::atan2(psi_r_beta, psi_r_alpha);
-        sin_flux       = std::sin(flux_angle);
-        cos_flux       = std::cos(flux_angle);
+    // --- Compute flux magnitude and angle ---
+    flux_magnitude = unit::MagneticFlux{std::sqrt(psi_r_alpha.Value() * psi_r_alpha.Value() + psi_r_beta.Value() * psi_r_beta.Value())};
+    flux_angle = unit::Angle{std::atan2(psi_r_beta.Value(), psi_r_alpha.Value())};
+    sin_flux = unit::DimensionlessRatio{std::sin(flux_angle.Value())};
+    cos_flux = unit::DimensionlessRatio{std::cos(flux_angle.Value())};
 
-        // --- Feed flux angle into MechanicalObserver PLL ---
-        //
-        // Compute the angle error between the flux angle and the PLL estimate.
-        // Using the cross-product sine approximation (no atan2 needed):
-        //   sin(θ_flux − θ̂) ≈ sin(θ_flux)·cos(θ̂) − cos(θ_flux)·sin(θ̂)
-        //
-        // This is the same technique used in the PMSM back-EMF PLL.
-        const T angle_error = sin_flux * mech_obs.cos_theta.Value()
-                      - cos_flux * mech_obs.sin_theta.Value();
+    // --- Feed flux angle into MechanicalObserver PLL ---
+    //
+    // Compute the angle error between the flux angle and the PLL estimate.
+    // Using the cross-product sine approximation (no atan2 needed):
+    //   sin(θ_flux − θ̂) ≈ sin(θ_flux)·cos(θ̂) − cos(θ_flux)·sin(θ̂)
+    //
+    // This is the same technique used in the PMSM back-EMF PLL.
+    const T angle_error = sin_flux.Value() * mech_obs.cos_theta.Value() - cos_flux.Value() * mech_obs.sin_theta.Value();
 
-        mech_obs.inject_angle_error(unit::Angle{angle_error}, unit::Time{dt});
-    }
+    mech_obs.inject_angle_error(unit::Angle{angle_error}, dt);
+  }
 
-    /**
-     * @brief Reset the observer state.
-     *
-     * Call on mode transitions or fault recovery.
-     */
-    constexpr void
-    reset() noexcept
-    {
-        i_alpha_hat    = static_cast<T>(0);
-        i_beta_hat     = static_cast<T>(0);
-        psi_r_alpha    = static_cast<T>(0);
-        psi_r_beta     = static_cast<T>(0);
-        flux_magnitude = static_cast<T>(0);
-        flux_angle     = static_cast<T>(0);
-        sin_flux       = static_cast<T>(0);
-        cos_flux       = static_cast<T>(1);
-    }
+  /**
+   * @brief Reset the observer state.
+   *
+   * Call on mode transitions or fault recovery.
+   */
+  constexpr void reset() noexcept {
+    i_alpha_hat = unit::Current{};
+    i_beta_hat = unit::Current{};
+    psi_r_alpha = unit::MagneticFlux{};
+    psi_r_beta = unit::MagneticFlux{};
+    flux_magnitude = unit::MagneticFlux{};
+    flux_angle = unit::Angle{};
+    sin_flux = unit::DimensionlessRatio{};
+    cos_flux = unit::DimensionlessRatio{1.0F};
+  }
 
-private:
-    /// Compute total leakage factor σ = 1 − L_m² / (L_s · L_r).
-    [[nodiscard]] constexpr T
-    calc_sigma() const noexcept
-    {
-        return static_cast<T>(1) - (L_m * L_m) / (L_s * L_r);
-    }
+ private:
+  /// Compute total leakage factor σ = 1 − L_m² / (L_s · L_r).
+  [[nodiscard]] constexpr T calc_sigma() const noexcept { return static_cast<T>(1) - (L_m.Value() * L_m.Value()) / (L_s.Value() * L_r.Value()); }
 };
 
 }  // namespace observer

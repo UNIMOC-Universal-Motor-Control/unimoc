@@ -27,20 +27,17 @@
 #ifndef UNIMOC_CONTROL_ASM_FLUX_CONTROLLER_H_
 #define UNIMOC_CONTROL_ASM_FLUX_CONTROLLER_H_
 
-#include <algorithm>
 #include <cmath>
-#include <concepts>
+#include "units.hpp"
 
 /**
  * @namespace unimoc global namespace
  */
-namespace unimoc
-{
+namespace unimoc {
 /**
  * @namespace control control algorithms namespace
  */
-namespace control
-{
+namespace control {
 
 /**
  * @brief Rotor-flux magnitude controller for induction motors (ASM).
@@ -73,114 +70,103 @@ namespace control
  * The caller should use ω_s to advance the field angle if an open-loop
  * feedforward scheme is preferred alongside the closed-loop flux observer.
  *
- * @tparam T  Floating-point type (float by default).
  */
-template <std::floating_point T = float>
-struct AsmFluxController
-{
-    // -------------------------------------------------------------------------
-    // Motor parameters
-    // -------------------------------------------------------------------------
+struct AsmFluxController {
+  // -------------------------------------------------------------------------
+  // Motor parameters
+  // -------------------------------------------------------------------------
 
-    /// Rotor resistance R_r [Ω].
-    T R_r{static_cast<T>(0.3)};
+  /// Rotor resistance R_r [Ω].
+  unit::Resistance R_r{unit::Resistance{0.3F}};
 
-    /// Rotor self-inductance L_r [H].
-    T L_r{static_cast<T>(50e-3)};
+  /// Rotor self-inductance L_r [H].
+  unit::Inductance L_r{unit::Inductance{50.0e-3F}};
 
-    /// Mutual (magnetising) inductance L_m [H].
-    T L_m{static_cast<T>(47e-3)};
+  /// Mutual (magnetising) inductance L_m [H].
+  unit::Inductance L_m{unit::Inductance{47.0e-3F}};
 
-    // -------------------------------------------------------------------------
-    // Controller gains
-    // -------------------------------------------------------------------------
+  // -------------------------------------------------------------------------
+  // Controller gains
+  // -------------------------------------------------------------------------
 
-    /// Proportional gain K_p [A/Wb].
-    T kp{static_cast<T>(10.0)};
+  /// Proportional gain K_p [A/Wb].
+  unit::CurrentPerMagneticFlux kp{unit::CurrentPerMagneticFlux{10.0F}};
 
-    /// Integral gain K_i [A/(Wb·s)].
-    T ki{static_cast<T>(50.0)};
+  /// Integral gain K_i [A/(Wb·s)].
+  unit::CurrentPerMagneticFluxTime ki{unit::CurrentPerMagneticFluxTime{50.0F}};
 
-    // -------------------------------------------------------------------------
-    // Output limits
-    // -------------------------------------------------------------------------
+  // -------------------------------------------------------------------------
+  // Output limits
+  // -------------------------------------------------------------------------
 
-    /// Minimum d-axis current [A] (must be ≥ 0; negative magnetising current
-    /// is not useful in a squirrel-cage motor).
-    T i_d_min{static_cast<T>(0.0)};
+  /// Minimum d-axis current [A] (must be ≥ 0; negative magnetising current
+  /// is not useful in a squirrel-cage motor).
+  unit::Current i_d_min{};
 
-    /// Maximum d-axis current [A].
-    T i_d_max{static_cast<T>(10.0)};
+  /// Maximum d-axis current [A].
+  unit::Current i_d_max{unit::Current{10.0F}};
 
-    // -------------------------------------------------------------------------
-    // State
-    // -------------------------------------------------------------------------
+  // -------------------------------------------------------------------------
+  // State
+  // -------------------------------------------------------------------------
 
-    /// PI integrator state [A].
-    T integrator{static_cast<T>(0)};
+  /// PI integrator state [A].
+  unit::Current integrator{};
 
-    // -------------------------------------------------------------------------
-    // Output
-    // -------------------------------------------------------------------------
+  // -------------------------------------------------------------------------
+  // Output
+  // -------------------------------------------------------------------------
 
-    /// d-axis current reference i_d* [A] (updated by update()).
-    T i_d_ref{static_cast<T>(0)};
+  /// d-axis current reference i_d* [A] (updated by update()).
+  unit::Current i_d_ref{};
 
-    /// Computed slip angular frequency ω_slip [rad/s] (updated by update()).
-    T omega_slip{static_cast<T>(0)};
+  /// Computed slip angular frequency ω_slip [rad/s] (updated by update()).
+  unit::AngularVelocity omega_slip{};
 
-    /**
-     * @brief Update the flux controller.
-     *
-     * Call once per control cycle.
-     *
-     * @param psi_r_ref     Rotor flux magnitude reference |ψ_r*| [Wb].
-     * @param psi_r_meas    Estimated rotor flux magnitude |ψ̂_r| [Wb]
-     *                      (from AsmFluxObserver::flux_magnitude).
-     * @param i_q           Current q-axis current component [A] (for slip
-     *                      frequency calculation).
-     * @param dt            Control period [s].
-     * @return              d-axis current reference i_d* [A].
-     */
-    constexpr T
-    update(const T psi_r_ref,
-           const T psi_r_meas,
-           const T i_q,
-           const T dt) noexcept
-    {
-        // --- PI flux controller ---
-        const T error = psi_r_ref - psi_r_meas;
+  /**
+   * @brief Update the flux controller.
+   *
+   * Call once per control cycle.
+   *
+   * @param psi_r_ref     Rotor flux magnitude reference |ψ_r*| [Wb].
+   * @param psi_r_meas    Estimated rotor flux magnitude |ψ̂_r| [Wb]
+   *                      (from AsmFluxObserver::flux_magnitude).
+   * @param i_q           Current q-axis current component [A] (for slip
+   *                      frequency calculation).
+   * @param dt            Control period [s].
+   * @return              d-axis current reference i_d* [A].
+   */
+  constexpr unit::Current update(const unit::MagneticFlux psi_r_ref,
+                                 const unit::MagneticFlux psi_r_meas,
+                                 const unit::Current i_q,
+                                 const unit::Time dt) noexcept {
+    // --- PI flux controller ---
+    const unit::MagneticFlux error = psi_r_ref - psi_r_meas;
 
-        integrator += ki * error * dt;
-        integrator  = std::clamp(integrator, i_d_min, i_d_max);
+    integrator = (integrator + ki * error * dt).Clamp(i_d_min, i_d_max);
 
-        i_d_ref = std::clamp(kp * error + integrator, i_d_min, i_d_max);
+    i_d_ref = (kp * error + integrator).Clamp(i_d_min, i_d_max);
 
-        // --- Slip frequency feedforward ---
-        // ω_slip = (1/T_r) · (L_m · i_q / ψ_r*)
-        // Use the flux reference in the denominator to avoid division by
-        // a near-zero measured flux during start-up.
-        if (psi_r_ref > static_cast<T>(1e-6))
-        {
-            const T T_r  = L_r / R_r;
-            omega_slip = (L_m / (T_r * psi_r_ref)) * i_q;
-        }
-        else
-        {
-            omega_slip = static_cast<T>(0);
-        }
-
-        return i_d_ref;
+    // --- Slip frequency feedforward ---
+    // ω_slip = (1/T_r) · (L_m · i_q / ψ_r*)
+    // Use the flux reference in the denominator to avoid division by
+    // a near-zero measured flux during start-up.
+    if (psi_r_ref > unit::MagneticFlux{1.0e-6F}) {
+      const unit::Time rotor_time_constant = L_r / R_r;
+      omega_slip = (L_m * i_q / psi_r_ref) / rotor_time_constant;
+    } else {
+      omega_slip = unit::AngularVelocity{};
     }
 
-    /// Reset controller state (call on enable or fault recovery).
-    constexpr void
-    reset() noexcept
-    {
-        integrator = static_cast<T>(0);
-        i_d_ref    = static_cast<T>(0);
-        omega_slip = static_cast<T>(0);
-    }
+    return i_d_ref;
+  }
+
+  /// Reset controller state (call on enable or fault recovery).
+  constexpr void reset() noexcept {
+    integrator = unit::Current{};
+    i_d_ref = unit::Current{};
+    omega_slip = unit::AngularVelocity{};
+  }
 };
 
 }  // namespace control

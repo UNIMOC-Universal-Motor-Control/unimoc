@@ -27,21 +27,19 @@
 #ifndef UNIMOC_CONTROL_FIELD_WEAKENING_H_
 #define UNIMOC_CONTROL_FIELD_WEAKENING_H_
 
-#include <algorithm>
 #include <cmath>
 #include <concepts>
 #include "stator_system.hpp"
+#include "units.hpp"
 
 /**
  * @namespace unimoc global namespace
  */
-namespace unimoc
-{
+namespace unimoc {
 /**
  * @namespace control control algorithms namespace
  */
-namespace control
-{
+namespace control {
 
 /**
  * @brief Field-weakening controller with i_d current control.
@@ -68,56 +66,50 @@ namespace control
  * @tparam T  Floating-point type (float by default).
  */
 template <std::floating_point T = float>
-struct FieldWeakening
-{
-    /// Maximum allowed voltage vector magnitude (normalised by V_dc, range (0, 1]).
-    T v_max{static_cast<T>(0.9)};
+struct FieldWeakening {
+  /// Maximum allowed voltage vector magnitude [V].
+  unit::Voltage v_max{unit::Voltage{0.9F}};
 
-    /// Integrator gain K_i [A / (V·s)].
-    T ki{static_cast<T>(10.0)};
+  /// Integrator gain K_i [A / (V·s)].
+  unit::CurrentPerVoltageTime ki{unit::CurrentPerVoltageTime{10.0F}};
 
-    /// Most negative i_d allowed [A] (prevents de-magnetisation).
-    T i_d_min{static_cast<T>(-10.0)};
+  /// Most negative i_d allowed [A] (prevents de-magnetisation).
+  unit::Current i_d_min{unit::Current{-10.0F}};
 
-    // -------------------------------------------------------------------------
-    // State
-    // -------------------------------------------------------------------------
+  // -------------------------------------------------------------------------
+  // State
+  // -------------------------------------------------------------------------
 
-    /// Integrator state: field-weakening d-axis current [A].
-    T i_d_fw{static_cast<T>(0.0)};
+  /// Integrator state: field-weakening d-axis current [A].
+  unit::Current i_d_fw{};
 
-    /**
-     * @brief Update the field-weakening integrator and return the i_d correction.
-     *
-     * Call this once per control cycle.  The returned value should be added to
-     * the MTPA i_d reference to obtain the total d-axis current set-point.
-     *
-     * @param v_s  Applied voltage vector in the stationary α/β frame
-     *             (normalised by V_dc).
-     * @param dt   Control cycle period [s].
-     * @return     Field-weakening i_d correction [A]  (≤ 0).
-     */
-    constexpr T
-    update(const system::Stator<T>& v_s, const T dt) noexcept
-    {
-        const T v_mag = std::sqrt(v_s.alpha * v_s.alpha + v_s.beta * v_s.beta);
-        const T error = v_max - v_mag;
+  /**
+   * @brief Update the field-weakening integrator and return the i_d correction.
+   *
+   * Call this once per control cycle.  The returned value should be added to
+   * the MTPA i_d reference to obtain the total d-axis current set-point.
+   *
+  * @param v_s  Applied voltage vector in the stationary α/β frame [V].
+   * @param dt   Control cycle period [s].
+  /// @return     Field-weakening i_d correction [A] (≤ 0).
+   */
+  constexpr unit::Current update(const system::Stator<unit::Voltage>& v_s, const unit::Time dt) noexcept {
+    const T v_alpha = static_cast<T>(v_s.alpha.Value());
+    const T v_beta = static_cast<T>(v_s.beta.Value());
+    const unit::Voltage v_mag{std::sqrt(v_alpha * v_alpha + v_beta * v_beta)};
+    const T error = v_max.Value() - v_mag.Value();
 
-        // Integrate voltage headroom error into i_d correction
-        i_d_fw += ki * error * dt;
+    // Integrate voltage headroom error into i_d correction
+    i_d_fw = unit::Current{i_d_fw.Value() + ki.Value() * error * dt.Value()};
 
-        // Clamp: i_d_fw must remain in [i_d_min, 0]
-        i_d_fw = std::clamp(i_d_fw, i_d_min, static_cast<T>(0));
+    // Clamp: i_d_fw must remain in [i_d_min, 0]
+    i_d_fw = unit::Current{i_d_fw.Value()}.Clamp(i_d_min.Value(), 0.0F);
 
-        return i_d_fw;
-    }
+    return i_d_fw;
+  }
 
-    /// Reset integrator state (call on enable / mode transitions).
-    constexpr void
-    reset() noexcept
-    {
-        i_d_fw = static_cast<T>(0);
-    }
+  /// Reset integrator state (call on enable / mode transitions).
+  constexpr void reset() noexcept { i_d_fw = unit::Current{}; }
 };
 
 }  // namespace control

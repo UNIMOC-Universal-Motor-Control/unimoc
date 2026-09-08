@@ -8,151 +8,135 @@
 #include <numbers>
 #include "position_tracker.hpp"
 
-namespace unimoc
-{
-namespace observer
-{
-namespace test
-{
+namespace unimoc {
+namespace observer {
+namespace test {
 
-class PositionTrackerTest : public ::testing::Test
-{
-protected:
-    using Tracker = PositionTracker<float>;
+class PositionTrackerTest : public ::testing::Test {
+ protected:
+  using Tracker = PositionTracker<float>;
+  using Angle = unimoc::unit::Angle;
 
-    static constexpr float pi     = std::numbers::pi_v<float>;
-    static constexpr float two_pi = 2.0f * pi;
-    static constexpr int   pp     = 4;  // pole pairs
+  static constexpr float pi = std::numbers::pi_v<float>;
+  static constexpr float two_pi = 2.0f * pi;
+  static constexpr int pp = 4;  // pole pairs
 };
 
 // --- Default state
-TEST_F(PositionTrackerTest, DefaultStateIsZero)
-{
-    Tracker t;
-    EXPECT_EQ(t.turns,        0);
-    EXPECT_FLOAT_EQ(t.position_rad, 0.0f);
-    EXPECT_FLOAT_EQ(t.position_rev, 0.0f);
-    EXPECT_FALSE(t.is_homed);
+TEST_F(PositionTrackerTest, DefaultStateIsZero) {
+  Tracker t;
+  EXPECT_EQ(t.turns, 0);
+  EXPECT_FLOAT_EQ(t.position_rad.Value(), 0.0f);
+  EXPECT_FLOAT_EQ(t.position_rev.Value(), 0.0f);
+  EXPECT_FALSE(t.is_homed);
 }
 
 // --- No wrapping: small forward step stays at 0 turns
-TEST_F(PositionTrackerTest, NoWrapSmallStep)
-{
-    Tracker t;
-    t.update(0.5f, pp);
-    EXPECT_EQ(t.turns, 0);
+TEST_F(PositionTrackerTest, NoWrapSmallStep) {
+  Tracker t;
+  t.update(Angle{0.5F}, pp);
+  EXPECT_EQ(t.turns, 0);
 }
 
 // --- Positive wrap detection: cross from just below +π to just above −π
-TEST_F(PositionTrackerTest, PositiveWrapDetected)
-{
-    Tracker t;
-    // Start near +π
-    t.update(pi - 0.01f, pp);
-    EXPECT_EQ(t.turns, 0);
+TEST_F(PositionTrackerTest, PositiveWrapDetected) {
+  Tracker t;
+  // Start near +π
+  t.update(Angle{pi - 0.01F}, pp);
+  EXPECT_EQ(t.turns, 0);
 
-    // Cross wrap boundary (jump as if angle wrapped to −π+ε)
-    t.update(-pi + 0.01f, pp);
-    EXPECT_EQ(t.turns, 1);
+  // Cross wrap boundary (jump as if angle wrapped to −π+ε)
+  t.update(Angle{-pi + 0.01F}, pp);
+  EXPECT_EQ(t.turns, 1);
 }
 
 // --- Negative wrap detection
-TEST_F(PositionTrackerTest, NegativeWrapDetected)
-{
-    Tracker t;
-    t.update(-pi + 0.01f, pp);
-    EXPECT_EQ(t.turns, 0);
+TEST_F(PositionTrackerTest, NegativeWrapDetected) {
+  Tracker t;
+  t.update(Angle{-pi + 0.01F}, pp);
+  EXPECT_EQ(t.turns, 0);
 
-    t.update(pi - 0.01f, pp);
-    EXPECT_EQ(t.turns, -1);
+  t.update(Angle{pi - 0.01F}, pp);
+  EXPECT_EQ(t.turns, -1);
 }
 
 // --- Multiple positive turns
-TEST_F(PositionTrackerTest, MultiplePositiveTurns)
-{
-    Tracker t;
-    float angle = 0.0f;
-    const float step = 0.1f;
-    int expected_turns = 0;
+TEST_F(PositionTrackerTest, MultiplePositiveTurns) {
+  Tracker t;
+  float angle = 0.0f;
+  const float step = 0.1f;
+  int expected_turns = 0;
 
-    for (int i = 0; i < 400; ++i)
-    {
-        angle += step;
-        if (angle > pi)
-        {
-            angle -= two_pi;
-            ++expected_turns;
-        }
-        t.update(angle, pp);
+  for (int i = 0; i < 400; ++i) {
+    angle += step;
+    if (angle > pi) {
+      angle -= two_pi;
+      ++expected_turns;
     }
-    EXPECT_EQ(t.turns, expected_turns);
+    t.update(Angle{angle}, pp);
+  }
+  EXPECT_EQ(t.turns, expected_turns);
 }
 
 // --- Position formula: (turns * 2π + theta) / pole_pairs − home_offset
-TEST_F(PositionTrackerTest, PositionFormula)
-{
-    Tracker t;
-    t.update(pi / 2.0f, pp);  // 0 turns, θ = π/2
-    // position_rad = (0 * 2π + π/2) / 4 = π/8
-    EXPECT_NEAR(t.position_rad, pi / 8.0f, 1e-5f);
+TEST_F(PositionTrackerTest, PositionFormula) {
+  Tracker t;
+  t.update(Angle{pi / 2.0F}, pp);  // 0 turns, θ = π/2
+  // position_rad = (0 * 2π + π/2) / 4 = π/8
+  EXPECT_NEAR(t.position_rad.Value(), pi / 8.0F, 1e-5F);
 }
 
 // --- set_home() zeroes position
-TEST_F(PositionTrackerTest, SetHomeClearsPosition)
-{
-    Tracker t;
-    t.update(pi / 2.0f, pp);
-    t.set_home(pp);
-    EXPECT_FLOAT_EQ(t.position_rad, 0.0f);
-    EXPECT_FLOAT_EQ(t.position_rev, 0.0f);
-    EXPECT_TRUE(t.is_homed);
+TEST_F(PositionTrackerTest, SetHomeClearsPosition) {
+  Tracker t;
+  t.update(Angle{pi / 2.0F}, pp);
+  t.set_home(pp);
+  EXPECT_FLOAT_EQ(t.position_rad.Value(), 0.0F);
+  EXPECT_FLOAT_EQ(t.position_rev.Value(), 0.0F);
+  EXPECT_TRUE(t.is_homed);
 }
 
 // --- After homing, position is relative to home
-TEST_F(PositionTrackerTest, PositionRelativeToHome)
-{
-    Tracker t;
-    // Home at θ = 0
-    t.update(0.0f, pp);
-    t.set_home(pp);
+TEST_F(PositionTrackerTest, PositionRelativeToHome) {
+  Tracker t;
+  // Home at θ = 0
+  t.update(Angle{0.0F}, pp);
+  t.set_home(pp);
 
-    // Advance to θ = π/2 (no wrap)
-    t.update(pi / 2.0f, pp);
-    // expected: (0*2π + π/2)/4 − home_offset_rad
-    // home_offset_rad = (0*2π + 0)/4 = 0
-    EXPECT_NEAR(t.position_rad, pi / 8.0f, 1e-5f);
+  // Advance to θ = π/2 (no wrap)
+  t.update(Angle{pi / 2.0F}, pp);
+  // expected: (0*2π + π/2)/4 − home_offset_rad
+  // home_offset_rad = (0*2π + 0)/4 = 0
+  EXPECT_NEAR(t.position_rad.Value(), pi / 8.0F, 1e-5F);
 }
 
 // --- 4096 mechanical revolutions with 1 pole-pair
-TEST_F(PositionTrackerTest, SupportsFourThousandRevolutions)
-{
-    Tracker t;
-    float angle = 0.0f;
-    const float step = 0.01f;  // [rad]
-    const int pole_pairs = 1;
+TEST_F(PositionTrackerTest, SupportsFourThousandRevolutions) {
+  Tracker t;
+  float angle = 0.0f;
+  const float step = 0.01f;  // [rad]
+  const int pole_pairs = 1;
 
-    // Simulate forward until turns == 4096
-    while (t.turns < 4096)
-    {
-        float next = angle + step;
-        if (next > pi) next -= two_pi;
-        t.update(next, pole_pairs);
-        angle = next;
-    }
-    EXPECT_EQ(t.turns, 4096);
+  // Simulate forward until turns == 4096
+  while (t.turns < 4096) {
+    float next = angle + step;
+    if (next > pi) next -= two_pi;
+    t.update(Angle{next}, pole_pairs);
+    angle = next;
+  }
+  EXPECT_EQ(t.turns, 4096);
 }
 
 // --- reset() clears all state
-TEST_F(PositionTrackerTest, ResetClearsAll)
-{
-    Tracker t;
-    t.update(pi / 2.0f, pp);
-    t.set_home(pp);
-    t.update(1.0f, pp);
-    t.reset();
-    EXPECT_EQ(t.turns,        0);
-    EXPECT_FLOAT_EQ(t.position_rad, 0.0f);
-    EXPECT_FALSE(t.is_homed);
+TEST_F(PositionTrackerTest, ResetClearsAll) {
+  Tracker t;
+  t.update(Angle{pi / 2.0F}, pp);
+  t.set_home(pp);
+  t.update(Angle{1.0F}, pp);
+  t.reset();
+  EXPECT_EQ(t.turns, 0);
+  EXPECT_FLOAT_EQ(t.position_rad.Value(), 0.0F);
+  EXPECT_FALSE(t.is_homed);
 }
 
 }  // namespace test

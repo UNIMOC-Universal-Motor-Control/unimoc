@@ -83,9 +83,9 @@ namespace control {
  *   cc.kp_d = settings.current_kp_d;  cc.ki_d = settings.current_ki_d;
  *   cc.kp_q = settings.current_kp_q;  cc.ki_q = settings.current_ki_q;
  *   cc.kb_d = settings.current_kb_d;  cc.kb_q = settings.current_kb_q;
- *   cc.L_d  = settings.l_d.Value();    cc.L_q  = settings.l_q.Value();
- *   cc.psi  = settings.flux_pm.Value();
- *   cc.v_max = settings.current_v_max.Value();
+ *   cc.L_d  = settings.l_d;            cc.L_q = settings.l_q;
+ *   cc.psi  = settings.flux_pm;
+ *   cc.v_max = settings.current_v_max;
  *
  *   // In the ISR:
  *   auto u_dq = cc.update(i_ref, i_meas, omega, dt_fast, v_dc);
@@ -100,29 +100,29 @@ struct CurrentController {
   // =========================================================================
 
   /// d-axis inductance L_d [H].
-  T L_d{static_cast<T>(1e-3)};
+  unit::Inductance L_d{unit::Inductance{1.0e-3F}};
 
   /// q-axis inductance L_q [H].
-  T L_q{static_cast<T>(1e-3)};
+  unit::Inductance L_q{unit::Inductance{1.0e-3F}};
 
   /// Permanent-magnet flux linkage ψ_PM [Wb].
-  T psi{static_cast<T>(0)};
+  unit::MagneticFlux psi{};
 
   // =========================================================================
   // Controller gains
   // =========================================================================
 
   /// d-axis proportional gain [V/A].
-  T kp_d{static_cast<T>(1.0)};
+  unit::VoltagePerCurrent kp_d{unit::VoltagePerCurrent{1.0F}};
 
   /// d-axis integral gain [V/(A·s)].
-  T ki_d{static_cast<T>(100.0)};
+  unit::VoltagePerCurrentTime ki_d{unit::VoltagePerCurrentTime{100.0F}};
 
   /// q-axis proportional gain [V/A].
-  T kp_q{static_cast<T>(1.0)};
+  unit::VoltagePerCurrent kp_q{unit::VoltagePerCurrent{1.0F}};
 
   /// q-axis integral gain [V/(A·s)].
-  T ki_q{static_cast<T>(100.0)};
+  unit::VoltagePerCurrentTime ki_q{unit::VoltagePerCurrentTime{100.0F}};
 
   // =========================================================================
   // Back-calculation anti-windup gains
@@ -132,10 +132,10 @@ struct CurrentController {
   /// Controls how aggressively the integrator is wound back when the output
   /// is saturated.  A value of ki_d / kp_d makes the tracking time-constant
   /// equal to the integral time Ti = kp_d / ki_d.  Must be > 0.
-  T kb_d{static_cast<T>(100.0)};
+  unit::InverseTime kb_d{unit::InverseTime{100.0F}};
 
   /// q-axis back-calculation gain [1/s].
-  T kb_q{static_cast<T>(100.0)};
+  unit::InverseTime kb_q{unit::InverseTime{100.0F}};
 
   // =========================================================================
   // Output limit
@@ -144,17 +144,17 @@ struct CurrentController {
   /// Maximum voltage vector magnitude as a fraction of V_dc (range (0, 1]).
   /// Typically set to 0.9 to preserve SVM headroom and avoid over-modulation.
   /// The actual voltage limit applied inside update() is v_max * v_dc [V].
-  T v_max{static_cast<T>(0.9)};
+  unit::DimensionlessRatio v_max{unit::DimensionlessRatio{0.9F}};
 
   // =========================================================================
   // Integrator state
   // =========================================================================
 
   /// d-axis integrator accumulator [V].
-  T integrator_d{static_cast<T>(0)};
+  unit::Voltage integrator_d{};
 
   /// q-axis integrator accumulator [V].
-  T integrator_q{static_cast<T>(0)};
+  unit::Voltage integrator_q{};
 
   // =========================================================================
   // Public API
@@ -176,9 +176,9 @@ struct CurrentController {
    */
   constexpr system::Rotor<unit::Voltage> update(const system::Rotor<unit::Current>& i_ref,
                                                 const system::Rotor<unit::Current>& i_meas,
-                                                const T omega,
-                                                const T dt,
-                                                const T v_dc) noexcept {
+                                                const unit::AngularVelocity omega,
+                                                const unit::Time dt,
+                                                const unit::Voltage v_dc) noexcept {
     // --- Current errors ---
     const T e_d = i_ref.d.Value() - i_meas.d.Value();
     const T e_q = i_ref.q.Value() - i_meas.q.Value();
@@ -186,18 +186,18 @@ struct CurrentController {
     // --- Cross-coupling feedforward ---
     //   v_ff_d = −ω · L_q · i_q
     //   v_ff_q = +ω · (L_d · i_d + ψ_PM)
-    const T v_ff_d = -omega * L_q * i_meas.q.Value();
-    const T v_ff_q = omega * (L_d * i_meas.d.Value() + psi);
+    const T v_ff_d = -omega.Value() * L_q.Value() * i_meas.q.Value();
+    const T v_ff_q = omega.Value() * (L_d.Value() * i_meas.d.Value() + psi.Value());
 
     // --- Total output before limiting (PI + feedforward) ---
-    const T u_d_raw = kp_d * e_d + integrator_d + v_ff_d;
-    const T u_q_raw = kp_q * e_q + integrator_q + v_ff_q;
+    const T u_d_raw = kp_d.Value() * e_d + integrator_d.Value() + v_ff_d;
+    const T u_q_raw = kp_q.Value() * e_q + integrator_q.Value() + v_ff_q;
 
     // --- Circular voltage-vector limiting ---
     // The limit is expressed in volts: v_limit = v_max [fraction] * v_dc [V].
     // The total output (PI + feedforward) is always hard-clamped to the
     // voltage circle, even when the feedforward terms alone push it over.
-    const T v_limit = v_max * v_dc;
+    const T v_limit = v_max.Value() * v_dc.Value();
     const T mag_sq = u_d_raw * u_d_raw + u_q_raw * u_q_raw;
     T u_d = u_d_raw;
     T u_q = u_q_raw;
@@ -216,8 +216,8 @@ struct CurrentController {
     // and when the feedforward terms alone drive the total output into
     // saturation — unlike a simple freeze which only detects total
     // saturation and cannot distinguish the two cases.
-    integrator_d += (ki_d * e_d + kb_d * (u_d - u_d_raw)) * dt;
-    integrator_q += (ki_q * e_q + kb_q * (u_q - u_q_raw)) * dt;
+    integrator_d = unit::Voltage{integrator_d.Value() + (ki_d.Value() * e_d + kb_d.Value() * (u_d - u_d_raw)) * dt.Value()};
+    integrator_q = unit::Voltage{integrator_q.Value() + (ki_q.Value() * e_q + kb_q.Value() * (u_q - u_q_raw)) * dt.Value()};
 
     return system::Rotor<unit::Voltage>{u_d, u_q};
   }
@@ -228,8 +228,8 @@ struct CurrentController {
    * Call when re-enabling the controller after a fault or mode transition.
    */
   constexpr void reset() noexcept {
-    integrator_d = static_cast<T>(0);
-    integrator_q = static_cast<T>(0);
+    integrator_d = unit::Voltage{};
+    integrator_q = unit::Voltage{};
   }
 };
 

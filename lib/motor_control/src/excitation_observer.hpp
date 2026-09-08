@@ -30,17 +30,16 @@
 #include <algorithm>
 #include <cmath>
 #include <concepts>
+#include "units.hpp"
 
 /**
  * @namespace unimoc global namespace
  */
-namespace unimoc
-{
+namespace unimoc {
 /**
  * @namespace observer observer algorithms namespace
  */
-namespace observer
-{
+namespace observer {
 
 /**
  * @brief Rotor excitation current observer for EESM.
@@ -74,74 +73,67 @@ namespace observer
  * @tparam T  Floating-point type (float by default).
  */
 template <std::floating_point T = float>
-struct ExcitationObserver
-{
-    // -------------------------------------------------------------------------
-    // Motor parameter
-    // -------------------------------------------------------------------------
+struct ExcitationObserver {
+  // -------------------------------------------------------------------------
+  // Motor parameter
+  // -------------------------------------------------------------------------
 
-    /// Mutual (magnetising) inductance L_m [H].
-    /// Scales the filtered current to the effective rotor flux linkage.
-    T L_m{static_cast<T>(47e-3)};
+  /// Mutual (magnetising) inductance L_m [H].
+  /// Scales the filtered current to the effective rotor flux linkage.
+  unit::Inductance L_m{unit::Inductance{47.0e-3F}};
 
-    // -------------------------------------------------------------------------
-    // Filter parameter
-    // -------------------------------------------------------------------------
+  // -------------------------------------------------------------------------
+  // Filter parameter
+  // -------------------------------------------------------------------------
 
-    /// Low-pass filter time constant tau [s].
-    /// Adjust to balance noise rejection against response speed.
-    T tau{static_cast<T>(2e-3)};
+  /// Low-pass filter time constant tau [s].
+  /// Adjust to balance noise rejection against response speed.
+  unit::Time tau{unit::Time{2.0e-3F}};
 
-    // -------------------------------------------------------------------------
-    // Outputs (updated by update())
-    // -------------------------------------------------------------------------
+  // -------------------------------------------------------------------------
+  // Outputs (updated by update())
+  // -------------------------------------------------------------------------
 
-    /// Estimated (filtered) rotor excitation current î_f [A].
-    T i_f_hat{static_cast<T>(0)};
+  /// Estimated (filtered) rotor excitation current î_f [A].
+  unit::Current i_f_hat{};
 
-    /// Estimated effective rotor flux linkage ψ̂_f = L_m · î_f [Wb].
-    T psi_f_hat{static_cast<T>(0)};
+  /// Estimated effective rotor flux linkage ψ̂_f = L_m · î_f [Wb].
+  unit::MagneticFlux psi_f_hat{};
 
-    /**
-     * @brief Update the excitation observer.
-     *
-     * Call once per control cycle.
-     *
-     * @param i_f_meas  Measured rotor excitation current [A].
-     *                  If a direct measurement is unavailable, pass the
-     *                  ExcitationController::i_f_ref as an open-loop estimate.
-     * @param dt        Control period [s].
-     */
-    constexpr void
-    update(const T i_f_meas, const T dt) noexcept
-    {
-        // First-order low-pass: i_f_hat += (dt / tau) * (i_f_meas - i_f_hat)
-        if (tau > static_cast<T>(1e-12))
-        {
-            i_f_hat += (dt / tau) * (i_f_meas - i_f_hat);
-        }
-        else
-        {
-            // Zero time constant — pass through immediately
-            i_f_hat = i_f_meas;
-        }
-
-        psi_f_hat = L_m * i_f_hat;
+  /**
+   * @brief Update the excitation observer.
+   *
+   * Call once per control cycle.
+   *
+   * @param i_f_meas  Measured rotor excitation current [A].
+   *                  If a direct measurement is unavailable, pass the
+   *                  ExcitationController::i_f_ref as an open-loop estimate.
+   * @param dt        Control period [s].
+   */
+  constexpr void update(const unit::Current i_f_meas, const unit::Time dt) noexcept {
+    // First-order low-pass: i_f_hat += (dt / tau) * (i_f_meas - i_f_hat)
+    if (tau.Value() > 1.0e-12F) {
+      const T alpha = dt.Value() / tau.Value();
+      i_f_hat = unit::Current{i_f_hat.Value() + alpha * (i_f_meas.Value() - i_f_hat.Value())};
+    } else {
+      // Zero time constant — pass through immediately
+      i_f_hat = i_f_meas;
     }
 
-    /**
-     * @brief Reset observer state.
-     *
-     * Call on mode transitions or fault recovery.
-     *
-     * @param i_f_init  Optional initial current estimate [A] (default 0).
-     */
-    constexpr void
-    reset(const T i_f_init = static_cast<T>(0)) noexcept
-    {
-        i_f_hat   = i_f_init;
-        psi_f_hat = L_m * i_f_hat;
-    }
+    psi_f_hat = L_m * i_f_hat;
+  }
+
+  /**
+   * @brief Reset observer state.
+   *
+   * Call on mode transitions or fault recovery.
+   *
+   * @param i_f_init  Optional initial current estimate [A] (default 0).
+   */
+  constexpr void reset(const unit::Current i_f_init = unit::Current{}) noexcept {
+    i_f_hat = i_f_init;
+    psi_f_hat = L_m * i_f_hat;
+  }
 };
 
 }  // namespace observer
