@@ -17,6 +17,7 @@
 #include <concepts>
 #include "nvm_settings.hpp"
 #include "stator_system.hpp"
+#include "three_phase_system.hpp"
 
 /**
  * @namespace unimoc global namespace
@@ -97,9 +98,10 @@ struct DeadTimeCompensation
         // --- Reconstruct three-phase currents from α/β ---
         constexpr T k = static_cast<T>(0.8660254037844386);  // √3 / 2
 
-        T ia = i_ab.alpha.Value();
-        T ib = static_cast<T>(-0.5) * i_ab.alpha.Value() + k * i_ab.beta.Value();
-        T ic = static_cast<T>(-0.5) * i_ab.alpha.Value() - k * i_ab.beta.Value();
+        const auto phase_currents = i_ab.ToThreePhase();
+        const T ia = phase_currents.a.Value();
+        const T ib = phase_currents.b.Value();
+        const T ic = phase_currents.c.Value();
 
         // --- Soft sign function: clamp(i / threshold, -1, +1) ---
         // This provides linear interpolation through zero, preventing chattering.

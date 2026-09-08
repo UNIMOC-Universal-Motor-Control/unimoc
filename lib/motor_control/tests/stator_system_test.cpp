@@ -67,3 +67,13 @@ TEST_F(StatorSystemTest, ClarkeAndParkPreserveTheUnitType) {
 
   EXPECT_NEAR(kRotor.d.Value(), 1.0F, 1.0e-5F);
 }
+
+TEST_F(StatorSystemTest, InverseClarkePreservesTheUnitType) {
+  const unimoc::system::Stator<unimoc::unit::Current> kStator{1.0F, 0.0F};
+
+  const auto kPhase = kStator.ToThreePhase();
+
+  EXPECT_NEAR(kPhase.a.Value(), 1.0F, 1.0e-5F);
+  EXPECT_NEAR(kPhase.b.Value(), -0.5F, 1.0e-5F);
+  EXPECT_NEAR(kPhase.c.Value(), -0.5F, 1.0e-5F);
+}

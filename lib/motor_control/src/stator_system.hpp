@@ -32,6 +32,10 @@ namespace unimoc::system
 template <unimoc::unit::UnitLike T>
 struct Rotor;
 
+/** Forward declaration of the three-phase reference frame. */
+template <unimoc::unit::UnitLike T>
+struct ThreePhase;
+
 /**
  * @brief Stores a unit-typed vector in the stationary alpha/beta reference frame.
  *
@@ -168,6 +172,16 @@ struct Stator
 	}
 
 	/**
+	 * @brief Applies the inverse Clarke transform to a stator vector.
+	 * @return The corresponding phase values in A, B, C order.
+	 *
+	 * The transform is amplitude-invariant and preserves the unit type of the
+	 * stator components. A zero-sequence component is not added.
+	 */
+	[[nodiscard]] constexpr ThreePhase<T>
+	ToThreePhase() const noexcept;
+
+	/**
 	 * @brief Returns the Euclidean length of the stator vector.
 	 * @return The vector length in the component unit.
 	 */
@@ -223,6 +237,7 @@ struct Stator
 		return Rotor<T>(T{(alpha.Value() * kCos) + (beta.Value() * kSin)},
 					 T{(beta.Value() * kCos) - (alpha.Value() * kSin)});
 	}
+
 };
 
 }  // namespace unimoc::system

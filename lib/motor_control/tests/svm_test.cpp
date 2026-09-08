@@ -2,7 +2,7 @@
 #include <gtest/gtest.h>
 
 using Stator = unimoc::system::Stator<unimoc::unit::DimensionlessRatio>;
-using Svm = unimoc::control::Svm<float>;
+using Svm = unimoc::control::Svm;
 
 class SvmTest : public ::testing::Test {};
 

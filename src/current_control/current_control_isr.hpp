@@ -301,7 +301,7 @@ class CurrentControlIsr {
   control::DeadTimeCompensation<float> dtc{};
 
   /// Space-vector modulator.
-  control::Svm<float> svm{};
+  control::Svm svm{};
 
   /// True when HFI injection is active.
   bool hfi_active{false};

@@ -47,10 +47,7 @@ namespace control
  * - After centring the output duty cycles are clamped to [duty_min, duty_max]
  *   (default 5 % … 95 %) to leave headroom for current measurement and dead-time
  *   compensation without preloading the timer counter.
- *
- * @tparam T  Floating-point type (float by default).
  */
-template <std::floating_point T = float>
 struct Svm
 {
     /// Minimum duty cycle (keeps time for ADC sampling and dead-time headroom).
@@ -81,34 +78,33 @@ struct Svm
     {
         // --- Inverse Clarke (amplitude-invariant) ---
         // Transforms the α/β reference into three phase-voltage references.
-        constexpr T k = static_cast<T>(0.8660254037844386);  // √3 / 2
-
-        T va = v.alpha.Value();
-        T vb = static_cast<T>(-0.5) * v.alpha.Value() + k * v.beta.Value();
-        T vc = static_cast<T>(-0.5) * v.alpha.Value() - k * v.beta.Value();
+        const auto phase_voltages = v.ToThreePhase();
+        unit::DimensionlessRatio va = phase_voltages.a;
+        unit::DimensionlessRatio vb = phase_voltages.b;
+        unit::DimensionlessRatio vc = phase_voltages.c;
 
         // --- Zero-sequence injection for centred SVM ---
         // The zero-sequence component centres the modulated waveforms so that the
         // mid-point of (max + min) is always at 0.  Adding it to each phase shifts
         // all duties to be symmetric around 0.5.
-        T vmax = std::max({va, vb, vc});
-        T vmin = std::min({va, vb, vc});
-        T v0   = static_cast<T>(-0.5) * (vmax + vmin);
+        unit::DimensionlessRatio vmax = std::max({va, vb, vc});
+        unit::DimensionlessRatio vmin = std::min({va, vb, vc});
+        unit::DimensionlessRatio v0   = (vmax + vmin) * -0.5F;
 
         // Convert phase voltages [-0.5, 0.5] → duty cycles [0, 1]
-        T da = static_cast<T>(0.5) + va + v0;
-        T db = static_cast<T>(0.5) + vb + v0;
-        T dc = static_cast<T>(0.5) + vc + v0;
+        unit::DimensionlessRatio da = unit::DimensionlessRatio{0.5F} + va + v0;
+        unit::DimensionlessRatio db = unit::DimensionlessRatio{0.5F} + vb + v0;
+        unit::DimensionlessRatio dc = unit::DimensionlessRatio{0.5F} + vc + v0;
 
         // --- Clamp to [duty_min, duty_max] ---
-        da = unit::DimensionlessRatio{da}.Clamp(duty_min.Value(), duty_max.Value()).Value();
-        db = unit::DimensionlessRatio{db}.Clamp(duty_min.Value(), duty_max.Value()).Value();
-        dc = unit::DimensionlessRatio{dc}.Clamp(duty_min.Value(), duty_max.Value()).Value();
+        da = da.Clamp(duty_min.Value(), duty_max.Value());
+        db = db.Clamp(duty_min.Value(), duty_max.Value());
+        dc = dc.Clamp(duty_min.Value(), duty_max.Value());
 
         return system::ThreePhase<unit::DimensionlessRatio>{
-            unit::DimensionlessRatio{da},
-            unit::DimensionlessRatio{db},
-            unit::DimensionlessRatio{dc}};
+            da,
+            db,
+            dc};
     }
 };
 

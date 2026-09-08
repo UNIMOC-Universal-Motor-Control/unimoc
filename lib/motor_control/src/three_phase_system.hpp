@@ -138,4 +138,20 @@ struct ThreePhase
 	}
 };
 
+/**
+ * @brief Applies the inverse Clarke transform to a stator vector.
+ *
+ * This definition is placed here because `ThreePhase` must be complete when
+ * the result object is constructed.
+ */
+template <unimoc::unit::UnitLike T>
+constexpr ThreePhase<T>
+Stator<T>::ToThreePhase() const noexcept
+{
+	constexpr Representation kSqrt3By2 = static_cast<Representation>(0.86602540378443864676F);
+	constexpr Representation kHalf = static_cast<Representation>(-0.5F);
+
+	return ThreePhase<T>{alpha, kHalf * alpha + kSqrt3By2 * beta, kHalf * alpha - kSqrt3By2 * beta};
+}
+
 }  // namespace unimoc::system
