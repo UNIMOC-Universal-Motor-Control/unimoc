@@ -49,7 +49,7 @@ TEST_F(NvmSettingsTest, DefaultMotorType) {
 // --- Default control mode is TORQUE
 TEST_F(NvmSettingsTest, DefaultControlMode) {
   NvmSettings settings;
-  EXPECT_EQ(settings.control_mode, ControlMode::TORQUE);
+  EXPECT_EQ(settings.control_mode, cyphal::ControlMode::TORQUE);
 }
 
 // --- Corrupt magic invalidates the block

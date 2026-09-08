@@ -1,34 +1,22 @@
 /*
-       __  ___   ________  _______  ______
-      / / / / | / /  _/  |/  / __ \/ ____/
-     / / / /  |/ // // /|_/ / / / / /
-    / /_/ / /|  // // /  / / /_/ / /___
-    \____/_/ |_/___/_/  /_/\____/\____/
-
-    Universal Motor Control  2026 Alexander <tecnologic86@gmail.com> Evers
-
-    This file is part of UNIMOC.
-
-    UNIMOC is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *       __  ___   ________  _______  ______
+ *      / / / / | / /  _/  |/  / __ \/ ____/
+ *     / / / /  |/ // // /|_/ / / / / /
+ *    / /_/ / /|  // //  /  / /_/ / /___
+ *    \____/_/ |_/___/_/  /_/\____/\____/
+ *
+ *    @file cyphal_interface.hpp
+ *    @brief Cyphal register, subject, and execute-command identifiers.
+ *
+ *    This file is part of UNIMOC and is licensed under GPL-3.0-or-later.
+ *    See the repository LICENSE file for details.
  */
 #pragma once
 
 #include <cstdint>
 
 /**
- * @file CyphalInterface.hpp
- * @brief Canonical UNIMOC Cyphal register names and subject port IDs.
+ * @details Canonical UNIMOC Cyphal register names and subject port IDs.
  *
  * Overview
  * ========
@@ -82,8 +70,6 @@
  */
 namespace unimoc
 {
-namespace system
-{
 namespace cyphal
 {
 
@@ -103,7 +89,7 @@ namespace reg
     inline constexpr const char* NODE_ID           = "uavcan.node.id";
 
     /// Human-readable UTF-8 node description / name (max 50 bytes).
-    /// Maps to NodeIdentity::name and returned in GetInfo.
+    /// Maps to node_identity::name and returned in GetInfo.
     /// Type: string (read/write, persistent)
     inline constexpr const char* NODE_DESCRIPTION  = "uavcan.node.description";
 
@@ -776,5 +762,4 @@ inline constexpr uint16_t CMD_MEASURE_BALANCE   = 0x0103u;
 /// @}
 
 }  // namespace cyphal
-}  // namespace system
 }  // namespace unimoc

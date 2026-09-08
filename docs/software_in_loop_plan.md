@@ -131,7 +131,7 @@ Keep `HardwareInterface` as the public hardware boundary. The host adapter shoul
 3. Keep target hardware bindings intact and add a host binding for SIL.
 4. Confirm the C++ runtime can be built as a reusable target independently of firmware `main.cpp`.
 5. Run a small Cyphal/UDP feasibility spike using maintained `pycyphal` tooling and confirm one register exchange plus one telemetry subject on Windows localhost.
-6. Decide the C++ DSDL generation and transport stack before committing to the full network API. Existing `CyphalInterface.hpp` constants are useful identifiers but are not serialization or transport support.
+6. Decide the C++ DSDL generation and transport stack before committing to the full network API. Existing `lib/cyphal/cyphal_interface.hpp` constants are useful identifiers but are not serialization or transport support.
 
 ### Phase 1: Single-motor C++ vertical slice
 

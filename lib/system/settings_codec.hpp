@@ -137,6 +137,7 @@ class Reader {
  */
 class SettingsCodec {
  public:
+  /// Number of bytes in one encoded settings image.
   static constexpr std::size_t kImageSize = kSettingsImageSize;
 
   /**
@@ -225,7 +226,7 @@ class SettingsCodec {
       return false;
 
     decoded.motor_type = static_cast<MotorType>(motor_type);
-    decoded.control_mode = static_cast<ControlMode>(control_mode);
+    decoded.control_mode = static_cast<cyphal::ControlMode>(control_mode);
     settings = decoded;
     return true;
   }

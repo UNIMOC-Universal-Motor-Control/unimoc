@@ -1,32 +1,23 @@
 /*
-       __  ___   ________  _______  ______
-      / / / / | / /  _/  |/  / __ \/ ____/
-     / / / /  |/ // // /|_/ / / / / /
-    / /_/ / /|  // // /  / / /_/ / /___
-    \____/_/ |_/___/_/  /_/\____/\____/
-
-    Universal Motor Control  2026 Alexander <tecnologic86@gmail.com> Evers
-
-    This file is part of UNIMOC.
-
-    UNIMOC is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *       __  ___   ________  _______  ______
+ *      / / / / | / /  _/  |/  / __ \/ ____/
+ *     / / / /  |/ // // /|_/ / / / / /
+ *    / /_/ / /|  // //  /  / /_/ / /___
+ *    \____/_/ |_/___/_/  /_/\____/\____/
+ *
+ *    @file heartbeat.hpp
+ *    @brief Serialization for the Cyphal node heartbeat message.
+ *
+ *    This file is part of UNIMOC and is licensed under GPL-3.0-or-later.
+ *    See the repository LICENSE file for details.
  */
 #pragma once
 
 #include <array>
 #include <cstdint>
+#if __has_include(<gitversion/version.h>)
 #include <gitversion/version.h>
+#endif
 
 namespace unimoc::cyphal {
 
@@ -86,11 +77,18 @@ constexpr uint8_t parse_minor(const char* s)
 
 } // namespace detail
 
-/// Software major version derived from the git tag via gitversion.
+#if __has_include(<gitversion/version.h>)
+/// Software major version derived from the generated gitversion header.
 static constexpr uint8_t SW_VERSION_MAJOR = detail::parse_major(version::VERSION_STRING);
 
-/// Software minor version derived from the git tag via gitversion.
+/// Software minor version derived from the generated gitversion header.
 static constexpr uint8_t SW_VERSION_MINOR = detail::parse_minor(version::VERSION_STRING);
+#else
+/// Fallback software major version when gitversion is unavailable.
+static constexpr uint8_t SW_VERSION_MAJOR = 1;
+/// Fallback software minor version when gitversion is unavailable.
+static constexpr uint8_t SW_VERSION_MINOR = 0;
+#endif
 
 /// Vendor-specific status code that encodes the software version.
 /// Bit layout: bits[18:10] = MAJOR (9 bits), bits[9:0] = MINOR (10 bits).

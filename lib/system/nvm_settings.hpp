@@ -14,9 +14,9 @@
 #pragma once
 
 #include <cstdint>
-#include "ControlMode.hpp"
-#include "MotorType.hpp"
-#include "NodeIdentity.hpp"
+#include "cyphal/control_mode.hpp"
+#include "motor_type.hpp"
+#include "cyphal/node_identity.hpp"
 #include "units.hpp"
 
 // ============================================================================
@@ -51,7 +51,7 @@ inline constexpr uint16_t kNvmVersion = 3u;
  *
  * Cyphal register mapping
  * -----------------------
- * Each field corresponds to a named Cyphal register (see CyphalInterface.hpp
+ * Each field corresponds to a named Cyphal register (see cyphal_interface.hpp
  * for the canonical register name strings).  The Cyphal register service
  * (`uavcan.register.Access`) is the write path; on successful write the
  * application flushes the updated NvmSettings to non-volatile storage.
@@ -89,7 +89,7 @@ struct NvmSettings {
 
   /// Human-readable node identity (name + hw/sw versions).
   /// Register: `uavcan.node.description` (name field only over Cyphal).
-  NodeIdentity identity{};
+  cyphal::NodeIdentity identity{};
 
   // =========================================================================
   // System
@@ -105,7 +105,7 @@ struct NvmSettings {
 
   /// Initial control mode after boot (overridden at runtime via Cyphal).
   /// Register: `unimoc.control.mode`
-  ControlMode control_mode{ControlMode::TORQUE};
+  cyphal::ControlMode control_mode{cyphal::ControlMode::TORQUE};
 
   // =========================================================================
   // Stator / winding parameters (all motor types)
@@ -488,6 +488,7 @@ struct NvmSettings {
    *
    * Call this after loading from NVM.  If it returns false the block is
    * uninitialised or corrupt — reset to defaults and re-save.
+  * @return `true` when the image header matches the current settings format.
    */
   [[nodiscard]] constexpr bool IsValid() const noexcept { return magic == kNvmMagic && version == kNvmVersion; }
 

@@ -1,3 +1,7 @@
+/**
+ * @file test_cyphal_node_identity.hpp
+ * @brief Test fixture and cases for the Cyphal node identity record.
+ */
 #pragma once
 
 #ifndef UNIMOC_TEST_NODE_IDENTITY_H_
@@ -6,11 +10,11 @@
 #include <gtest/gtest.h>
 #include <cstring>
 #include <string_view>
-#include "NodeIdentity.hpp"
+#include "cyphal/node_identity.hpp"
 
 namespace unimoc
 {
-namespace system
+namespace cyphal
 {
 namespace test
 {
@@ -90,7 +94,7 @@ TEST_F(NodeIdentityTest, InequalityHwVersion)
 }
 
 }  // namespace test
-}  // namespace system
+}  // namespace cyphal
 }  // namespace unimoc
 
 #endif /* UNIMOC_TEST_NODE_IDENTITY_H_ */

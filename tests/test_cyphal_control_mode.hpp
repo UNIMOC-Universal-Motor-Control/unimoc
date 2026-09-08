@@ -1,3 +1,7 @@
+/**
+ * @file test_cyphal_control_mode.hpp
+ * @brief Test fixture and cases for Cyphal control-mode selection.
+ */
 #pragma once
 
 #ifndef UNIMOC_TEST_CONTROL_MODE_H_
@@ -8,11 +12,11 @@
 
 #include <gtest/gtest.h>
 
-#include "ControlMode.hpp"
+#include "cyphal/control_mode.hpp"
 
 namespace unimoc
 {
-namespace system
+namespace cyphal
 {
 namespace test
 {
@@ -73,7 +77,7 @@ TEST_F(ControlModeTest, IgnoresEmptySetpoint)
 }
 
 }  // namespace test
-}  // namespace system
+}  // namespace cyphal
 }  // namespace unimoc
 
 #endif /* UNIMOC_TEST_CONTROL_MODE_H_ */

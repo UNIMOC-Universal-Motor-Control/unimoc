@@ -1,26 +1,15 @@
 /*
-       __  ___   ________  _______  ______
-      / / / / | / /  _/  |/  / __ \/ ____/
-     / / / /  |/ // // /|_/ / / / / /
-    / /_/ / /|  // // /  / / /_/ / /___
-    \____/_/ |_/___/_/  /_/\____/\____/
-
-    Universal Motor Control  2026 Alexander <tecnologic86@gmail.com> Evers
-
-    This file is part of UNIMOC.
-
-    UNIMOC is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *       __  ___   ________  _______  ______
+ *      / / / / | / /  _/  |/  / __ \/ ____/
+ *     / / / /  |/ // // /|_/ / / / / /
+ *    / /_/ / /|  // //  /  / /_/ / /___
+ *    \____/_/ |_/___/_/  /_/\____/\____/
+ *
+ *    @file control_mode.hpp
+ *    @brief Cyphal control-mode definitions and UDRAL setpoint mapping.
+ *
+ *    This file is part of UNIMOC and is licensed under GPL-3.0-or-later.
+ *    See the repository LICENSE file for details.
  */
 #pragma once
 
@@ -34,9 +23,9 @@
 namespace unimoc
 {
 /**
- * @namespace system coordinate and motor type definitions
+ * @namespace cyphal Cyphal protocol and application definitions
  */
-namespace system
+namespace cyphal
 {
 
 /**
@@ -89,6 +78,18 @@ enum class ControlMode : unsigned char
  * 2) angular_acceleration is not currently supported by UNIMOC and is ignored.
  * 3) If no kinematics command is provided, finite torque selects TORQUE mode.
  * 4) If nothing actionable is finite, return std::nullopt (ignore setpoint).
+ *
+ * @tparam T Floating-point type used for the four setpoint fields.
+ * @param angular_position Angular position setpoint, or a non-finite value
+ *                         when absent.
+ * @param angular_velocity Angular velocity setpoint, or a non-finite value
+ *                         when absent.
+ * @param angular_acceleration Unsupported acceleration setpoint. A finite
+ *                             value is ignored and produces no mode unless a
+ *                             higher-priority field is finite.
+ * @param torque Torque setpoint, or a non-finite value when absent.
+ * @return The selected control mode, or `std::nullopt` for an empty or
+ *         unsupported setpoint.
  */
 template <std::floating_point T>
 [[nodiscard]] inline std::optional<ControlMode>
@@ -116,5 +117,5 @@ select_control_mode_from_udral_servo_rotation(const T angular_position,
     return std::nullopt;
 }
 
-}  // namespace system
+}  // namespace cyphal
 }  // namespace unimoc

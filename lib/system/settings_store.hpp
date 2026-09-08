@@ -28,12 +28,19 @@ namespace unimoc::system {
  * @brief Result of loading or changing settings.
  */
 enum class SettingsStatus : uint8_t {
+  /// The operation completed successfully.
   kSuccess,
+  /// Factory settings were restored and persisted.
   kFactoryDefaults,
+  /// The stored image could not be decoded.
   kInvalidImage,
+  /// Settings failed structural or enum validation.
   kInvalidSettings,
+  /// A setting exceeded a configured safety or range limit.
   kOutOfRange,
+  /// The storage adapter is not available on this target.
   kStorageUnavailable,
+  /// The storage adapter reported an I/O failure.
   kStorageError,
 };
 
@@ -71,7 +78,8 @@ namespace settings_store_internal {
   const bool valid_motor_type =
       settings.motor_type == MotorType::PMSM || settings.motor_type == MotorType::ASM || settings.motor_type == MotorType::EESM;
   const bool valid_control_mode =
-      settings.control_mode == ControlMode::TORQUE || settings.control_mode == ControlMode::SPEED || settings.control_mode == ControlMode::POSITION;
+      settings.control_mode == cyphal::ControlMode::TORQUE || settings.control_mode == cyphal::ControlMode::SPEED ||
+      settings.control_mode == cyphal::ControlMode::POSITION;
   const float pwm_frequency_hz = settings.pwm_frequency.Value();
   const bool valid_pwm_frequency = pwm_frequency_hz == 16000.0F || pwm_frequency_hz == 20000.0F || pwm_frequency_hz == 24000.0F ||
                                    pwm_frequency_hz == 28000.0F || pwm_frequency_hz == 32000.0F;
@@ -128,6 +136,7 @@ class SettingsSnapshot {
  public:
   /**
    * @brief Returns the active settings as a read-only record.
+    * @return Const reference to the snapshot's immutable settings record.
    */
   [[nodiscard]] const NvmSettings& Get() const noexcept { return settings_; }
 
@@ -160,21 +169,34 @@ class SettingsOperations {
 
   /**
    * @brief Changes the Cyphal node ID.
+    * @param node_id Node-ID in the range [0, 127], where 0 requests PnP
+    *                allocation.
+    * @return The validation and persistence result.
    */
   SettingsStatus SetNodeId(uint8_t node_id) const;
 
   /**
    * @brief Changes the configured motor current limit.
+    * @param current New maximum resultant motor current.
+    * @return The validation and persistence result.
    */
   SettingsStatus SetMotorCurrentLimit(unit::Current current) const;
 
   /**
    * @brief Changes the persisted node name.
+    * @param name New UTF-8 node name; it is truncated to the protocol limit.
+    * @return The validation and persistence result.
    */
   SettingsStatus SetNodeName(std::string_view name) const;
 
   /**
    * @brief Commits ADC calibration results as one transaction.
+    * @param offset_a Phase-A current offset.
+    * @param offset_b Phase-B current offset.
+    * @param gain_a Phase-A current-sense gain.
+    * @param gain_b Phase-B current-sense gain.
+    * @param gain_vdc DC-link voltage-sense gain.
+    * @return The validation and persistence result.
    */
   SettingsStatus ApplyAdcCalibration(unit::Current offset_a,
                                      unit::Current offset_b,
@@ -184,11 +206,13 @@ class SettingsOperations {
 
   /**
    * @brief Returns the immutable hardware capabilities used for validation.
+    * @return Const reference to the target hardware capability limits.
    */
   [[nodiscard]] const HardwareCapabilities& GetHardwareCapabilities() const noexcept;
 
   /**
    * @brief Replaces settings with the immutable target factory profile.
+    * @return The validation and persistence result.
    */
   SettingsStatus ResetToFactoryDefaults() const;
 
@@ -239,16 +263,19 @@ class SettingsStore {
 
   /**
    * @brief Returns a read-only copy of the active settings.
+    * @return Snapshot containing the current settings.
    */
   [[nodiscard]] SettingsSnapshot GetSnapshot() const { return SettingsSnapshot{settings_}; }
 
   /**
    * @brief Creates the authorized operation capability.
+    * @return Operations object that can commit validated changes.
    */
   [[nodiscard]] SettingsOperations GetOperations() noexcept { return SettingsOperations{*this}; }
 
   /**
    * @brief Returns the immutable target profile.
+    * @return Const reference to the profile used by this store.
    */
   [[nodiscard]] const SettingsProfile& GetProfile() const noexcept { return profile_; }
 

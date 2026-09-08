@@ -92,11 +92,14 @@ lib/
 │   ├── hfi.hpp                   # 4-step High-Frequency Injection (IPMSM standstill)
 │   ├── mechanical_observer.hpp   # Back-EMF observer + PLL (PMSM / shared with ASM)
 │   └── PositionTracker.hpp       # Absolute multi-turn position + homing
+├── cyphal/
+│   ├── control_mode.hpp          # Cyphal setpoint-to-control-mode mapping
+│   ├── cyphal_interface.hpp      # Register names + subject port IDs
+│   ├── heartbeat.hpp             # Heartbeat serialization
+│   ├── node.hpp                  # Transport-injected Cyphal node shell
+│   ├── node_identity.hpp         # Node name + hw/sw version
+│   └── transport.hpp             # UDP/CAN/test transport contract
 ├── system/
-│   ├── ControlMode.hpp           # ControlMode enum: TORQUE / SPEED / POSITION
-│   ├── CyphalInterface.hpp       # Register names + subject port IDs (full API map)
-│   ├── MotorType.hpp             # MotorType enum: PMSM / ASM / EESM
-│   ├── NodeIdentity.hpp          # Node name + hw/sw version (UID read from hardware)
 │   ├── nvm_settings.hpp          # Typed aggregate of NVM-backed parameters
 │   ├── settings_codec.hpp        # Versioned explicit settings image codec
 │   ├── settings_profile.hpp      # Immutable target capabilities and defaults
@@ -153,7 +156,7 @@ Every parameter in `NvmSettings` is accessible as a named Cyphal register
 in-RAM configuration values are traceable with tools like **Cymon**.
 Writing a register updates the in-RAM value and schedules an NVM flush.
 
-Full register name table (`lib/system/CyphalInterface.hpp`):
+Full register name table (`lib/cyphal/cyphal_interface.hpp`):
 
 | Register | Type | Description |
 |---|---|---|

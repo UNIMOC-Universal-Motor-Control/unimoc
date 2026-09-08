@@ -22,17 +22,19 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+/**
+ * @file test_cyphal_interface.hpp
+ * @brief Test fixture and cases for Cyphal interface identifiers.
+ */
 #pragma once
 
 #ifndef UNIMOC_TEST_CYPHAL_INTERFACE_H_
 #define UNIMOC_TEST_CYPHAL_INTERFACE_H_
 
 #include <gtest/gtest.h>
-#include "CyphalInterface.hpp"
+#include "cyphal/cyphal_interface.hpp"
 
 namespace unimoc
-{
-namespace system
 {
 namespace cyphal
 {
@@ -286,7 +288,6 @@ TEST_F(CyphalInterfaceTest, StatusCodesUnique)
 
 }  // namespace test
 }  // namespace cyphal
-}  // namespace system
 }  // namespace unimoc
 
 #endif /* UNIMOC_TEST_CYPHAL_INTERFACE_H_ */
