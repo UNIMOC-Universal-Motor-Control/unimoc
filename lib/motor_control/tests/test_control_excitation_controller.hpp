@@ -5,7 +5,7 @@
 
 #include <gtest/gtest.h>
 #include <cmath>
-#include "ExcitationController.hpp"
+#include "excitation_controller.hpp"
 
 namespace unimoc
 {

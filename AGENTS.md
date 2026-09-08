@@ -8,8 +8,11 @@ features, and read `CONTEXT.md` for the project's domain vocabulary.
 
 ## Project Layout
 
-- `lib/control/`, `lib/observer/`, `lib/system/`, and `lib/units/` contain the
-	portable control algorithms, observers, data types, and unit wrappers.
+- `lib/motor_control/` contains the portable coordinate systems, control
+	algorithms, and observers. Its public headers live in `src/` and focused
+	tests live in `tests/`.
+- `lib/settings/`, `lib/units/`, and `lib/cyphal/` provide separate library
+	dependencies that can be linked without the complete application.
 - `src/` contains the firmware application and runtime integrations such as
 	current control, Cyphal, logging, and startup.
 - `hardware/` contains hardware-specific implementations. Keep platform
@@ -32,8 +35,9 @@ production baseline. Until the user explicitly expands this scope, treat only
 the following as validated:
 
 - `lib/units/units.hpp`
-- `lib/system/three_phase_system.hpp`
-- `tests/three_phase_system_test.cpp` and its `three_phase_system_test` target
+- `lib/motor_control/src/three_phase_system.hpp`
+- `lib/motor_control/tests/three_phase_system_test.cpp` and its
+	`three_phase_system_test` target
 
 For changes confined to this scope, use focused hosted validation first:
 

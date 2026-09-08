@@ -62,7 +62,7 @@ endif()
 
 if(ENABLE_TESTS)
   include(CTest)
-  add_subdirectory(tests)
+  include(cmake/UnimocTesting.cmake)
 else()
   # add the projects code folders
   add_subdirectory(src)
@@ -70,6 +70,10 @@ endif()
 
 # add universal code as library
 add_subdirectory(lib)
+
+if(ENABLE_TESTS)
+  add_subdirectory(tests)
+endif()
 
 # The firmware executable only exists when tests are disabled (src/ is added).
 if(NOT ENABLE_TESTS)

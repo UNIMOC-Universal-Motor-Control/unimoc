@@ -5,7 +5,7 @@
 
 #include <gtest/gtest.h>
 #include <cmath>
-#include "ExcitationObserver.hpp"
+#include "excitation_observer.hpp"
 
 namespace unimoc
 {

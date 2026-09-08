@@ -78,20 +78,22 @@ Stator control path identical to PMSM.  Additionally:
 
 ```
 lib/
-├── control/
-│   ├── AsmFluxController.hpp     # ASM rotor-flux PI controller
-│   ├── dead_time_compensation.hpp  # Inverter dead-time compensation
-│   ├── ExcitationController.hpp  # EESM rotor excitation PI (current / flux mode)
-│   ├── FieldWeakening.hpp        # Voltage-headroom field-weakening integrator
-│   ├── Mtpa.hpp                  # Maximum-Torque-Per-Ampere (IPMSM)
-│   ├── PositionController.hpp    # Cascaded P+PI position/speed controller + homing FSM
-│   └── svm.hpp                   # Space Vector PWM modulator
-├── observer/
-│   ├── AsmFluxObserver.hpp       # ASM full-order Luenberger rotor-flux observer
-│   ├── ExcitationObserver.hpp    # EESM excitation current LPF → flux estimate
-│   ├── hfi.hpp                   # 4-step High-Frequency Injection (IPMSM standstill)
-│   ├── mechanical_observer.hpp   # Back-EMF observer + PLL (PMSM / shared with ASM)
-│   └── PositionTracker.hpp       # Absolute multi-turn position + homing
+├── motor_control/
+│   ├── src/
+│   │   ├── asm_flux_controller.hpp  # ASM rotor-flux PI controller
+│   │   ├── dead_time_compensation.hpp  # Inverter dead-time compensation
+│   │   ├── excitation_controller.hpp  # EESM rotor excitation PI (current / flux mode)
+│   │   ├── field_weakening.hpp      # Voltage-headroom field-weakening integrator
+│   │   ├── mtpa.hpp                 # Maximum-Torque-Per-Ampere (IPMSM)
+│   │   ├── position_controller.hpp  # Cascaded P+PI position/speed controller + homing FSM
+│   │   ├── svm.hpp                   # Space Vector PWM modulator
+│   │   ├── asm_flux_observer.hpp    # ASM full-order Luenberger rotor-flux observer
+│   │   ├── excitation_observer.hpp  # EESM excitation current LPF -> flux estimate
+│   │   ├── hfi.hpp                   # 4-step High-Frequency Injection (IPMSM standstill)
+│   │   ├── mechanical_observer.hpp  # Back-EMF observer + PLL (PMSM / shared with ASM)
+│   │   ├── position_tracker.hpp     # Absolute multi-turn position + homing
+│   │   └── *_system.hpp              # Rotor, stator, and three-phase coordinate systems
+│   └── tests/                        # Focused motor-control unit tests
 ├── cyphal/
 │   ├── control_mode.hpp          # Cyphal setpoint-to-control-mode mapping
 │   ├── cyphal_interface.hpp      # Register names + subject port IDs
@@ -262,9 +264,9 @@ All input/output subjects can be inspected live in Cymon.
 
 ## NVM-Backed Settings
 
-All settings are aggregated in `unimoc::system::NvmSettings`
-(`lib/system/nvm_settings.hpp`).  Runtime ownership is provided by
-`unimoc::system::SettingsStore`.  The design is:
+All settings are aggregated in `unimoc::settings::NvmSettings`
+(`lib/settings/nvm_settings.hpp`).  Runtime ownership is provided by
+`unimoc::settings::SettingsStore`.  The design is:
 
 - **Validated** by a magic word (`0x554D4F43` = "UMOC"), a format version, and
    target capability/cross-field checks. Invalid images are replaced by the
@@ -285,7 +287,7 @@ All settings are aggregated in `unimoc::system::NvmSettings`
 #include "hardware_interface.hpp"
 #include "settings_store.hpp"
 
-unimoc::system::SettingsStore settings_store{
+unimoc::settings::SettingsStore settings_store{
       unimoc::hardware::settings.GetSettingsProfile(),
       unimoc::hardware::settings.GetSettingsStorage()};
 

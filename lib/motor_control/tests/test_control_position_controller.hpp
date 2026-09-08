@@ -5,8 +5,8 @@
 
 #include <gtest/gtest.h>
 #include <cmath>
-#include "PositionController.hpp"
-#include "PositionTracker.hpp"
+#include "position_controller.hpp"
+#include "position_tracker.hpp"
 
 namespace unimoc
 {
