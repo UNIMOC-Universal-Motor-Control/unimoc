@@ -99,12 +99,13 @@ lib/
 │   ├── node.hpp                  # Transport-injected Cyphal node shell
 │   ├── node_identity.hpp         # Node name + hw/sw version
 │   └── transport.hpp             # UDP/CAN/test transport contract
-├── system/
+├── settings/
 │   ├── nvm_settings.hpp          # Typed aggregate of NVM-backed parameters
 │   ├── settings_codec.hpp        # Versioned explicit settings image codec
 │   ├── settings_profile.hpp      # Immutable target capabilities and defaults
 │   ├── settings_storage.hpp      # Platform load/save callback contract
-│   ├── settings_store.hpp        # Snapshot and authorized mutation API
+│   └── settings_store.hpp        # Snapshot and authorized mutation API
+├── system/
 │   ├── rotor_angle.hpp           # Q1.31 electrical angle + revolution counter, sin/cos LUT
 │   ├── rotor_system.hpp          # d/q rotating reference frame
 │   ├── stator_system.hpp         # α/β stationary reference frame

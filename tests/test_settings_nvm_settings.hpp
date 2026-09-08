@@ -43,7 +43,7 @@ TEST_F(NvmSettingsTest, DefaultNodeIdZero) {
 // --- Default motor type is PMSM
 TEST_F(NvmSettingsTest, DefaultMotorType) {
   NvmSettings settings;
-  EXPECT_EQ(settings.motor_type, MotorType::PMSM);
+  EXPECT_EQ(settings.motor_type, system::MotorType::PMSM);
 }
 
 // --- Default control mode is TORQUE

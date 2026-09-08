@@ -27,14 +27,14 @@ namespace unimoc::hardware {
 
 namespace {
 
-system::SettingsStorageStatus LoadSettings(void* const, const std::span<std::byte>) noexcept { return system::SettingsStorageStatus::kUnavailable; }
+settings::SettingsStorageStatus LoadSettings(void* const, const std::span<std::byte>) noexcept { return settings::SettingsStorageStatus::kUnavailable; }
 
-system::SettingsStorageStatus SaveSettings(void* const, const std::span<const std::byte>) noexcept {
-  return system::SettingsStorageStatus::kUnavailable;
+settings::SettingsStorageStatus SaveSettings(void* const, const std::span<const std::byte>) noexcept {
+  return settings::SettingsStorageStatus::kUnavailable;
 }
 
-const system::SettingsProfile kSettingsProfile = [] {
-  system::SettingsProfile profile{};
+const settings::SettingsProfile kSettingsProfile = [] {
+  settings::SettingsProfile profile{};
   profile.factory_settings.motor_i_max = unit::Current{80.0F};
   profile.factory_settings.battery_drive_current_max = unit::Current{50.0F};
   profile.factory_settings.battery_charge_current_max = unit::Current{20.0F};
@@ -45,7 +45,7 @@ const system::SettingsProfile kSettingsProfile = [] {
   return profile;
 }();
 
-const system::SettingsStorage kSettingsStorage{nullptr, LoadSettings, SaveSettings};
+const settings::SettingsStorage kSettingsStorage{nullptr, LoadSettings, SaveSettings};
 
 void LogMessage(const LogLevel level, const char* const message) noexcept {
   switch (level) {

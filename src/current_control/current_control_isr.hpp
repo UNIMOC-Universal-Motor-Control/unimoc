@@ -201,7 +201,7 @@ class CurrentControlIsr {
    * @param timer_clock_hz  Timer peripheral clock frequency in Hz
    *                        (e.g. 168 000 000 for a 168 MHz APB2 timer).
    */
-  void init(const system::NvmSettings& settings, hardware::HardwareInterface& hardware, uint32_t timer_clock_hz) noexcept;
+  void init(const settings::NvmSettings& settings, hardware::HardwareInterface& hardware, uint32_t timer_clock_hz) noexcept;
 
   // =========================================================================
   // ISR entry point

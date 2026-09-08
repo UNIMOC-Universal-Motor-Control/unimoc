@@ -73,7 +73,7 @@ struct DeadTimeCompensation
      * @param settings Validated NVM settings.
      */
     constexpr void
-    init(const system::NvmSettings& settings) noexcept
+    init(const settings::NvmSettings& settings) noexcept
     {
         dead_time   = settings.dtc_dead_time;
         f_pwm       = settings.dtc_f_pwm;

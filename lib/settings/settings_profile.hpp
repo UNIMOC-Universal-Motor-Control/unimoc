@@ -15,7 +15,7 @@
 
 #include "nvm_settings.hpp"
 
-namespace unimoc::system {
+namespace unimoc::settings {
 
 /**
  * @brief Immutable electrical capabilities of a hardware target.
@@ -53,4 +53,4 @@ struct SettingsProfile {
   HardwareCapabilities capabilities{};
 };
 
-}  // namespace unimoc::system
+}  // namespace unimoc::settings

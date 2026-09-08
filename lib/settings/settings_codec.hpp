@@ -20,7 +20,7 @@
 #include <span>
 #include "nvm_settings.hpp"
 
-namespace unimoc::system {
+namespace unimoc::settings {
 
 /**
  * @brief Fixed size of the versioned settings image in bytes.
@@ -225,11 +225,11 @@ class SettingsCodec {
         reader.Position() != kImageSize)
       return false;
 
-    decoded.motor_type = static_cast<MotorType>(motor_type);
+    decoded.motor_type = static_cast<system::MotorType>(motor_type);
     decoded.control_mode = static_cast<cyphal::ControlMode>(control_mode);
     settings = decoded;
     return true;
   }
 };
 
-}  // namespace unimoc::system
+}  // namespace unimoc::settings

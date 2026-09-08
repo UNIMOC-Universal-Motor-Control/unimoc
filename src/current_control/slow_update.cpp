@@ -26,7 +26,7 @@ namespace current_control {
 // init
 // =============================================================================
 
-void SlowUpdate::init(const system::NvmSettings& settings, CurrentControlIsr& isr) noexcept {
+void SlowUpdate::init(const settings::NvmSettings& settings, CurrentControlIsr& isr) noexcept {
   isr_ = &isr;
 
   // --- PMSM flux observer parameters ---

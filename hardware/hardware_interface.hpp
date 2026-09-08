@@ -213,22 +213,22 @@ class HardwareSettingsInterface {
    * @param profile Immutable factory settings and hardware capabilities.
    * @param storage Platform callbacks for the writable settings image.
    */
-  HardwareSettingsInterface(const system::SettingsProfile& profile, system::SettingsStorage storage) noexcept
+  HardwareSettingsInterface(const settings::SettingsProfile& profile, settings::SettingsStorage storage) noexcept
       : profile_{profile}, storage_{storage} {}
 
   /**
    * @brief Returns the immutable target profile.
    */
-  [[nodiscard]] const system::SettingsProfile& GetSettingsProfile() const noexcept { return profile_; }
+  [[nodiscard]] const settings::SettingsProfile& GetSettingsProfile() const noexcept { return profile_; }
 
   /**
    * @brief Returns the platform settings storage callbacks.
    */
-  [[nodiscard]] const system::SettingsStorage& GetSettingsStorage() const noexcept { return storage_; }
+  [[nodiscard]] const settings::SettingsStorage& GetSettingsStorage() const noexcept { return storage_; }
 
  private:
-  const system::SettingsProfile& profile_;
-  system::SettingsStorage storage_;
+  const settings::SettingsProfile& profile_;
+  settings::SettingsStorage storage_;
 };
 
 extern HardwareSettingsInterface settings;  ///< Node settings hardware boundary.

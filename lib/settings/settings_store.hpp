@@ -22,7 +22,7 @@
 #include "settings_profile.hpp"
 #include "settings_storage.hpp"
 
-namespace unimoc::system {
+namespace unimoc::settings {
 
 /**
  * @brief Result of loading or changing settings.
@@ -76,7 +76,7 @@ namespace settings_store_internal {
 
 [[nodiscard]] inline bool IsValidEnumValues(const NvmSettings& settings) noexcept {
   const bool valid_motor_type =
-      settings.motor_type == MotorType::PMSM || settings.motor_type == MotorType::ASM || settings.motor_type == MotorType::EESM;
+      settings.motor_type == system::MotorType::PMSM || settings.motor_type == system::MotorType::ASM || settings.motor_type == system::MotorType::EESM;
   const bool valid_control_mode =
       settings.control_mode == cyphal::ControlMode::TORQUE || settings.control_mode == cyphal::ControlMode::SPEED ||
       settings.control_mode == cyphal::ControlMode::POSITION;
@@ -355,4 +355,4 @@ inline SettingsStatus SettingsOperations::ApplyAdcCalibration(unit::Current offs
 
 inline SettingsStatus SettingsOperations::ResetToFactoryDefaults() const { return store_->Commit(store_->profile_.factory_settings); }
 
-}  // namespace unimoc::system
+}  // namespace unimoc::settings

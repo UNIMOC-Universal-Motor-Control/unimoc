@@ -29,25 +29,25 @@ const char* GetSettingsPath() noexcept {
   return path == nullptr ? "unimoc_settings.bin" : path;
 }
 
-system::SettingsStorageStatus LoadSettings(void* const, const std::span<std::byte> image) noexcept {
+settings::SettingsStorageStatus LoadSettings(void* const, const std::span<std::byte> image) noexcept {
   std::ifstream input{GetSettingsPath(), std::ios::binary};
-  if (!input.is_open()) return system::SettingsStorageStatus::kNotFound;
+  if (!input.is_open()) return settings::SettingsStorageStatus::kNotFound;
 
   input.read(reinterpret_cast<char*>(image.data()), static_cast<std::streamsize>(image.size()));
-  return input.gcount() == static_cast<std::streamsize>(image.size()) ? system::SettingsStorageStatus::kSuccess
-                                                                      : system::SettingsStorageStatus::kIoError;
+  return input.gcount() == static_cast<std::streamsize>(image.size()) ? settings::SettingsStorageStatus::kSuccess
+                                                                       : settings::SettingsStorageStatus::kIoError;
 }
 
-system::SettingsStorageStatus SaveSettings(void* const, const std::span<const std::byte> image) noexcept {
+settings::SettingsStorageStatus SaveSettings(void* const, const std::span<const std::byte> image) noexcept {
   std::ofstream output{GetSettingsPath(), std::ios::binary | std::ios::trunc};
-  if (!output.is_open()) return system::SettingsStorageStatus::kIoError;
+  if (!output.is_open()) return settings::SettingsStorageStatus::kIoError;
 
   output.write(reinterpret_cast<const char*>(image.data()), static_cast<std::streamsize>(image.size()));
-  return output.good() ? system::SettingsStorageStatus::kSuccess : system::SettingsStorageStatus::kIoError;
+  return output.good() ? settings::SettingsStorageStatus::kSuccess : settings::SettingsStorageStatus::kIoError;
 }
 
-const system::SettingsProfile kSettingsProfile = [] {
-  system::SettingsProfile profile{};
+const settings::SettingsProfile kSettingsProfile = [] {
+  settings::SettingsProfile profile{};
   profile.factory_settings.motor_i_max = unit::Current{80.0F};
   profile.factory_settings.battery_drive_current_max = unit::Current{50.0F};
   profile.factory_settings.battery_charge_current_max = unit::Current{20.0F};
@@ -58,7 +58,7 @@ const system::SettingsProfile kSettingsProfile = [] {
   return profile;
 }();
 
-const system::SettingsStorage kSettingsStorage{nullptr, LoadSettings, SaveSettings};
+const settings::SettingsStorage kSettingsStorage{nullptr, LoadSettings, SaveSettings};
 
 }  // namespace
 

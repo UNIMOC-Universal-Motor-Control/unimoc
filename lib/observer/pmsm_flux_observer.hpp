@@ -169,7 +169,7 @@ struct PmsmFluxObserver
      * @param settings Validated NVM settings.
      */
     constexpr void
-    init(const system::NvmSettings& settings) noexcept
+    init(const settings::NvmSettings& settings) noexcept
     {
         rs  = settings.stator_r;
         L_d = settings.l_d;

@@ -64,7 +64,7 @@ struct Svm
      * @param settings Validated NVM settings.
      */
     constexpr void
-    init(const system::NvmSettings& settings) noexcept
+    init(const settings::NvmSettings& settings) noexcept
     {
         duty_min = settings.svm_duty_min;
         duty_max = settings.svm_duty_max;

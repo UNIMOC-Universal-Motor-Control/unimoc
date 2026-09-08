@@ -103,7 +103,7 @@ class SlowUpdate {
    * @param isr       Reference to the ISR instance whose shared state and
    *                  `MechanicalObserver` this task will update.
    */
-  void init(const system::NvmSettings& settings, CurrentControlIsr& isr) noexcept;
+  void init(const settings::NvmSettings& settings, CurrentControlIsr& isr) noexcept;
 
   // =========================================================================
   // Setpoint interface (called from outer control loop)

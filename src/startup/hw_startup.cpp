@@ -717,12 +717,12 @@ void HwStartup::run_done() noexcept {
   const float gain_b = (results.gain_b > 1e-4f) ? (1.0f / results.gain_b) : 1.0f;
   const float gain_vdc = (results.gain_vdc > 1e-4f) ? (1.0f / results.gain_vdc) : 1.0f;
 
-  const system::SettingsStatus commit_status = settings_operations_.ApplyAdcCalibration(unit::Current{results.adc_offset_a},
+  const settings::SettingsStatus commit_status = settings_operations_.ApplyAdcCalibration(unit::Current{results.adc_offset_a},
                                                                                         unit::Current{results.adc_offset_b},
                                                                                         unit::DimensionlessRatio{gain_a},
                                                                                         unit::DimensionlessRatio{gain_b},
                                                                                         unit::DimensionlessRatio{gain_vdc});
-  if (commit_status != system::SettingsStatus::kSuccess) {
+  if (commit_status != settings::SettingsStatus::kSuccess) {
     enter_fault("failed to persist calibration settings");
     return;
   }

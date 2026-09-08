@@ -121,7 +121,7 @@ struct Hfi
      * @param settings Validated NVM settings.
      */
     constexpr void
-    init(const system::NvmSettings& settings) noexcept
+    init(const settings::NvmSettings& settings) noexcept
     {
         v_inject  = settings.hfi_v_inject;
         error_gain = settings.hfi_error_gain;

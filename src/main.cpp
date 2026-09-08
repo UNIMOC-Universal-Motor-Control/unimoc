@@ -25,9 +25,9 @@ void SlowUpdateInterrupt() noexcept { unimoc::current_control::SlowUpdate::insta
 }  // namespace
 
 int main() {
-  unimoc::system::SettingsStore settings_store{unimoc::hardware::settings.GetSettingsProfile(), unimoc::hardware::settings.GetSettingsStorage()};
+  unimoc::settings::SettingsStore settings_store{unimoc::hardware::settings.GetSettingsProfile(), unimoc::hardware::settings.GetSettingsStorage()};
   const auto settings_status = settings_store.Load();
-  if (settings_status != unimoc::system::SettingsStatus::kSuccess && settings_status != unimoc::system::SettingsStatus::kFactoryDefaults) {
+  if (settings_status != unimoc::settings::SettingsStatus::kSuccess && settings_status != unimoc::settings::SettingsStatus::kFactoryDefaults) {
     unimoc::hardware::runtime.Log(unimoc::hardware::LogLevel::kError, "Failed to load motor settings\n");
     return 1;
   }

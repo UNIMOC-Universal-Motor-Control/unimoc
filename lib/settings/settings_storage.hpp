@@ -17,7 +17,7 @@
 #include <cstdint>
 #include <span>
 
-namespace unimoc::system {
+namespace unimoc::settings {
 
 /**
  * @brief Result of a platform settings storage operation.
@@ -75,4 +75,4 @@ class SettingsStorage {
   SaveCallback save_{nullptr};
 };
 
-}  // namespace unimoc::system
+}  // namespace unimoc::settings

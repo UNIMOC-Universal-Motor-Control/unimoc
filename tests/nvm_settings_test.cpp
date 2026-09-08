@@ -12,4 +12,4 @@
  *    See the repository LICENSE file for details.
  */
 
-#include "test_system_nvm_settings.hpp"
+#include "test_settings_nvm_settings.hpp"

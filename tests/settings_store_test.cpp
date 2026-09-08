@@ -23,7 +23,7 @@
 #include <utility>
 #include "settings_codec.hpp"
 
-namespace unimoc::system::test {
+namespace unimoc::settings::test {
 namespace {
 
 struct MemoryBackend {
@@ -144,4 +144,4 @@ TEST(SettingsStoreTest, ResetRestoresFactoryProfile) {
   EXPECT_EQ(store.GetSnapshot().Get().motor_i_max.Value(), 30.0F);
 }
 
-}  // namespace unimoc::system::test
+}  // namespace unimoc::settings::test

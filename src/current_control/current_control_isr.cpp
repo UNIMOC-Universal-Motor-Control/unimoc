@@ -27,7 +27,7 @@ namespace current_control {
 // init
 // =============================================================================
 
-void CurrentControlIsr::init(const system::NvmSettings& settings, hardware::HardwareInterface& hardware, const uint32_t timer_clock_hz) noexcept {
+void CurrentControlIsr::init(const settings::NvmSettings& settings, hardware::HardwareInterface& hardware, const uint32_t timer_clock_hz) noexcept {
   hardware_ = &hardware;
 
   // --- Timing parameters ---

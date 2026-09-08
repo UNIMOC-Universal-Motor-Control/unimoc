@@ -10,6 +10,7 @@ add_subdirectory(cyphal)
 target_include_directories(unimoc_lib INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/system
+    ${CMAKE_CURRENT_SOURCE_DIR}/settings
     ${CMAKE_CURRENT_SOURCE_DIR}/units
     ${CMAKE_CURRENT_SOURCE_DIR}/control
     ${CMAKE_CURRENT_SOURCE_DIR}/observer)

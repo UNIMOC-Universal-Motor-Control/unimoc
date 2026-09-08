@@ -29,7 +29,7 @@
  * @endcode
  */
 
-#include "../../lib/system/settings_store.hpp"
+#include "../../lib/settings/settings_store.hpp"
 #include "../current_control/current_control_isr.hpp"
 #include "StartupResults.hpp"
 
@@ -109,7 +109,7 @@ class HwStartup {
   /// authorized settings operation capability.
   ///
   /// \param cc   Reference to the active current-control ISR.
-  HwStartup(current_control::CurrentControlIsr& cc, system::SettingsOperations settings_operations) noexcept
+  HwStartup(current_control::CurrentControlIsr& cc, settings::SettingsOperations settings_operations) noexcept
       : cc_{cc}, settings_operations_{settings_operations} {}
 
   // =========================================================================
@@ -173,7 +173,7 @@ class HwStartup {
   // =========================================================================
 
   current_control::CurrentControlIsr& cc_;
-  system::SettingsOperations settings_operations_;
+  settings::SettingsOperations settings_operations_;
 
   FsmState state_{FsmState::IDLE};
 

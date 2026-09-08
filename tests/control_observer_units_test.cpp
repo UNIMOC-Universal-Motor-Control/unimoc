@@ -31,7 +31,7 @@ TEST(ControlObserverUnitsTest, MechanicalObserverUsesUnitTypes) {
 }
 
 TEST(ControlObserverUnitsTest, AlgorithmsLoadInitialSettingsFromNvm) {
-  system::NvmSettings settings{};
+  settings::NvmSettings settings{};
   settings.flux_pm = unit::MagneticFlux{0.012F};
   settings.l_d = unit::Inductance{0.002F};
   settings.l_q = unit::Inductance{0.003F};

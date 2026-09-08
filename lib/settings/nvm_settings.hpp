@@ -29,9 +29,9 @@
  */
 namespace unimoc {
 /**
- * @namespace system coordinate and motor type definitions
+ * @namespace settings persistent motor-control settings
  */
-namespace system {
+namespace settings {
 
 /// Magic number stored at the start of every NvmSettings block.
 /// Used to detect an uninitialised or corrupt NVM image.
@@ -97,7 +97,7 @@ struct NvmSettings {
 
   /// Active motor type.
   /// Register: `unimoc.motor.type`
-  MotorType motor_type{MotorType::PMSM};
+  system::MotorType motor_type{system::MotorType::PMSM};
 
   /// Motor pole-pair count.
   /// Register: `unimoc.motor.pole_pairs`
@@ -496,5 +496,5 @@ struct NvmSettings {
   void ResetToDefaults() noexcept { *this = NvmSettings{}; }
 };
 
-}  // namespace system
+}  // namespace settings
 }  // namespace unimoc
