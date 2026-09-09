@@ -41,6 +41,8 @@ namespace unimoc {
  */
 namespace control {
 
+using namespace unit;
+
 /**
  * @brief Field-weakening controller with i_d current control.
  *
@@ -68,13 +70,13 @@ namespace control {
 template <std::floating_point T = float>
 struct FieldWeakening {
   /// Maximum allowed voltage vector magnitude [V].
-  unit::Voltage v_max{unit::Voltage{0.9F}};
+  unit::Voltage v_max{0.9_V};
 
   /// Integrator gain K_i [A / (V·s)].
-  unit::CurrentPerVoltageTime ki{unit::CurrentPerVoltageTime{10.0F}};
+  unit::CurrentPerVoltageTime ki{10.0_A_per_V_s};
 
   /// Most negative i_d allowed [A] (prevents de-magnetisation).
-  unit::Current i_d_min{unit::Current{-10.0F}};
+  unit::Current i_d_min{-10.0_A};
 
   // -------------------------------------------------------------------------
   // State

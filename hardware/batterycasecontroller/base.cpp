@@ -25,9 +25,13 @@ using namespace modm::literals;
 
 namespace unimoc::hardware {
 
+using namespace unit;
+
 namespace {
 
-settings::SettingsStorageStatus LoadSettings(void* const, const std::span<std::byte>) noexcept { return settings::SettingsStorageStatus::kUnavailable; }
+settings::SettingsStorageStatus LoadSettings(void* const, const std::span<std::byte>) noexcept {
+  return settings::SettingsStorageStatus::kUnavailable;
+}
 
 settings::SettingsStorageStatus SaveSettings(void* const, const std::span<const std::byte>) noexcept {
   return settings::SettingsStorageStatus::kUnavailable;
@@ -35,13 +39,13 @@ settings::SettingsStorageStatus SaveSettings(void* const, const std::span<const 
 
 const settings::SettingsProfile kSettingsProfile = [] {
   settings::SettingsProfile profile{};
-  profile.factory_settings.motor_i_max = unit::Current{80.0F};
-  profile.factory_settings.battery_drive_current_max = unit::Current{50.0F};
-  profile.factory_settings.battery_charge_current_max = unit::Current{20.0F};
-  profile.capabilities.max_phase_current = unit::Current{100.0F};
-  profile.capabilities.max_motor_current = unit::Current{80.0F};
-  profile.capabilities.max_battery_drive_current = unit::Current{50.0F};
-  profile.capabilities.max_battery_charge_current = unit::Current{20.0F};
+  profile.factory_settings.motor_i_max = 80.0_A;
+  profile.factory_settings.battery_drive_current_max = 50.0_A;
+  profile.factory_settings.battery_charge_current_max = 20.0_A;
+  profile.capabilities.max_phase_current = 100.0_A;
+  profile.capabilities.max_motor_current = 80.0_A;
+  profile.capabilities.max_battery_drive_current = 50.0_A;
+  profile.capabilities.max_battery_charge_current = 20.0_A;
   return profile;
 }();
 
@@ -125,8 +129,7 @@ bool Initialize(const unit::Frequency pwm_frequency,
   }
 
   pulse_width::SetAdcTriggerOffset(adc_trigger_offset);
-  pulse_width::SetPhaseDuties(
-      system::ThreePhase<unit::DimensionlessRatio>{unit::DimensionlessRatio{0.5F}, unit::DimensionlessRatio{0.5F}, unit::DimensionlessRatio{0.5F}});
+  pulse_width::SetPhaseDuties(system::ThreePhase<unit::DimensionlessRatio>{0.5_ratio, 0.5_ratio, 0.5_ratio});
 
   // Initialize the ADCs last so the timer trigger and control state are ready
   // before the first conversion interrupt can be delivered.

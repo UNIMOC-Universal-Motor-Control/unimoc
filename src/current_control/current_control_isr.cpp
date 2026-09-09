@@ -22,6 +22,8 @@
 namespace unimoc {
 namespace current_control {
 
+using namespace unit;
+
 // =============================================================================
 // init
 // =============================================================================
@@ -60,7 +62,7 @@ void CurrentControlIsr::init(const settings::NvmSettings& settings, hardware::Ha
   for (auto& buf : state.double_buf.buf) {
     for (uint8_t k = 0u; k < NUM_SUB_STEPS; ++k) {
       // phi_k = 0 + k × omega_init × dt_fast = 0 (omega = 0 at startup)
-      buf.sc[k] = system::SinCos<unit::DimensionlessRatio>(unit::Angle{0.0F});
+      buf.sc[k] = system::SinCos<unit::DimensionlessRatio>(0.0_rad);
     }
   }
 
@@ -70,8 +72,7 @@ void CurrentControlIsr::init(const settings::NvmSettings& settings, hardware::Ha
   sub_step_ = 0u;
   active_buf_snapshot_ = 0u;
   state.samples_ready = false;
-  state.phase_duties =
-      system::ThreePhase<unit::DimensionlessRatio>{unit::DimensionlessRatio{0.5f}, unit::DimensionlessRatio{0.5f}, unit::DimensionlessRatio{0.5f}};
+  state.phase_duties = system::ThreePhase<unit::DimensionlessRatio>{0.5_ratio, 0.5_ratio, 0.5_ratio};
 }
 
 // =============================================================================
@@ -143,9 +144,7 @@ void CurrentControlIsr::on_jeoc() noexcept {
     if (!duty_in_bounds(applied_duties.a, svm.duty_min, svm.duty_max) || !duty_in_bounds(applied_duties.b, svm.duty_min, svm.duty_max) ||
         !duty_in_bounds(applied_duties.c, svm.duty_min, svm.duty_max)) {
       // Write safe neutral duties (50 %) and skip this control update.
-      set_phase_duties(system::ThreePhase<unit::DimensionlessRatio>{unit::DimensionlessRatio{0.5f},
-                                                                    unit::DimensionlessRatio{0.5f},
-                                                                    unit::DimensionlessRatio{0.5f}});
+      set_phase_duties(system::ThreePhase<unit::DimensionlessRatio>{0.5_ratio, 0.5_ratio, 0.5_ratio});
       sub_step_ = (sub_step_ + 1u) & 3u;
       if (sub_step_ == 0u) {
         state.samples_ready = true;

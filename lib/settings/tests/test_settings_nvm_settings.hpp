@@ -20,6 +20,8 @@ namespace unimoc {
 namespace settings {
 namespace test {
 
+using namespace unit;
+
 class NvmSettingsTest : public ::testing::Test {};
 
 // --- Default construction is valid
@@ -134,9 +136,9 @@ TEST_F(NvmSettingsTest, DefaultPhaseBalanceC) {
 
 TEST_F(NvmSettingsTest, PhaseBalanceCanBeModified) {
   NvmSettings settings;
-  settings.phase_balance_a = unit::DimensionlessRatio{1.02F};
-  settings.phase_balance_b = unit::DimensionlessRatio{0.98F};
-  settings.phase_balance_c = unit::DimensionlessRatio{1.00F};
+  settings.phase_balance_a = 1.02_ratio;
+  settings.phase_balance_b = 0.98_ratio;
+  settings.phase_balance_c = 1.00_ratio;
   EXPECT_FLOAT_EQ(settings.phase_balance_a.Value(), 1.02F);
   EXPECT_FLOAT_EQ(settings.phase_balance_b.Value(), 0.98F);
   EXPECT_FLOAT_EQ(settings.phase_balance_c.Value(), 1.00F);
@@ -145,9 +147,9 @@ TEST_F(NvmSettingsTest, PhaseBalanceCanBeModified) {
 
 TEST_F(NvmSettingsTest, ResetRestoresPhaseBalanceDefaults) {
   NvmSettings settings;
-  settings.phase_balance_a = unit::DimensionlessRatio{1.05F};
-  settings.phase_balance_b = unit::DimensionlessRatio{0.95F};
-  settings.phase_balance_c = unit::DimensionlessRatio{0.99F};
+  settings.phase_balance_a = 1.05_ratio;
+  settings.phase_balance_b = 0.95_ratio;
+  settings.phase_balance_c = 0.99_ratio;
   settings.ResetToDefaults();
   EXPECT_FLOAT_EQ(settings.phase_balance_a.Value(), 1.0F);
   EXPECT_FLOAT_EQ(settings.phase_balance_b.Value(), 1.0F);

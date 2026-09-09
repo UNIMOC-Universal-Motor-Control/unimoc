@@ -3,6 +3,7 @@
 
 using Stator = unimoc::system::Stator<unimoc::unit::DimensionlessRatio>;
 using Svm = unimoc::control::Svm;
+using namespace unimoc::unit;
 
 class SvmTest : public ::testing::Test {};
 
@@ -29,8 +30,8 @@ TEST_F(SvmTest, AlphaVoltageUsesCenteredZeroSequence) {
 
 TEST_F(SvmTest, DutiesAreClampedToConfiguredRange) {
   unimoc::settings::NvmSettings settings;
-  settings.svm_duty_min = unimoc::unit::DimensionlessRatio{0.2F};
-  settings.svm_duty_max = unimoc::unit::DimensionlessRatio{0.8F};
+  settings.svm_duty_min = 0.2_ratio;
+  settings.svm_duty_max = 0.8_ratio;
 
   Svm svm;
   svm.init(settings);

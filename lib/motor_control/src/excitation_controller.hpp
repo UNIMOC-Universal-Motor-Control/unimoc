@@ -40,6 +40,8 @@ namespace unimoc {
  */
 namespace control {
 
+using namespace unit;
+
 /**
  * @brief Control mode for the ExcitationController.
  *
@@ -95,17 +97,17 @@ struct ExcitationController {
 
   /// Mutual (magnetising) inductance L_m [H].
   /// Used only in FluxMode to convert a flux setpoint to a current setpoint.
-  unit::Inductance L_m{unit::Inductance{47.0e-3F}};
+  unit::Inductance L_m{47.0_mH};
 
   // -------------------------------------------------------------------------
   // PI gains
   // -------------------------------------------------------------------------
 
   /// Proportional gain K_p [1] for the current-reference loop.
-  unit::DimensionlessRatio kp{unit::DimensionlessRatio{5.0F}};
+  unit::DimensionlessRatio kp{5.0_ratio};
 
   /// Integral gain K_i [1/s].
-  unit::InverseTime ki{unit::InverseTime{50.0F}};
+  unit::InverseTime ki{50.0_per_s};
 
   // -------------------------------------------------------------------------
   // Output limits
@@ -116,7 +118,7 @@ struct ExcitationController {
   unit::Current i_f_min{};
 
   /// Maximum rotor excitation current i_f_ref [A].
-  unit::Current i_f_max{unit::Current{10.0F}};
+  unit::Current i_f_max{10.0_A};
 
   // -------------------------------------------------------------------------
   // Setpoint (written by Cyphal callback or application code)

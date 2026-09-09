@@ -24,6 +24,9 @@
 #include "settings_codec.hpp"
 
 namespace unimoc::settings::test {
+
+using namespace unimoc::unit;
+
 namespace {
 
 struct MemoryBackend {
@@ -55,13 +58,13 @@ SettingsStorageStatus SaveImage(void* context, std::span<const std::byte> image)
 
 SettingsProfile MakeProfile() {
   SettingsProfile profile{};
-  profile.factory_settings.motor_i_max = unit::Current{30.0F};
-  profile.factory_settings.battery_drive_current_max = unit::Current{12.0F};
-  profile.factory_settings.battery_charge_current_max = unit::Current{4.0F};
-  profile.capabilities.max_phase_current = unit::Current{50.0F};
-  profile.capabilities.max_motor_current = unit::Current{30.0F};
-  profile.capabilities.max_battery_drive_current = unit::Current{12.0F};
-  profile.capabilities.max_battery_charge_current = unit::Current{4.0F};
+  profile.factory_settings.motor_i_max = 30.0_A;
+  profile.factory_settings.battery_drive_current_max = 12.0_A;
+  profile.factory_settings.battery_charge_current_max = 4.0_A;
+  profile.capabilities.max_phase_current = 50.0_A;
+  profile.capabilities.max_motor_current = 30.0_A;
+  profile.capabilities.max_battery_drive_current = 12.0_A;
+  profile.capabilities.max_battery_charge_current = 4.0_A;
   return profile;
 }
 
@@ -84,10 +87,10 @@ TEST(SettingsStoreTest, MissingImageUsesAndPersistsFactoryDefaults) {
 
 TEST(SettingsStoreTest, CodecRoundTripPreservesTypedValues) {
   NvmSettings original{};
-  original.stator_r = unit::Resistance{0.23F};
-  original.l_d = unit::Inductance{0.0012F};
-  original.motor_j = unit::Inertia{0.00042F};
-  original.pwm_frequency = unit::Frequency{32000.0F};
+  original.stator_r = 0.23_Ohm;
+  original.l_d = 1.2_mH;
+  original.motor_j = 0.00042_kg_m2;
+  original.pwm_frequency = 32.0_kHz;
 
   std::array<std::byte, kSettingsImageSize> image{};
   NvmSettings decoded{};
@@ -106,7 +109,7 @@ TEST(SettingsStoreTest, AuthorizedOperationUpdatesAndPersists) {
   ASSERT_EQ(store.Load(), SettingsStatus::kFactoryDefaults);
 
   auto operations = store.GetOperations();
-  EXPECT_EQ(operations.SetMotorCurrentLimit(unit::Current{20.0F}), SettingsStatus::kSuccess);
+  EXPECT_EQ(operations.SetMotorCurrentLimit(20.0_A), SettingsStatus::kSuccess);
   EXPECT_EQ(store.GetSnapshot().Get().motor_i_max.Value(), 20.0F);
   EXPECT_EQ(backend.save_count, 2U);
 }
@@ -117,7 +120,7 @@ TEST(SettingsStoreTest, CapabilityViolationLeavesSnapshotUnchanged) {
   ASSERT_EQ(store.Load(), SettingsStatus::kFactoryDefaults);
   auto operations = store.GetOperations();
 
-  EXPECT_EQ(operations.SetMotorCurrentLimit(unit::Current{31.0F}), SettingsStatus::kOutOfRange);
+  EXPECT_EQ(operations.SetMotorCurrentLimit(31.0_A), SettingsStatus::kOutOfRange);
   EXPECT_EQ(store.GetSnapshot().Get().motor_i_max.Value(), 30.0F);
   EXPECT_EQ(backend.save_count, 1U);
 }
@@ -129,7 +132,7 @@ TEST(SettingsStoreTest, SaveFailureLeavesSnapshotUnchanged) {
   backend.fail_save = true;
 
   auto operations = store.GetOperations();
-  EXPECT_EQ(operations.SetMotorCurrentLimit(unit::Current{20.0F}), SettingsStatus::kStorageError);
+  EXPECT_EQ(operations.SetMotorCurrentLimit(20.0_A), SettingsStatus::kStorageError);
   EXPECT_EQ(store.GetSnapshot().Get().motor_i_max.Value(), 30.0F);
 }
 
@@ -138,7 +141,7 @@ TEST(SettingsStoreTest, ResetRestoresFactoryProfile) {
   SettingsStore store{MakeProfile(), MakeStorage(backend)};
   ASSERT_EQ(store.Load(), SettingsStatus::kFactoryDefaults);
   auto operations = store.GetOperations();
-  ASSERT_EQ(operations.SetMotorCurrentLimit(unit::Current{20.0F}), SettingsStatus::kSuccess);
+  ASSERT_EQ(operations.SetMotorCurrentLimit(20.0_A), SettingsStatus::kSuccess);
 
   EXPECT_EQ(operations.ResetToFactoryDefaults(), SettingsStatus::kSuccess);
   EXPECT_EQ(store.GetSnapshot().Get().motor_i_max.Value(), 30.0F);

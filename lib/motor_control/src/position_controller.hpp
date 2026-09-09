@@ -40,6 +40,8 @@ namespace unimoc {
  */
 namespace control {
 
+using namespace unit;
+
 /**
  * @brief Homing state machine states.
  *
@@ -134,17 +136,17 @@ struct PositionController {
   // -------------------------------------------------------------------------
 
   /// Position loop proportional gain [rad/s per rad].
-  unit::AngularVelocityPerAngle kp_pos{unit::AngularVelocityPerAngle{10.0F}};
+  unit::AngularVelocityPerAngle kp_pos{10.0_rad_per_s_per_rad};
 
   // -------------------------------------------------------------------------
   // Speed loop
   // -------------------------------------------------------------------------
 
   /// Speed loop proportional gain [(rad/s) per (rad/s)].
-  unit::DimensionlessRatio kp_speed{unit::DimensionlessRatio{5.0F}};
+  unit::DimensionlessRatio kp_speed{5.0_ratio};
 
   /// Speed loop integral gain [(rad/s) per (rad/s²)].
-  unit::InverseTime ki_speed{unit::InverseTime{20.0F}};
+  unit::InverseTime ki_speed{20.0_per_s};
 
   // -------------------------------------------------------------------------
   // Limits
@@ -152,20 +154,20 @@ struct PositionController {
 
   /// Maximum allowed mechanical angular velocity [rad/s].
   /// Clamps both the position-loop output and the speed-loop output.
-  unit::AngularVelocity speed_limit{unit::AngularVelocity{100.0F}};
+  unit::AngularVelocity speed_limit{100.0_rad_per_s};
 
   /// Maximum rate of change of the speed demand [rad/s²].
   /// Prevents the position loop from commanding instantaneous speed steps.
-  unit::AngularAcceleration accel_limit{unit::AngularAcceleration{500.0F}};
+  unit::AngularAcceleration accel_limit{500.0_rad_per_s2};
 
   /// Position error threshold for the in_position flag [rad].
-  unit::Angle position_tolerance{unit::Angle{0.01F}};
+  unit::Angle position_tolerance{0.01_rad};
 
   /// Speed threshold for the in_position flag [rad/s].
-  unit::AngularVelocity speed_tolerance{unit::AngularVelocity{1.0F}};
+  unit::AngularVelocity speed_tolerance{1.0_rad_per_s};
 
   /// Position-step threshold [rad] above which trapezoidal planning is used.
-  unit::Angle trapezoid_jump_threshold{unit::Angle{0.5F}};
+  unit::Angle trapezoid_jump_threshold{0.5_rad};
 
   // -------------------------------------------------------------------------
   // Homing parameters
@@ -173,7 +175,7 @@ struct PositionController {
 
   /// Constant shaft velocity used during the SEARCHING phase [rad/s].
   /// Positive = positive rotation direction.
-  unit::AngularVelocity homing_speed{unit::AngularVelocity{5.0F}};
+  unit::AngularVelocity homing_speed{5.0_rad_per_s};
 
   /// Current threshold [A] used for blocked-drive homing detection.
   /// If > 0 and |homing_current_feedback| >= threshold while SEARCHING,

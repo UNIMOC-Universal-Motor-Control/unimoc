@@ -24,6 +24,8 @@ using namespace modm::platform;
 
 namespace unimoc::hardware::pulse_width {
 
+using namespace unimoc::unit;
+
 HardwareInterface::SlowUpdateCallback slow_update_callback = nullptr;
 
 void TimerUpdateInterruptHandler() noexcept {
@@ -136,9 +138,7 @@ void SetPhaseDuties(const system::ThreePhase<unit::DimensionlessRatio>& duties) 
 system::ThreePhase<unit::DimensionlessRatio> GetPhaseDuties() noexcept {
   const auto overflow = Timer8::getOverflow();
   if (overflow == 0u) {
-    return system::ThreePhase<unit::DimensionlessRatio>{unit::DimensionlessRatio{0.5F},
-                                                        unit::DimensionlessRatio{0.5F},
-                                                        unit::DimensionlessRatio{0.5F}};
+    return system::ThreePhase<unit::DimensionlessRatio>{0.5_ratio, 0.5_ratio, 0.5_ratio};
   }
   const float scale = 1.0F / static_cast<float>(overflow);
   return system::ThreePhase<unit::DimensionlessRatio>{unit::DimensionlessRatio{static_cast<float>(Timer8::getCompareValue(1u)) * scale},

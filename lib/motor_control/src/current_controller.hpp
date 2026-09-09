@@ -26,6 +26,8 @@ namespace unimoc {
  */
 namespace control {
 
+using namespace unit;
+
 /**
  * @brief d/q-axis PI current controller with cross-coupling feedforward and
  *        circular voltage-vector limiting.
@@ -100,10 +102,10 @@ struct CurrentController {
   // =========================================================================
 
   /// d-axis inductance L_d [H].
-  unit::Inductance L_d{unit::Inductance{1.0e-3F}};
+  unit::Inductance L_d{1.0_mH};
 
   /// q-axis inductance L_q [H].
-  unit::Inductance L_q{unit::Inductance{1.0e-3F}};
+  unit::Inductance L_q{1.0_mH};
 
   /// Permanent-magnet flux linkage ψ_PM [Wb].
   unit::MagneticFlux psi{};
@@ -113,16 +115,16 @@ struct CurrentController {
   // =========================================================================
 
   /// d-axis proportional gain [V/A].
-  unit::VoltagePerCurrent kp_d{unit::VoltagePerCurrent{1.0F}};
+  unit::VoltagePerCurrent kp_d{1.0_V_per_A};
 
   /// d-axis integral gain [V/(A·s)].
-  unit::VoltagePerCurrentTime ki_d{unit::VoltagePerCurrentTime{100.0F}};
+  unit::VoltagePerCurrentTime ki_d{100.0_V_per_A_s};
 
   /// q-axis proportional gain [V/A].
-  unit::VoltagePerCurrent kp_q{unit::VoltagePerCurrent{1.0F}};
+  unit::VoltagePerCurrent kp_q{1.0_V_per_A};
 
   /// q-axis integral gain [V/(A·s)].
-  unit::VoltagePerCurrentTime ki_q{unit::VoltagePerCurrentTime{100.0F}};
+  unit::VoltagePerCurrentTime ki_q{100.0_V_per_A_s};
 
   // =========================================================================
   // Back-calculation anti-windup gains
@@ -132,10 +134,10 @@ struct CurrentController {
   /// Controls how aggressively the integrator is wound back when the output
   /// is saturated.  A value of ki_d / kp_d makes the tracking time-constant
   /// equal to the integral time Ti = kp_d / ki_d.  Must be > 0.
-  unit::InverseTime kb_d{unit::InverseTime{100.0F}};
+  unit::InverseTime kb_d{100.0_per_s};
 
   /// q-axis back-calculation gain [1/s].
-  unit::InverseTime kb_q{unit::InverseTime{100.0F}};
+  unit::InverseTime kb_q{100.0_per_s};
 
   // =========================================================================
   // Output limit
@@ -144,7 +146,7 @@ struct CurrentController {
   /// Maximum voltage vector magnitude as a fraction of V_dc (range (0, 1]).
   /// Typically set to 0.9 to preserve SVM headroom and avoid over-modulation.
   /// The actual voltage limit applied inside update() is v_max * v_dc [V].
-  unit::DimensionlessRatio v_max{unit::DimensionlessRatio{0.9F}};
+  unit::DimensionlessRatio v_max{0.9_ratio};
 
   // =========================================================================
   // Integrator state

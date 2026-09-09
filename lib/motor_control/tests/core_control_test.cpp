@@ -9,12 +9,13 @@ using DimensionlessStator = unimoc::system::Stator<unimoc::unit::DimensionlessRa
 using CurrentStator = unimoc::system::Stator<unimoc::unit::Current>;
 using CurrentRotor = unimoc::system::Rotor<unimoc::unit::Current>;
 using VoltageRotor = unimoc::system::Rotor<unimoc::unit::Voltage>;
+using namespace unimoc::unit;
 
 TEST(DeadTimeCompensationTest, ReconstructsAndTransformsPhaseSigns) {
   unimoc::settings::NvmSettings settings;
-  settings.dtc_dead_time = unimoc::unit::Time{2.0e-6F};
-  settings.dtc_f_pwm = unimoc::unit::Frequency{10000.0F};
-  settings.dtc_i_threshold = unimoc::unit::Current{1.0F};
+  settings.dtc_dead_time = 2.0_us;
+  settings.dtc_f_pwm = 10.0_kHz;
+  settings.dtc_i_threshold = 1.0_A;
 
   unimoc::control::DeadTimeCompensation<float> compensation;
   compensation.init(settings);
@@ -27,9 +28,9 @@ TEST(DeadTimeCompensationTest, ReconstructsAndTransformsPhaseSigns) {
 
 TEST(DeadTimeCompensationTest, SoftSignInterpolatesAndSaturates) {
   unimoc::control::DeadTimeCompensation<float> compensation;
-  compensation.dead_time = unimoc::unit::Time{2.0e-6F};
-  compensation.f_pwm = unimoc::unit::Frequency{10000.0F};
-  compensation.i_threshold = unimoc::unit::Current{1.0F};
+  compensation.dead_time = 2.0_us;
+  compensation.f_pwm = 10.0_kHz;
+  compensation.i_threshold = 1.0_A;
 
   const auto interpolated = compensation.calculate(CurrentStator{0.5F, 0.0F});
   const auto saturated = compensation.calculate(CurrentStator{2.0F, 0.0F});
@@ -40,35 +41,35 @@ TEST(DeadTimeCompensationTest, SoftSignInterpolatesAndSaturates) {
 
 TEST(MtpaTest, ZeroSaliencyReturnsZero) {
   unimoc::control::Mtpa<float> mtpa;
-  mtpa.flux_pm = unimoc::unit::MagneticFlux{0.1F};
-  mtpa.L_d = unimoc::unit::Inductance{1.0e-3F};
-  mtpa.L_q = unimoc::unit::Inductance{1.0e-3F};
+  mtpa.flux_pm = 0.1_Wb;
+  mtpa.L_d = 1.0_mH;
+  mtpa.L_q = 1.0_mH;
 
-  EXPECT_FLOAT_EQ(mtpa.calculate(unimoc::unit::Current{2.0F}).Value(), 0.0F);
+  EXPECT_FLOAT_EQ(mtpa.calculate(2.0_A).Value(), 0.0F);
 }
 
 TEST(MtpaTest, CalculatesAndLimitsDaxisCurrent) {
   unimoc::control::Mtpa<float> mtpa;
-  mtpa.flux_pm = unimoc::unit::MagneticFlux{0.0F};
-  mtpa.L_d = unimoc::unit::Inductance{2.0e-3F};
-  mtpa.L_q = unimoc::unit::Inductance{1.0e-3F};
-  EXPECT_FLOAT_EQ(mtpa.calculate(unimoc::unit::Current{2.0F}).Value(), -1.0F);
+  mtpa.flux_pm = 0.0_Wb;
+  mtpa.L_d = 2.0_mH;
+  mtpa.L_q = 1.0_mH;
+  EXPECT_FLOAT_EQ(mtpa.calculate(2.0_A).Value(), -1.0F);
 
-  mtpa.flux_pm = unimoc::unit::MagneticFlux{0.01F};
-  mtpa.L_d = unimoc::unit::Inductance{1.0e-3F};
-  mtpa.L_q = unimoc::unit::Inductance{2.0e-3F};
-  EXPECT_FLOAT_EQ(mtpa.calculate(unimoc::unit::Current{1.0F}).Value(), -1.0F);
+  mtpa.flux_pm = 0.01_Wb;
+  mtpa.L_d = 1.0_mH;
+  mtpa.L_q = 2.0_mH;
+  EXPECT_FLOAT_EQ(mtpa.calculate(1.0_A).Value(), -1.0F);
 }
 
 TEST(FieldWeakeningTest, IntegratesOnlyNegativeVoltageHeadroom) {
   unimoc::control::FieldWeakening<float> field_weakening;
-  field_weakening.v_max = unimoc::unit::Voltage{0.9F};
-  field_weakening.ki = unimoc::unit::CurrentPerVoltageTime{10.0F};
-  field_weakening.i_d_min = unimoc::unit::Current{-0.5F};
+  field_weakening.v_max = 0.9_V;
+  field_weakening.ki = 10.0_A_per_V_s;
+  field_weakening.i_d_min = -0.5_A;
 
-  EXPECT_FLOAT_EQ(field_weakening.update(unimoc::system::Stator<unimoc::unit::Voltage>{0.5F, 0.0F}, unimoc::unit::Time{0.1F}).Value(), 0.0F);
-  EXPECT_NEAR(field_weakening.update(unimoc::system::Stator<unimoc::unit::Voltage>{1.0F, 0.0F}, unimoc::unit::Time{0.1F}).Value(), -0.1F, 1.0e-6F);
-  EXPECT_FLOAT_EQ(field_weakening.update(unimoc::system::Stator<unimoc::unit::Voltage>{10.0F, 0.0F}, unimoc::unit::Time{1.0F}).Value(), -0.5F);
+  EXPECT_FLOAT_EQ(field_weakening.update(unimoc::system::Stator<unimoc::unit::Voltage>{0.5_V, 0.0_V}, 0.1_s).Value(), 0.0F);
+  EXPECT_NEAR(field_weakening.update(unimoc::system::Stator<unimoc::unit::Voltage>{1.0_V, 0.0_V}, 0.1_s).Value(), -0.1F, 1.0e-6F);
+  EXPECT_FLOAT_EQ(field_weakening.update(unimoc::system::Stator<unimoc::unit::Voltage>{10.0_V, 0.0_V}, 1.0_s).Value(), -0.5F);
 
   field_weakening.reset();
   EXPECT_FLOAT_EQ(field_weakening.i_d_fw.Value(), 0.0F);
@@ -76,15 +77,11 @@ TEST(FieldWeakeningTest, IntegratesOnlyNegativeVoltageHeadroom) {
 
 TEST(CurrentControllerTest, UnsaturatedPiStepUpdatesIntegrator) {
   unimoc::control::CurrentController<float> controller;
-  controller.kp_d = unimoc::unit::VoltagePerCurrent{2.0F};
-  controller.ki_d = unimoc::unit::VoltagePerCurrentTime{10.0F};
-  controller.v_max = unimoc::unit::DimensionlessRatio{1.0F};
+  controller.kp_d = 2.0_V_per_A;
+  controller.ki_d = 10.0_V_per_A_s;
+  controller.v_max = 1.0_ratio;
 
-  const VoltageRotor output = controller.update(CurrentRotor{1.0F, 0.0F},
-                                                CurrentRotor{0.0F, 0.0F},
-                                                unimoc::unit::AngularVelocity{0.0F},
-                                                unimoc::unit::Time{0.1F},
-                                                unimoc::unit::Voltage{10.0F});
+  const VoltageRotor output = controller.update(CurrentRotor{1.0F, 0.0F}, CurrentRotor{0.0F, 0.0F}, 0.0_rad_per_s, 0.1_s, 10.0_V);
 
   EXPECT_FLOAT_EQ(output.d.Value(), 2.0F);
   EXPECT_FLOAT_EQ(output.q.Value(), 0.0F);
@@ -93,19 +90,15 @@ TEST(CurrentControllerTest, UnsaturatedPiStepUpdatesIntegrator) {
 
 TEST(CurrentControllerTest, CircularLimitScalesBothAxes) {
   unimoc::control::CurrentController<float> controller;
-  controller.kp_d = unimoc::unit::VoltagePerCurrent{2.0F};
-  controller.kp_q = unimoc::unit::VoltagePerCurrent{2.0F};
-  controller.ki_d = unimoc::unit::VoltagePerCurrentTime{0.0F};
-  controller.ki_q = unimoc::unit::VoltagePerCurrentTime{0.0F};
-  controller.kb_d = unimoc::unit::InverseTime{0.0F};
-  controller.kb_q = unimoc::unit::InverseTime{0.0F};
-  controller.v_max = unimoc::unit::DimensionlessRatio{0.1F};
+  controller.kp_d = 2.0_V_per_A;
+  controller.kp_q = 2.0_V_per_A;
+  controller.ki_d = 0.0_V_per_A_s;
+  controller.ki_q = 0.0_V_per_A_s;
+  controller.kb_d = 0.0_per_s;
+  controller.kb_q = 0.0_per_s;
+  controller.v_max = 0.1_ratio;
 
-  const VoltageRotor output = controller.update(CurrentRotor{1.0F, 1.0F},
-                                                CurrentRotor{0.0F, 0.0F},
-                                                unimoc::unit::AngularVelocity{0.0F},
-                                                unimoc::unit::Time{0.1F},
-                                                unimoc::unit::Voltage{10.0F});
+  const VoltageRotor output = controller.update(CurrentRotor{1.0F, 1.0F}, CurrentRotor{0.0F, 0.0F}, 0.0_rad_per_s, 0.1_s, 10.0_V);
   const float magnitude = std::sqrt(output.d.Value() * output.d.Value() + output.q.Value() * output.q.Value());
 
   EXPECT_NEAR(magnitude, 1.0F, 1.0e-6F);

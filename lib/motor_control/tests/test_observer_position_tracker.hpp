@@ -12,6 +12,8 @@ namespace unimoc {
 namespace observer {
 namespace test {
 
+using namespace unit;
+
 class PositionTrackerTest : public ::testing::Test {
  protected:
   using Tracker = PositionTracker<float>;
@@ -34,7 +36,7 @@ TEST_F(PositionTrackerTest, DefaultStateIsZero) {
 // --- No wrapping: small forward step stays at 0 turns
 TEST_F(PositionTrackerTest, NoWrapSmallStep) {
   Tracker t;
-  t.update(Angle{0.5F}, pp);
+  t.update(0.5_rad, pp);
   EXPECT_EQ(t.turns, 0);
 }
 
@@ -100,7 +102,7 @@ TEST_F(PositionTrackerTest, SetHomeClearsPosition) {
 TEST_F(PositionTrackerTest, PositionRelativeToHome) {
   Tracker t;
   // Home at θ = 0
-  t.update(Angle{0.0F}, pp);
+  t.update(0.0_rad, pp);
   t.set_home(pp);
 
   // Advance to θ = π/2 (no wrap)
@@ -132,7 +134,7 @@ TEST_F(PositionTrackerTest, ResetClearsAll) {
   Tracker t;
   t.update(Angle{pi / 2.0F}, pp);
   t.set_home(pp);
-  t.update(Angle{1.0F}, pp);
+  t.update(1.0_rad, pp);
   t.reset();
   EXPECT_EQ(t.turns, 0);
   EXPECT_FLOAT_EQ(t.position_rad.Value(), 0.0F);

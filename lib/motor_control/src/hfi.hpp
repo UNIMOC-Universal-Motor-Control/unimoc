@@ -29,6 +29,8 @@ namespace unimoc {
  */
 namespace observer {
 
+using namespace unit;
+
 /**
  * @brief 4-step High-Frequency Injection (HFI) observer for IPMSM.
  *
@@ -91,7 +93,7 @@ struct Hfi {
    * Tune so that the PLL bandwidth is in the desired range.  A higher value
    * gives faster convergence but more sensitivity to noise.
    */
-  unit::AnglePerCurrent error_gain{unit::AnglePerCurrent{1.0F}};
+  unit::AnglePerCurrent error_gain{1.0_rad_per_A};
 
   // -------------------------------------------------------------------------
   // State

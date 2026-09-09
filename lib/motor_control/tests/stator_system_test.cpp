@@ -8,6 +8,7 @@
 using Stator = unimoc::system::Stator<unimoc::unit::DimensionlessRatio>;
 using Rotor = unimoc::system::Rotor<unimoc::unit::DimensionlessRatio>;
 using RotorAngle = unimoc::system::RotorAngle;
+using namespace unimoc::unit;
 
 class StatorSystemTest : public ::testing::Test {};
 
@@ -33,7 +34,7 @@ TEST_F(StatorSystemTest, ToRotorAtQuarterTurn) {
 
 TEST_F(StatorSystemTest, ParkAndInverseParkRoundTrip) {
   const Stator kOriginal{1.25F, -0.75F};
-  const RotorAngle kAngle = RotorAngle::FromAngle(unimoc::unit::Angle{0.6435011F});
+  const RotorAngle kAngle = RotorAngle::FromAngle(0.6435011_rad);
 
   const Rotor kRotor = kOriginal.ToRotor(kAngle);
   const Stator kRestored = kRotor.ToStator(kAngle);

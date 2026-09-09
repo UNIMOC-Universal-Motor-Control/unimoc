@@ -29,6 +29,7 @@
 #include <concepts>
 
 using ThreePhase = unimoc::system::ThreePhase<unimoc::unit::DimensionlessRatio>;
+using namespace unimoc::unit;
 
 static_assert(unimoc::unit::UnitLike<unimoc::unit::Current>);
 static_assert(!unimoc::unit::UnitLike<float>);
@@ -42,6 +43,12 @@ concept CanInstantiateStator = requires { typename unimoc::system::Stator<T>; };
 static_assert(!CanInstantiateThreePhase<float>);
 static_assert(!CanInstantiateStator<float>);
 static_assert(std::same_as<decltype(unimoc::system::ThreePhase<unimoc::unit::Current>{}.ToStator()), unimoc::system::Stator<unimoc::unit::Current>>);
+
+TEST(UnitLiteralTest, ConvertsScaledValuesToBaseUnits) {
+  EXPECT_FLOAT_EQ(unimoc::unit::Inductance{47.0_mH}.Value(), 47.0e-3F);
+  EXPECT_FLOAT_EQ(unimoc::unit::Time{2.0_us}.Value(), 2.0e-6F);
+  EXPECT_FLOAT_EQ(unimoc::unit::Frequency{20.0_kHz}.Value(), 20000.0F);
+}
 
 // Test fixture for ThreePhase tests
 class ThreePhaseTest : public ::testing::Test {
@@ -102,7 +109,7 @@ TEST_F(ThreePhaseTest, CopyConstructor) {
   EXPECT_FLOAT_EQ(copy.c.Value(), 3.0F);
 
   // Verify independence
-  copy.a = unimoc::unit::DimensionlessRatio{10.0F};
+  copy.a = 10.0_ratio;
   EXPECT_FLOAT_EQ(original.a.Value(), 1.0F);
 }
 

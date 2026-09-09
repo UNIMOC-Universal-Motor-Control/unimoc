@@ -40,6 +40,8 @@ namespace unimoc {
  */
 namespace control {
 
+using namespace unit;
+
 /**
  * @brief Maximum Torque Per Ampere (MTPA) algorithm for interior PMSM.
  *
@@ -66,10 +68,10 @@ struct Mtpa {
   unit::MagneticFlux flux_pm{};
 
   /// d-axis inductance L_d [H].
-  unit::Inductance L_d{unit::Inductance{1.0e-3F}};
+  unit::Inductance L_d{1.0_mH};
 
   /// q-axis inductance L_q [H].
-  unit::Inductance L_q{unit::Inductance{1.0e-3F}};
+  unit::Inductance L_q{1.0_mH};
 
   /**
    * @brief Compute the MTPA d-axis current reference.

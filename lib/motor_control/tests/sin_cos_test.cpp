@@ -9,6 +9,7 @@ using unimoc::system::GenerateSinCos;
 using unimoc::system::PortableSinCosProvider;
 using unimoc::system::SinCosProvider;
 using unimoc::unit::Angle;
+using namespace unimoc::unit;
 
 namespace {
 
@@ -20,7 +21,7 @@ struct TestProvider {
 
   [[nodiscard]] static constexpr Result Calculate(std::int32_t kRaw) noexcept {
     static_cast<void>(kRaw);
-    return Result{unimoc::unit::DimensionlessRatio{0.25F}, unimoc::unit::DimensionlessRatio{0.75F}};
+    return Result{0.25_ratio, 0.75_ratio};
   }
 };
 
@@ -49,8 +50,8 @@ TEST(PortableSinCosProviderTest, MatchesStandardLibrary) {
 }
 
 TEST(PortableSinCosProviderTest, AngleValueUsesPortableProvider) {
-  const unimoc::system::SinCos<unimoc::unit::DimensionlessRatio> kResult{Angle{0.5F}};
-  const auto kExpected = PortableSinCosProvider::Calculate(Angle{0.5F});
+  const unimoc::system::SinCos<unimoc::unit::DimensionlessRatio> kResult{0.5_rad};
+  const auto kExpected = PortableSinCosProvider::Calculate(0.5_rad);
 
   EXPECT_FLOAT_EQ(kResult.sin.Value(), kExpected.sin.Value());
   EXPECT_FLOAT_EQ(kResult.cos.Value(), kExpected.cos.Value());

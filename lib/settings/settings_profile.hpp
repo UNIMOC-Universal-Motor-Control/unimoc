@@ -17,6 +17,8 @@
 
 namespace unimoc::settings {
 
+using namespace unit;
+
 /**
  * @brief Immutable electrical capabilities of a hardware target.
  *
@@ -26,16 +28,16 @@ namespace unimoc::settings {
  */
 struct HardwareCapabilities {
   /// Absolute phase-current limit of the inverter [A].
-  unit::Current max_phase_current{unit::Current{100.0F}};
+  unit::Current max_phase_current{100.0_A};
 
   /// Absolute resultant motor-current limit [A].
-  unit::Current max_motor_current{unit::Current{40.0F}};
+  unit::Current max_motor_current{40.0_A};
 
   /// Absolute battery-discharge current limit [A].
-  unit::Current max_battery_drive_current{unit::Current{15.0F}};
+  unit::Current max_battery_drive_current{15.0_A};
 
   /// Absolute regenerative battery-charge current limit [A].
-  unit::Current max_battery_charge_current{unit::Current{5.0F}};
+  unit::Current max_battery_charge_current{5.0_A};
 };
 
 /**

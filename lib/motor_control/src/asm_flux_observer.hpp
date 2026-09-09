@@ -44,6 +44,8 @@ namespace unimoc {
  */
 namespace observer {
 
+using namespace unit;
+
 /**
  * @brief Full-order Luenberger rotor-flux observer for induction motors (ASM).
  *
@@ -92,19 +94,19 @@ struct AsmFluxObserver {
   // -------------------------------------------------------------------------
 
   /// Stator resistance R_s [Ω].
-  unit::Resistance R_s{unit::Resistance{0.5F}};
+  unit::Resistance R_s{0.5_Ohm};
 
   /// Rotor resistance R_r [Ω].
-  unit::Resistance R_r{unit::Resistance{0.3F}};
+  unit::Resistance R_r{0.3_Ohm};
 
   /// Stator self-inductance L_s [H].
-  unit::Inductance L_s{unit::Inductance{50.0e-3F}};
+  unit::Inductance L_s{50.0_mH};
 
   /// Rotor self-inductance L_r [H] (≈ L_s for squirrel-cage motors).
-  unit::Inductance L_r{unit::Inductance{50.0e-3F}};
+  unit::Inductance L_r{50.0_mH};
 
   /// Mutual (magnetising) inductance L_m [H].
-  unit::Inductance L_m{unit::Inductance{47.0e-3F}};
+  unit::Inductance L_m{47.0_mH};
 
   // -------------------------------------------------------------------------
   // Observer gains
@@ -115,13 +117,13 @@ struct AsmFluxObserver {
   /// Governs how aggressively the current prediction error corrects the
   /// estimated stator current.  A value in the range [2·R_s/σL_s … 10·R_s/σL_s]
   /// is a reasonable starting point.
-  unit::InverseTime g_i{unit::InverseTime{500.0F}};
+  unit::InverseTime g_i{500.0_per_s};
 
   /// Rotor-flux correction gain g_flux [Wb/(A·s)].
   ///
   /// Determines how fast the flux estimate responds to the current error.
   /// Set larger than g_i to prevent flux lag during transients.
-  unit::MagneticFluxPerCurrentTime g_flux{unit::MagneticFluxPerCurrentTime{5000.0F}};
+  unit::MagneticFluxPerCurrentTime g_flux{5000.0_Wb_per_A_s};
 
   // -------------------------------------------------------------------------
   // Observer state
@@ -150,7 +152,7 @@ struct AsmFluxObserver {
   /// sin(θ_flux) — ready for field-oriented transforms.
   unit::DimensionlessRatio sin_flux{};
   /// cos(θ_flux) — ready for field-oriented transforms.
-  unit::DimensionlessRatio cos_flux{unit::DimensionlessRatio{1.0F}};
+  unit::DimensionlessRatio cos_flux{1.0_ratio};
 
   /**
    * @brief Run one observer step and update the MechanicalObserver PLL.
@@ -236,7 +238,7 @@ struct AsmFluxObserver {
     flux_magnitude = unit::MagneticFlux{};
     flux_angle = unit::Angle{};
     sin_flux = unit::DimensionlessRatio{};
-    cos_flux = unit::DimensionlessRatio{1.0F};
+    cos_flux = 1.0_ratio;
   }
 
  private:

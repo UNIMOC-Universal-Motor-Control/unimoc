@@ -33,6 +33,8 @@ namespace unimoc {
  */
 namespace settings {
 
+using namespace unit;
+
 /// Magic number stored at the start of every NvmSettings block.
 /// Used to detect an uninitialised or corrupt NVM image.
 inline constexpr uint32_t kNvmMagic = 0x554D4F43u;  // 'UMOC'
@@ -113,11 +115,11 @@ struct NvmSettings {
 
   /// Stator phase resistance [Ω].
   /// Register: `unimoc.motor.stator.R`
-  unit::Resistance stator_r{unit::Resistance{0.1f}};
+  unit::Resistance stator_r{0.1_Ohm};
 
   /// Stator inductance [H] (L_q for IPMSM; average (L_d+L_q)/2 otherwise).
   /// Register: `unimoc.motor.stator.L`
-  unit::Inductance stator_l{unit::Inductance{1e-3f}};
+  unit::Inductance stator_l{1.0_mH};
 
   // =========================================================================
   // Motor operating limits
@@ -129,26 +131,26 @@ struct NvmSettings {
   /// Maximum motor (resultant stator vector) current [A].
   /// Hard upper bound: hardware profile's maximum motor current.
   /// Register: `unimoc.motor.limits.i_max`
-  unit::Current motor_i_max{unit::Current{40.0f}};
+  unit::Current motor_i_max{40.0_A};
 
   /// Maximum electrical angular velocity in the forward direction [rad/s].
   /// Register: `unimoc.motor.limits.omega_max`
-  unit::AngularVelocity motor_omega_max{unit::AngularVelocity{2000.0f}};
+  unit::AngularVelocity motor_omega_max{2000.0_rad_per_s};
 
   /// Maximum electrical angular velocity in the reverse direction [rad/s]
   /// (stored as a negative value).
   /// Register: `unimoc.motor.limits.omega_min`
-  unit::AngularVelocity motor_omega_min{unit::AngularVelocity{-2000.0f}};
+  unit::AngularVelocity motor_omega_min{-2000.0_rad_per_s};
 
   /// Maximum battery discharge (drive) current [A].
   /// Hard upper bound: hardware profile's maximum drive current.
   /// Register: `unimoc.battery.limits.drive_current`
-  unit::Current battery_drive_current_max{unit::Current{15.0f}};
+  unit::Current battery_drive_current_max{15.0_A};
 
   /// Maximum battery charge (regenerative braking) current [A].
   /// Hard upper bound: hardware profile's maximum charge current.
   /// Register: `unimoc.battery.limits.charge_current`
-  unit::Current battery_charge_current_max{unit::Current{5.0f}};
+  unit::Current battery_charge_current_max{5.0_A};
 
   // =========================================================================
   // PMSM / EESM parameters
@@ -158,15 +160,15 @@ struct NvmSettings {
   /// For EESM, this is the initial/nominal ψ_f used until the excitation
   /// observer provides a measured value.
   /// Register: `unimoc.motor.pmsm.flux_pm`
-  unit::MagneticFlux flux_pm{unit::MagneticFlux{0.0f}};
+  unit::MagneticFlux flux_pm{0.0_Wb};
 
   /// d-axis inductance L_d [H].
   /// Register: `unimoc.motor.pmsm.L_d`
-  unit::Inductance l_d{unit::Inductance{1e-3f}};
+  unit::Inductance l_d{1.0_mH};
 
   /// q-axis inductance L_q [H].
   /// Register: `unimoc.motor.pmsm.L_q`
-  unit::Inductance l_q{unit::Inductance{1e-3f}};
+  unit::Inductance l_q{1.0_mH};
 
   // =========================================================================
   // Asynchronous motor (ASM) parameters
@@ -174,23 +176,23 @@ struct NvmSettings {
 
   /// Rotor resistance R_r [Ω].
   /// Register: `unimoc.motor.asm.R_r`
-  unit::Resistance asm_r_r{unit::Resistance{0.3f}};
+  unit::Resistance asm_r_r{0.3_Ohm};
 
   /// Stator resistance R_s [Ω].
   /// Register: `unimoc.motor.asm.R_s`
-  unit::Resistance asm_r_s{unit::Resistance{0.5f}};
+  unit::Resistance asm_r_s{0.5_Ohm};
 
   /// Stator self-inductance L_s [H].
   /// Register: `unimoc.motor.asm.L_s`
-  unit::Inductance asm_l_s{unit::Inductance{50e-3f}};
+  unit::Inductance asm_l_s{50.0_mH};
 
   /// Rotor self-inductance L_r [H].
   /// Register: `unimoc.motor.asm.L_r`
-  unit::Inductance asm_l_r{unit::Inductance{50e-3f}};
+  unit::Inductance asm_l_r{50.0_mH};
 
   /// Mutual (magnetising) inductance L_m [H].
   /// Register: `unimoc.motor.asm.L_m`
-  unit::Inductance asm_l_m{unit::Inductance{47e-3f}};
+  unit::Inductance asm_l_m{47.0_mH};
 
   // =========================================================================
   // Mechanical observer (Kalman filter) parameters
@@ -199,7 +201,7 @@ struct NvmSettings {
   /// Rotor + load inertia J [kg·m²].
   /// Used by MechanicalObserver::predict() to integrate the torque equation.
   /// Register: `unimoc.motor.mechanics.J`
-  unit::Inertia motor_j{unit::Inertia{1e-4f}};
+  unit::Inertia motor_j{1.0e-4_kg_m2};
 
   /// Kalman filter process noise variance Q.
   /// Increase to let the filter track faster but noisier.
@@ -217,11 +219,11 @@ struct NvmSettings {
 
   /// d-axis anti-drift feedback gain C_d [1/s].
   /// Register: `unimoc.observer.pmsm_flux.C_d`
-  unit::InverseTime pmsm_flux_obs_c_d{unit::InverseTime{50.0f}};
+  unit::InverseTime pmsm_flux_obs_c_d{50.0_per_s};
 
   /// q-axis anti-drift feedback gain C_q [1/s].
   /// Register: `unimoc.observer.pmsm_flux.C_q`
-  unit::InverseTime pmsm_flux_obs_c_q{unit::InverseTime{1.0f}};
+  unit::InverseTime pmsm_flux_obs_c_q{1.0_per_s};
 
   // =========================================================================
   // ASM flux observer gains
@@ -229,11 +231,11 @@ struct NvmSettings {
 
   /// Stator-current correction gain g_i [1/s].
   /// Register: `unimoc.observer.asm_flux.g_i`
-  unit::InverseTime asm_obs_g_i{unit::InverseTime{500.0f}};
+  unit::InverseTime asm_obs_g_i{500.0_per_s};
 
   /// Rotor-flux correction gain g_flux [Wb/(A·s)].
   /// Register: `unimoc.observer.asm_flux.g_flux`
-  unit::MagneticFluxPerCurrentTime asm_obs_g_flux{unit::MagneticFluxPerCurrentTime{5000.0F}};
+  unit::MagneticFluxPerCurrentTime asm_obs_g_flux{5000.0_Wb_per_A_s};
 
   // =========================================================================
   // ASM flux controller
@@ -241,19 +243,19 @@ struct NvmSettings {
 
   /// Proportional gain [A/Wb].
   /// Register: `unimoc.control.asm_flux.kp`
-  unit::CurrentPerMagneticFlux asm_flux_kp{unit::CurrentPerMagneticFlux{10.0F}};
+  unit::CurrentPerMagneticFlux asm_flux_kp{10.0_A_per_Wb};
 
   /// Integral gain [A/(Wb·s)].
   /// Register: `unimoc.control.asm_flux.ki`
-  unit::CurrentPerMagneticFluxTime asm_flux_ki{unit::CurrentPerMagneticFluxTime{50.0F}};
+  unit::CurrentPerMagneticFluxTime asm_flux_ki{50.0_A_per_Wb_s};
 
   /// Minimum d-axis current [A].
   /// Register: `unimoc.control.asm_flux.i_d_min`
-  unit::Current asm_flux_i_d_min{unit::Current{0.0F}};
+  unit::Current asm_flux_i_d_min{0.0_A};
 
   /// Maximum d-axis current [A].
   /// Register: `unimoc.control.asm_flux.i_d_max`
-  unit::Current asm_flux_i_d_max{unit::Current{10.0F}};
+  unit::Current asm_flux_i_d_max{10.0_A};
 
   // =========================================================================
   // Field weakening
@@ -261,15 +263,15 @@ struct NvmSettings {
 
   /// Maximum voltage vector magnitude (normalised, range (0,1]).
   /// Register: `unimoc.control.fw.v_max`
-  unit::Voltage fw_v_max{unit::Voltage{0.9F}};
+  unit::Voltage fw_v_max{0.9_V};
 
   /// Integrator gain [A/(V·s)].
   /// Register: `unimoc.control.fw.ki`
-  unit::CurrentPerVoltageTime fw_ki{unit::CurrentPerVoltageTime{10.0F}};
+  unit::CurrentPerVoltageTime fw_ki{10.0_A_per_V_s};
 
   /// Most negative i_d allowed [A].
   /// Register: `unimoc.control.fw.i_d_min`
-  unit::Current fw_i_d_min{unit::Current{-10.0F}};
+  unit::Current fw_i_d_min{-10.0_A};
 
   // =========================================================================
   // PWM frequency
@@ -282,7 +284,7 @@ struct NvmSettings {
   /// The slow-update task runs at (2 × f_pwm) / 4 = f_pwm / 2.
   ///
   /// Register: `unimoc.control.pwm_frequency`
-  unit::Frequency pwm_frequency{unit::Frequency{20000.0F}};
+  unit::Frequency pwm_frequency{20.0_kHz};
 
   // =========================================================================
   // Current controller (d/q-axis PI with cross-coupling feedforward)
@@ -290,26 +292,26 @@ struct NvmSettings {
 
   /// d-axis proportional gain [V/A].
   /// Register: `unimoc.control.current.kp_d`
-  unit::VoltagePerCurrent current_kp_d{unit::VoltagePerCurrent{1.0F}};
+  unit::VoltagePerCurrent current_kp_d{1.0_V_per_A};
 
   /// d-axis integral gain [V/(A·s)].
   /// Register: `unimoc.control.current.ki_d`
-  unit::VoltagePerCurrentTime current_ki_d{unit::VoltagePerCurrentTime{100.0F}};
+  unit::VoltagePerCurrentTime current_ki_d{100.0_V_per_A_s};
 
   /// q-axis proportional gain [V/A].
   /// Register: `unimoc.control.current.kp_q`
-  unit::VoltagePerCurrent current_kp_q{unit::VoltagePerCurrent{1.0F}};
+  unit::VoltagePerCurrent current_kp_q{1.0_V_per_A};
 
   /// q-axis integral gain [V/(A·s)].
   /// Register: `unimoc.control.current.ki_q`
-  unit::VoltagePerCurrentTime current_ki_q{unit::VoltagePerCurrentTime{100.0F}};
+  unit::VoltagePerCurrentTime current_ki_q{100.0_V_per_A_s};
 
   /// Maximum voltage vector magnitude (normalised by V_dc, range (0, 1]).
   /// Limits the current controller output before it reaches the SVM
   /// modulator.  Typically set slightly below the SVM duty_max to preserve
   /// headroom for dead-time compensation and ADC sampling.
   /// Register: `unimoc.control.current.v_max`
-  unit::DimensionlessRatio current_v_max{unit::DimensionlessRatio{0.9f}};
+  unit::DimensionlessRatio current_v_max{0.9_ratio};
 
   // =========================================================================
   // SVM modulator
@@ -317,11 +319,11 @@ struct NvmSettings {
 
   /// Minimum duty cycle (headroom for ADC + dead-time).
   /// Register: `unimoc.control.svm.duty_min`
-  unit::DimensionlessRatio svm_duty_min{unit::DimensionlessRatio{0.05f}};
+  unit::DimensionlessRatio svm_duty_min{0.05_ratio};
 
   /// Maximum duty cycle.
   /// Register: `unimoc.control.svm.duty_max`
-  unit::DimensionlessRatio svm_duty_max{unit::DimensionlessRatio{0.95f}};
+  unit::DimensionlessRatio svm_duty_max{0.95_ratio};
 
   // =========================================================================
   // Dead-time compensation
@@ -329,15 +331,15 @@ struct NvmSettings {
 
   /// Gate-driver dead time [s].
   /// Register: `unimoc.control.dtc.dead_time`
-  unit::Time dtc_dead_time{unit::Time{0.0f}};
+  unit::Time dtc_dead_time{0.0_s};
 
   /// PWM switching frequency [Hz].
   /// Register: `unimoc.control.dtc.f_pwm`
-  unit::Frequency dtc_f_pwm{unit::Frequency{10000.0f}};
+  unit::Frequency dtc_f_pwm{10.0_kHz};
 
   /// Phase-current zero-crossing threshold [A].
   /// Register: `unimoc.control.dtc.i_threshold`
-  unit::Current dtc_i_threshold{unit::Current{0.1f}};
+  unit::Current dtc_i_threshold{0.1_A};
 
   // =========================================================================
   // HFI (high-frequency injection) observer
@@ -345,11 +347,11 @@ struct NvmSettings {
 
   /// HFI injection voltage [V].
   /// Register: `unimoc.observer.hfi.v_inject`
-  unit::Voltage hfi_v_inject{unit::Voltage{0.0f}};
+  unit::Voltage hfi_v_inject{0.0_V};
 
   /// Current error to PLL angle scaling gain [rad/A].
   /// Register: `unimoc.observer.hfi.error_gain`
-  unit::AnglePerCurrent hfi_error_gain{unit::AnglePerCurrent{1.0F}};
+  unit::AnglePerCurrent hfi_error_gain{1.0_rad_per_A};
 
   // =========================================================================
   // EESM excitation controller
@@ -361,23 +363,23 @@ struct NvmSettings {
 
   /// Mutual inductance L_m [H] for flux↔current conversion.
   /// Register: `unimoc.control.excitation.L_m`
-  unit::Inductance excitation_l_m{unit::Inductance{47e-3f}};
+  unit::Inductance excitation_l_m{47.0_mH};
 
   /// Proportional gain [V/A].
   /// Register: `unimoc.control.excitation.kp`
-  unit::DimensionlessRatio excitation_kp{unit::DimensionlessRatio{5.0F}};
+  unit::DimensionlessRatio excitation_kp{5.0_ratio};
 
   /// Integral gain [V/(A·s)].
   /// Register: `unimoc.control.excitation.ki`
-  unit::InverseTime excitation_ki{unit::InverseTime{50.0F}};
+  unit::InverseTime excitation_ki{50.0_per_s};
 
   /// Minimum rotor excitation current [A].
   /// Register: `unimoc.control.excitation.i_f_min`
-  unit::Current excitation_i_f_min{unit::Current{0.0f}};
+  unit::Current excitation_i_f_min{0.0_A};
 
   /// Maximum rotor excitation current [A].
   /// Register: `unimoc.control.excitation.i_f_max`
-  unit::Current excitation_i_f_max{unit::Current{10.0f}};
+  unit::Current excitation_i_f_max{10.0_A};
 
   // =========================================================================
   // EESM excitation observer
@@ -385,11 +387,11 @@ struct NvmSettings {
 
   /// Low-pass filter time constant [s].
   /// Register: `unimoc.observer.excitation.tau`
-  unit::Time excitation_obs_tau{unit::Time{2e-3f}};
+  unit::Time excitation_obs_tau{2.0_ms};
 
   /// Mutual inductance L_m [H] used by the observer.
   /// Register: `unimoc.observer.excitation.L_m`
-  unit::Inductance excitation_obs_l_m{unit::Inductance{47e-3f}};
+  unit::Inductance excitation_obs_l_m{47.0_mH};
 
   // =========================================================================
   // Position controller
@@ -397,35 +399,35 @@ struct NvmSettings {
 
   /// Position loop proportional gain [rad/s per rad].
   /// Register: `unimoc.control.pos.kp`
-  unit::AngularVelocityPerAngle pos_kp_pos{unit::AngularVelocityPerAngle{10.0F}};
+  unit::AngularVelocityPerAngle pos_kp_pos{10.0_rad_per_s_per_rad};
 
   /// Speed loop proportional gain.
   /// Register: `unimoc.control.pos.kp_speed`
-  unit::DimensionlessRatio pos_kp_speed{unit::DimensionlessRatio{5.0F}};
+  unit::DimensionlessRatio pos_kp_speed{5.0_ratio};
 
   /// Speed loop integral gain.
   /// Register: `unimoc.control.pos.ki_speed`
-  unit::InverseTime pos_ki_speed{unit::InverseTime{20.0F}};
+  unit::InverseTime pos_ki_speed{20.0_per_s};
 
   /// Maximum mechanical angular velocity [rad/s].
   /// Register: `unimoc.control.pos.speed_limit`
-  unit::AngularVelocity pos_speed_limit{unit::AngularVelocity{100.0f}};
+  unit::AngularVelocity pos_speed_limit{100.0_rad_per_s};
 
   /// Maximum speed-demand rate of change [rad/s²].
   /// Register: `unimoc.control.pos.accel_limit`
-  unit::AngularAcceleration pos_accel_limit{unit::AngularAcceleration{500.0f}};
+  unit::AngularAcceleration pos_accel_limit{500.0_rad_per_s2};
 
   /// In-position position tolerance [rad].
   /// Register: `unimoc.control.pos.position_tolerance`
-  unit::Angle pos_position_tolerance{unit::Angle{0.01f}};
+  unit::Angle pos_position_tolerance{0.01_rad};
 
   /// In-position speed tolerance [rad/s].
   /// Register: `unimoc.control.pos.speed_tolerance`
-  unit::AngularVelocity pos_speed_tolerance{unit::AngularVelocity{1.0f}};
+  unit::AngularVelocity pos_speed_tolerance{1.0_rad_per_s};
 
   /// Constant homing velocity [rad/s].
   /// Register: `unimoc.control.pos.homing_speed`
-  unit::AngularVelocity pos_homing_speed{unit::AngularVelocity{5.0f}};
+  unit::AngularVelocity pos_homing_speed{5.0_rad_per_s};
 
   // =========================================================================
   // ADC calibration (populated by the hardware startup aid)
@@ -438,25 +440,25 @@ struct NvmSettings {
 
   /// Phase-A current-sense ADC zero offset [A].
   /// Register: `unimoc.startup.adc_offset_a`
-  unit::Current adc_offset_a{unit::Current{0.0f}};
+  unit::Current adc_offset_a{0.0_A};
 
   /// Phase-B current-sense ADC zero offset [A].
   /// Register: `unimoc.startup.adc_offset_b`
-  unit::Current adc_offset_b{unit::Current{0.0f}};
+  unit::Current adc_offset_b{0.0_A};
 
   /// Phase-A current-sense ADC gain correction factor [dimensionless].
   /// Apply as: i_cal_a = (i_raw_a - adc_offset_a) * adc_gain_a.
   /// Register: `unimoc.startup.gain_a`
-  unit::DimensionlessRatio adc_gain_a{unit::DimensionlessRatio{1.0f}};
+  unit::DimensionlessRatio adc_gain_a{1.0_ratio};
 
   /// Phase-B current-sense ADC gain correction factor [dimensionless].
   /// Register: `unimoc.startup.gain_b`
-  unit::DimensionlessRatio adc_gain_b{unit::DimensionlessRatio{1.0f}};
+  unit::DimensionlessRatio adc_gain_b{1.0_ratio};
 
   /// DC-link voltage ADC gain correction factor [dimensionless].
   /// Apply as: v_cal = v_raw * adc_gain_vdc.
   /// Register: `unimoc.startup.gain_vdc`
-  unit::DimensionlessRatio adc_gain_vdc{unit::DimensionlessRatio{1.0f}};
+  unit::DimensionlessRatio adc_gain_vdc{1.0_ratio};
 
   // =========================================================================
   // Phase current balance correction
@@ -469,15 +471,15 @@ struct NvmSettings {
 
   /// Phase-A ADC gain correction factor [dimensionless, ≈ 1.0].
   /// Register: `unimoc.motor.balance.gain_a`
-  unit::DimensionlessRatio phase_balance_a{unit::DimensionlessRatio{1.0f}};
+  unit::DimensionlessRatio phase_balance_a{1.0_ratio};
 
   /// Phase-B ADC gain correction factor [dimensionless, ≈ 1.0].
   /// Register: `unimoc.motor.balance.gain_b`
-  unit::DimensionlessRatio phase_balance_b{unit::DimensionlessRatio{1.0f}};
+  unit::DimensionlessRatio phase_balance_b{1.0_ratio};
 
   /// Phase-C ADC gain correction factor [dimensionless, ≈ 1.0].
   /// Register: `unimoc.motor.balance.gain_c`
-  unit::DimensionlessRatio phase_balance_c{unit::DimensionlessRatio{1.0f}};
+  unit::DimensionlessRatio phase_balance_c{1.0_ratio};
 
   // =========================================================================
   // Validation and safety clamping

@@ -39,6 +39,8 @@ namespace unimoc {
  */
 namespace control {
 
+using namespace unit;
+
 /**
  * @brief Rotor-flux magnitude controller for induction motors (ASM).
  *
@@ -77,23 +79,23 @@ struct AsmFluxController {
   // -------------------------------------------------------------------------
 
   /// Rotor resistance R_r [Ω].
-  unit::Resistance R_r{unit::Resistance{0.3F}};
+  unit::Resistance R_r{0.3_Ohm};
 
   /// Rotor self-inductance L_r [H].
-  unit::Inductance L_r{unit::Inductance{50.0e-3F}};
+  unit::Inductance L_r{50.0_mH};
 
   /// Mutual (magnetising) inductance L_m [H].
-  unit::Inductance L_m{unit::Inductance{47.0e-3F}};
+  unit::Inductance L_m{47.0_mH};
 
   // -------------------------------------------------------------------------
   // Controller gains
   // -------------------------------------------------------------------------
 
   /// Proportional gain K_p [A/Wb].
-  unit::CurrentPerMagneticFlux kp{unit::CurrentPerMagneticFlux{10.0F}};
+  unit::CurrentPerMagneticFlux kp{10.0_A_per_Wb};
 
   /// Integral gain K_i [A/(Wb·s)].
-  unit::CurrentPerMagneticFluxTime ki{unit::CurrentPerMagneticFluxTime{50.0F}};
+  unit::CurrentPerMagneticFluxTime ki{50.0_A_per_Wb_s};
 
   // -------------------------------------------------------------------------
   // Output limits
@@ -104,7 +106,7 @@ struct AsmFluxController {
   unit::Current i_d_min{};
 
   /// Maximum d-axis current [A].
-  unit::Current i_d_max{unit::Current{10.0F}};
+  unit::Current i_d_max{10.0_A};
 
   // -------------------------------------------------------------------------
   // State
@@ -151,7 +153,7 @@ struct AsmFluxController {
     // ω_slip = (1/T_r) · (L_m · i_q / ψ_r*)
     // Use the flux reference in the denominator to avoid division by
     // a near-zero measured flux during start-up.
-    if (psi_r_ref > unit::MagneticFlux{1.0e-6F}) {
+    if (psi_r_ref > unit::MagneticFlux{1.0_uWb}) {
       const unit::Time rotor_time_constant = L_r / R_r;
       omega_slip = (L_m * i_q / psi_r_ref) / rotor_time_constant;
     } else {

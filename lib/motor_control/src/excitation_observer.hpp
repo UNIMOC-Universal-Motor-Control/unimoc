@@ -41,6 +41,8 @@ namespace unimoc {
  */
 namespace observer {
 
+using namespace unit;
+
 /**
  * @brief Rotor excitation current observer for EESM.
  *
@@ -80,7 +82,7 @@ struct ExcitationObserver {
 
   /// Mutual (magnetising) inductance L_m [H].
   /// Scales the filtered current to the effective rotor flux linkage.
-  unit::Inductance L_m{unit::Inductance{47.0e-3F}};
+  unit::Inductance L_m{47.0_mH};
 
   // -------------------------------------------------------------------------
   // Filter parameter
@@ -88,7 +90,7 @@ struct ExcitationObserver {
 
   /// Low-pass filter time constant tau [s].
   /// Adjust to balance noise rejection against response speed.
-  unit::Time tau{unit::Time{2.0e-3F}};
+  unit::Time tau{2.0_ms};
 
   // -------------------------------------------------------------------------
   // Outputs (updated by update())

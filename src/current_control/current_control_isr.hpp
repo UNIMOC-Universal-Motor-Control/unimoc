@@ -15,15 +15,15 @@
 
 #include <atomic>
 #include <cstdint>
+#include "SubStepBuffer.hpp"
+#include "current_controller.hpp"
 #include "dead_time_compensation.hpp"
 #include "hfi.hpp"
 #include "mechanical_observer.hpp"
-#include "SubStepBuffer.hpp"
-#include "svm.hpp"
-#include "current_controller.hpp"
 #include "nvm_settings.hpp"
 #include "rotor_system.hpp"
 #include "stator_system.hpp"
+#include "svm.hpp"
 
 namespace unimoc::hardware {
 class HardwareInterface;
@@ -37,6 +37,8 @@ namespace unimoc {
  * @namespace current_control current-control subsystem namespace
  */
 namespace current_control {
+
+using namespace unit;
 
 /**
  * @brief Timer period in seconds derived from a PWM frequency.
@@ -108,9 +110,7 @@ struct CurrentControlState {
   uint32_t adc_trigger_offset{168u};
 
   /// Most recently requested normalized phase duties.
-  system::ThreePhase<unit::DimensionlessRatio> phase_duties{unit::DimensionlessRatio{0.5f},
-                                                            unit::DimensionlessRatio{0.5f},
-                                                            unit::DimensionlessRatio{0.5f}};
+  system::ThreePhase<unit::DimensionlessRatio> phase_duties{0.5_ratio, 0.5_ratio, 0.5_ratio};
 
   /// Most-recent raw ADC samples; updated by every on_jeoc() call regardless
   /// of control mode. Safe to read from lower-priority contexts (e.g. the
@@ -313,9 +313,7 @@ class CurrentControlIsr {
 
   /// Fixed duty cycles applied to CCR1/2/3 while force_duty_active is true.
   /// Clamped to [svm.duty_min, svm.duty_max] by force_duty().
-  system::ThreePhase<unit::DimensionlessRatio> forced_duties{unit::DimensionlessRatio{0.5f},
-                                                             unit::DimensionlessRatio{0.5f},
-                                                             unit::DimensionlessRatio{0.5f}};
+  system::ThreePhase<unit::DimensionlessRatio> forced_duties{0.5_ratio, 0.5_ratio, 0.5_ratio};
 
  private:
   CurrentControlIsr() = default;

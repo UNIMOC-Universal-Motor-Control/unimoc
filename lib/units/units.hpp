@@ -104,6 +104,25 @@ class Unit {
   explicit constexpr Unit(Rep val) : val_(val) {}
 
   /**
+   * @brief Converts a value with the same tag from another period.
+   * @param other Unit value expressed in another period.
+   */
+  template <typename OtherPeriod>
+  constexpr Unit(const Unit<Rep, OtherPeriod, Tag>& other)
+      : val_(other.Value() * static_cast<Rep>(OtherPeriod::num) / OtherPeriod::den * static_cast<Rep>(Period::den) / Period::num) {}
+
+  /**
+   * @brief Assigns a value with the same tag from another period.
+   * @param other Unit value expressed in another period.
+   * @return This unit after conversion and assignment.
+   */
+  template <typename OtherPeriod>
+  constexpr Unit& operator=(const Unit<Rep, OtherPeriod, Tag>& other) {
+    val_ = other.Value() * static_cast<Rep>(OtherPeriod::num) / OtherPeriod::den * static_cast<Rep>(Period::den) / Period::num;
+    return *this;
+  }
+
+  /**
    * @brief Returns the stored numeric value.
    * @return The value expressed in this unit's period.
    */
@@ -1048,6 +1067,19 @@ constexpr Unit<float, std::milli, MagneticFluxTag> operator""_mWb(unsigned long 
 }
 
 /**
+ * @brief Creates a magnetic-flux value from a microweber literal.
+ * @param val Literal value in microwebers.
+ * @return Magnetic flux with a microweber period.
+ */
+constexpr Unit<float, std::micro, MagneticFluxTag> operator""_uWb(long double val) {
+  return Unit<float, std::micro, MagneticFluxTag>(static_cast<float>(val));
+}
+
+constexpr Unit<float, std::micro, MagneticFluxTag> operator""_uWb(unsigned long long val) {
+  return Unit<float, std::micro, MagneticFluxTag>(static_cast<float>(val));
+}
+
+/**
  * @brief Creates a resistance value from an ohm literal.
  * @param val Literal value in ohms.
  * @return Resistance in ohms.
@@ -1110,6 +1142,136 @@ constexpr Inductance operator""_H(unsigned long long val) { return Inductance(st
 constexpr Unit<float, std::milli, InductanceTag> operator""_mH(unsigned long long val) {
   return Unit<float, std::milli, InductanceTag>(static_cast<float>(val));
 }
+
+/**
+ * @brief Creates a time value from a microsecond literal.
+ * @param val Literal value in microseconds.
+ * @return Time with a microsecond period.
+ */
+constexpr Unit<float, std::micro, TimeTag> operator""_us(long double val) { return Unit<float, std::micro, TimeTag>(static_cast<float>(val)); }
+
+constexpr Unit<float, std::micro, TimeTag> operator""_us(unsigned long long val) { return Unit<float, std::micro, TimeTag>(static_cast<float>(val)); }
+
+/**
+ * @brief Creates an angular velocity from a radians-per-second literal.
+ * @param val Literal value in radians per second.
+ * @return Angular velocity in radians per second.
+ */
+constexpr AngularVelocity operator""_rad_per_s(long double val) { return AngularVelocity(static_cast<float>(val)); }
+constexpr AngularVelocity operator""_rad_per_s(unsigned long long val) { return AngularVelocity(static_cast<float>(val)); }
+
+/**
+ * @brief Creates an angular acceleration from a radians-per-second-squared
+ * literal.
+ * @param val Literal value in radians per second squared.
+ * @return Angular acceleration in radians per second squared.
+ */
+constexpr AngularAcceleration operator""_rad_per_s2(long double val) { return AngularAcceleration(static_cast<float>(val)); }
+constexpr AngularAcceleration operator""_rad_per_s2(unsigned long long val) { return AngularAcceleration(static_cast<float>(val)); }
+
+/**
+ * @brief Creates an inverse-time value from a reciprocal-second literal.
+ * @param val Literal value in reciprocal seconds.
+ * @return Inverse time in reciprocal seconds.
+ */
+constexpr InverseTime operator""_per_s(long double val) { return InverseTime(static_cast<float>(val)); }
+constexpr InverseTime operator""_per_s(unsigned long long val) { return InverseTime(static_cast<float>(val)); }
+
+/**
+ * @brief Creates a dimensionless ratio literal.
+ * @param val Ratio value.
+ * @return A dimensionless ratio.
+ */
+constexpr DimensionlessRatio operator""_ratio(long double val) { return DimensionlessRatio(static_cast<float>(val)); }
+constexpr DimensionlessRatio operator""_ratio(unsigned long long val) { return DimensionlessRatio(static_cast<float>(val)); }
+
+/**
+ * @brief Creates a rotational inertia from a kilogram-square-metre literal.
+ * @param val Literal value in kg m^2.
+ * @return Rotational inertia in kg m^2.
+ */
+constexpr Inertia operator""_kg_m2(long double val) { return Inertia(static_cast<float>(val)); }
+constexpr Inertia operator""_kg_m2(unsigned long long val) { return Inertia(static_cast<float>(val)); }
+
+/**
+ * @brief Creates a voltage-per-current gain literal.
+ * @param val Gain value in V/A.
+ * @return A voltage-per-current gain.
+ */
+constexpr VoltagePerCurrent operator""_V_per_A(long double val) { return VoltagePerCurrent(static_cast<float>(val)); }
+constexpr VoltagePerCurrent operator""_V_per_A(unsigned long long val) { return VoltagePerCurrent(static_cast<float>(val)); }
+
+/**
+ * @brief Creates a voltage-per-current-per-time gain literal.
+ * @param val Gain value in V/(A s).
+ * @return A voltage-per-current-per-time gain.
+ */
+constexpr VoltagePerCurrentTime operator""_V_per_A_s(long double val) { return VoltagePerCurrentTime(static_cast<float>(val)); }
+constexpr VoltagePerCurrentTime operator""_V_per_A_s(unsigned long long val) { return VoltagePerCurrentTime(static_cast<float>(val)); }
+
+/**
+ * @brief Creates a current-per-flux gain literal.
+ * @param val Gain value in A/Wb.
+ * @return A current-per-flux gain.
+ */
+constexpr CurrentPerMagneticFlux operator""_A_per_Wb(long double val) { return CurrentPerMagneticFlux(static_cast<float>(val)); }
+constexpr CurrentPerMagneticFlux operator""_A_per_Wb(unsigned long long val) { return CurrentPerMagneticFlux(static_cast<float>(val)); }
+
+/**
+ * @brief Creates a current-per-flux-per-time gain literal.
+ * @param val Gain value in A/(Wb s).
+ * @return A current-per-flux-per-time gain.
+ */
+constexpr CurrentPerMagneticFluxTime operator""_A_per_Wb_s(long double val) { return CurrentPerMagneticFluxTime(static_cast<float>(val)); }
+constexpr CurrentPerMagneticFluxTime operator""_A_per_Wb_s(unsigned long long val) { return CurrentPerMagneticFluxTime(static_cast<float>(val)); }
+
+/**
+ * @brief Creates a current-rate literal.
+ * @param val Rate value in A/s.
+ * @return A current rate.
+ */
+constexpr CurrentPerTime operator""_A_per_s(long double val) { return CurrentPerTime(static_cast<float>(val)); }
+constexpr CurrentPerTime operator""_A_per_s(unsigned long long val) { return CurrentPerTime(static_cast<float>(val)); }
+
+/**
+ * @brief Creates a current-per-voltage-per-time gain literal.
+ * @param val Gain value in A/(V s).
+ * @return A current-per-voltage-per-time gain.
+ */
+constexpr CurrentPerVoltageTime operator""_A_per_V_s(long double val) { return CurrentPerVoltageTime(static_cast<float>(val)); }
+constexpr CurrentPerVoltageTime operator""_A_per_V_s(unsigned long long val) { return CurrentPerVoltageTime(static_cast<float>(val)); }
+
+/**
+ * @brief Creates an angle-per-current gain literal.
+ * @param val Gain value in rad/A.
+ * @return An angle-per-current gain.
+ */
+constexpr AnglePerCurrent operator""_rad_per_A(long double val) { return AnglePerCurrent(static_cast<float>(val)); }
+constexpr AnglePerCurrent operator""_rad_per_A(unsigned long long val) { return AnglePerCurrent(static_cast<float>(val)); }
+
+/**
+ * @brief Creates an angular-velocity-per-angle gain literal.
+ * @param val Gain value in (rad/s)/rad.
+ * @return An angular-velocity-per-angle gain.
+ */
+constexpr AngularVelocityPerAngle operator""_rad_per_s_per_rad(long double val) { return AngularVelocityPerAngle(static_cast<float>(val)); }
+constexpr AngularVelocityPerAngle operator""_rad_per_s_per_rad(unsigned long long val) { return AngularVelocityPerAngle(static_cast<float>(val)); }
+
+/**
+ * @brief Creates a magnetic-flux-per-current-per-time gain literal.
+ * @param val Gain value in Wb/(A s).
+ * @return A magnetic-flux-per-current-per-time gain.
+ */
+constexpr MagneticFluxPerCurrentTime operator""_Wb_per_A_s(long double val) { return MagneticFluxPerCurrentTime(static_cast<float>(val)); }
+constexpr MagneticFluxPerCurrentTime operator""_Wb_per_A_s(unsigned long long val) { return MagneticFluxPerCurrentTime(static_cast<float>(val)); }
+
+/**
+ * @brief Creates a temperature value from a degrees-Celsius literal.
+ * @param val Literal value in degrees Celsius.
+ * @return Temperature in degrees Celsius.
+ */
+constexpr Temperature operator""_degC(long double val) { return Temperature(static_cast<float>(val)); }
+constexpr Temperature operator""_degC(unsigned long long val) { return Temperature(static_cast<float>(val)); }
 
 /**
  * @brief Tests whether a type carries the angle tag.
