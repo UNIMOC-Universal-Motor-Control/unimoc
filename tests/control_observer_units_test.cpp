@@ -28,6 +28,14 @@ namespace unimoc::test {
 
 using namespace unit;
 
+template <typename Numerator, typename Denominator>
+concept Dividable = requires(Numerator numerator, Denominator denominator) { numerator / denominator; };
+
+TEST(ControlObserverUnitsTest, RejectsDimensionlessRatioPerTime) {
+  static_assert(!Dividable<unit::DimensionlessRatio, unit::Time>);
+  static_assert(std::is_same_v<decltype((unit::DimensionlessRatio{} * unit::Angle{}) / unit::Time{}), unit::AngularVelocity>);
+}
+
 TEST(ControlObserverUnitsTest, MechanicalObserverUsesUnitTypes) {
   static_assert(std::is_same_v<decltype(observer::MechanicalObserver<float>::psi), unit::MagneticFlux>);
   static_assert(std::is_same_v<decltype(observer::MechanicalObserver<float>::J), unit::Inertia>);
@@ -46,7 +54,8 @@ TEST(ControlObserverUnitsTest, MotorControlPhysicalStateUsesUnitTypes) {
   static_assert(std::is_same_v<decltype(unit::Inductance{} / unit::Resistance{}), unit::Time>);
   static_assert(std::is_same_v<decltype(unit::CurrentPerMagneticFlux{} * unit::MagneticFlux{}), unit::Current>);
   static_assert(std::is_same_v<decltype(unit::CurrentPerMagneticFluxTime{} * unit::MagneticFlux{} * unit::Time{}), unit::Current>);
-  static_assert(std::is_same_v<decltype((unit::Inductance{} * unit::Current{}) / unit::MagneticFlux{} / unit::Time{}), unit::AngularVelocity>);
+  static_assert(std::is_same_v<decltype(((unit::Inductance{} * unit::Current{}) / unit::MagneticFlux{} * unit::Angle{}) / unit::Time{}),
+                               unit::AngularVelocity>);
   static_assert(std::is_same_v<decltype(observer::AsmFluxObserver<float>::flux_magnitude), unit::MagneticFlux>);
   static_assert(std::is_same_v<decltype(observer::AsmFluxObserver<float>::flux_angle), unit::Angle>);
   static_assert(std::is_same_v<decltype(observer::Hfi<float>::i_d_step0), unit::Current>);

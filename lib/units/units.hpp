@@ -392,15 +392,6 @@ constexpr auto operator/(const Unit<Rep, P1, AngleTag>& angle, const Unit<Rep, P
 }
 
 /**
- * @brief Divides a dimensionless ratio by time to obtain angular velocity.
- * @return Angular velocity with the quotient period.
- */
-template <typename Rep, typename P1, typename P2>
-constexpr auto operator/(const Unit<Rep, P1, DimensionlessRatioTag>& ratio, const Unit<Rep, P2, TimeTag>& time) {
-  return Unit<Rep, std::ratio_divide<P1, P2>, AngularVelocityTag>(ratio.Value() / time.Value());
-}
-
-/**
  * @brief Multiplies angular velocity by time to obtain an angle.
  * @return Angle with the product period.
  */
